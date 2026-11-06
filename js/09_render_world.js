@@ -20,7 +20,7 @@ function renderWorldContents() {
   }
 
   // 1.06 Draw 2.5D Isometric Obstacles (석등, 이끼 거암, 대나무 군락, 방어 목책)
-  renderObstacles();
+  renderObstacles('back');
 
   // 1.07 Draw Diablo-Style Martial Shrines (태을혈기, 풍신선풍, 금강불괴, 만천비검 신단)
   renderShrines();
@@ -60,6 +60,9 @@ function renderWorldContents() {
 
   // 6. Draw Player (with 4-frame walk cycle!)
   renderPlayer();
+
+  // 6.5 주인공보다 앞쪽(아래)에 있는 소품은 주인공 위에 그림 (뒤로 지나가면 가려짐)
+  renderObstacles('front');
 
   // 7. Draw Flying Swords & Projectiles
   renderProjectiles();
@@ -693,17 +696,67 @@ function renderGround() {
 }
 
 // 2.5D Isometric Obstacles (고풍 3단 석등, 이끼 거암, 대나무 군락, 방어 목책)
-function renderObstacles() {
+// 소품 그림 크기(월드 단위). 서진 키 = 144
+const PROP_SPRITE_DEFS = {
+  bamboo:     { key: 'prop_bamboo',     h: 210, foot: 8,  shadowW: 0.34, sway: true },
+  rock_big:   { key: 'prop_rock_big',   w: 128, foot: 10, shadowW: 0.46 },
+  boulder:    { key: 'prop_rock_big',   w: 128, foot: 10, shadowW: 0.46 },
+  rock_small: { key: 'prop_rock_small', w: 70,  foot: 6,  shadowW: 0.46 },
+  lantern:    { key: 'prop_lantern',    h: 112, foot: 8,  shadowW: 0.40, glow: true }
+};
+
+// pass: 'back' = 주인공보다 뒤(위쪽)에 있는 소품, 'front' = 주인공보다 앞(아래쪽)에 있는 소품
+// 이렇게 두 번 나눠 그려서 주인공이 대나무·석등 뒤로 지나가면 가려지게 함
+function renderObstacles(pass = 'all') {
+  if (typeof ensureObstacleChunks === 'function') ensureObstacleChunks();
   if (!obstacles || obstacles.length === 0) return;
   const camX = state.camera.x;
   const camY = state.camera.y;
-  const cullW = gameWidth / 2 + 100;
-  const cullH = gameHeight / 2 + 100;
+  const cullW = gameWidth / 2 + 160;
+  const cullH = gameHeight / 2 + 240;
 
   obstacles.forEach(obs => {
     if (Math.abs(obs.x - camX) > cullW || Math.abs(obs.y - camY) > cullH) return;
+    if (pass === 'back' && obs.y > player.y) return;
+    if (pass === 'front' && obs.y <= player.y) return;
     ctx.save();
     ctx.translate(obs.x, obs.y);
+
+    // --- 새 그림 소품 (있으면 그림으로, 없으면 아래 예전 도형 그리기) ---
+    const def = PROP_SPRITE_DEFS[obs.type];
+    const img = def && SPRITES[def.key];
+    if (img && img.width > 0) {
+      const sc = obs.scale || 1;
+      const h = (def.h || def.w * img.height / img.width) * sc;
+      const w = (def.w || def.h * img.width / img.height) * sc;
+      // 바닥 그림자
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+      ctx.beginPath();
+      ctx.ellipse(0, 2, w * def.shadowW, w * def.shadowW * 0.38, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // 석등 불빛
+      if (def.glow) {
+        const pulse = 1.0 + Math.sin(state.gameTime * 6 + obs.x) * 0.1;
+        const g = ctx.createRadialGradient(0, -h * 0.55, 4, 0, -h * 0.55, 70 * pulse);
+        g.addColorStop(0, 'rgba(251, 191, 36, 0.35)');
+        g.addColorStop(1, 'rgba(251, 191, 36, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(-80, -h * 0.55 - 80, 160, 160);
+      }
+      // 주인공이 앞쪽 소품 뒤에 숨으면 살짝 투명하게
+      if (pass === 'front' && Math.abs(player.x - obs.x) < w * 0.45 && player.y > obs.y - h && player.y < obs.y) {
+        ctx.globalAlpha = 0.55;
+      }
+      if (obs.flip) ctx.scale(-1, 1);
+      if (def.sway) {
+        // 대나무는 바람에 살랑 (윗부분만 휘도록 기울임)
+        const sway = Math.sin(state.gameTime * 1.6 + obs.x * 0.01) * 0.035;
+        ctx.transform(1, 0, sway, 1, 0, 0);
+      }
+      ctx.drawImage(img, -w / 2, -h + def.foot, w, h);
+      ctx.restore();
+      return;
+    }
 
     if (obs.type === 'lantern') {
       // 1. 고풍 3단 무협 석등 (Stone Pagoda Lantern)
@@ -895,6 +948,63 @@ function renderShrines() {
 
     const now = state.gameTime * 2.5 + (s.pulse || 0);
     const pulse = 1.0 + Math.sin(now) * 0.1;
+
+    // --- 새 그림 신단 ---
+    const simg = SPRITES['shrine_' + s.type];
+    if (simg && simg.width > 0) {
+      const w = 150;
+      const h = w * simg.height / simg.width;
+      // 바닥 그림자
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(0, 6, w * 0.48, w * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (s.active) {
+        // 바닥에 은은하게 도는 빛 고리
+        ctx.save();
+        ctx.globalAlpha = 0.55 + Math.sin(now) * 0.15;
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = s.color;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, w * 0.56 * pulse, w * 0.24 * pulse, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.filter = 'grayscale(1) brightness(0.55)'; // 이미 쓴 신단은 빛이 꺼진 돌
+      }
+      ctx.drawImage(simg, -w / 2, -h + w * 0.2, w, h);
+      ctx.filter = 'none';
+      if (s.active) {
+        // 구슬이 숨 쉬듯 빛남
+        const orbY = -h + w * 0.2 + h * 0.36;
+        const orbX = (s.type === 'invincible' || s.type === 'infinite_blades') ? w * 0.02 : -w * 0.06;
+        const g = ctx.createRadialGradient(orbX, orbY, 2, orbX, orbY, 34 * pulse);
+        g.addColorStop(0, 'rgba(255,255,255,0.55)');
+        g.addColorStop(0.4, s.color + '88');
+        g.addColorStop(1, s.color + '00');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(orbX, orbY, 34 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        // 이름은 가까이 왔을 때만 짧게 표시 (화면을 가리지 않게)
+        const near = Math.hypot(player.x - s.x, player.y - s.y) < 260;
+        if (near) {
+          const shortName = s.name.split(' (')[0];
+          ctx.font = 'bold 13px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+          ctx.strokeText(`${s.icon} ${shortName}`, 0, -h + w * 0.2 - 12);
+          ctx.fillStyle = '#fff';
+          ctx.fillText(`${s.icon} ${shortName}`, 0, -h + w * 0.2 - 12);
+        }
+      }
+      ctx.restore();
+      return;
+    }
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
     ctx.beginPath();

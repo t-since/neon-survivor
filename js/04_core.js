@@ -518,10 +518,13 @@ function initShrines() {
     { type: 'infinite_blades', name: '만천비검신단 (萬天飛劍壇)', icon: '🗡️', desc: '25초간 비검 투사체 +3 & 발사속도 대폭 증가!', color: '#38bdf8', duration: 25 }
   ];
 
+  // 신단 4개를 동서남북으로 고르게 흩어 놓음 (시작 지점에서 650~1150 떨어진 곳, 서로 최소 90도 간격)
+  const baseRot = Math.random() * Math.PI * 2;
+  const order = [0, 1, 2, 3].sort(() => Math.random() - 0.5); // 방향마다 어떤 신단이 올지 섞기
   for (let i = 0; i < 4; i++) {
-    const ang = (i / 4) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-    const dist = 380 + Math.random() * 300;
-    const def = shrineDefs[i % shrineDefs.length];
+    const ang = baseRot + (i / 4) * Math.PI * 2 + (Math.random() - 0.5) * 0.7;
+    const dist = 650 + Math.random() * 500;
+    const def = shrineDefs[order[i]];
     shrines.push({
       id: 'shrine_' + i,
       x: player.x + Math.cos(ang) * dist,
@@ -541,6 +544,8 @@ function initShrines() {
 // --- 2.5D Isometric Obstacles (쿼터뷰 지형지물 & 입체감) ---
 function initObstacles() {
   obstacles.length = 0;
+  obstacleChunks.clear();
+  obstaclePropSet = null;
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
   const curZone = state.currentZone || 1;
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][curZone - 1]) ? ZONE_CONFIGS[secIdx][curZone - 1] : ZONE_CONFIGS[0][0];
@@ -560,24 +565,66 @@ function initObstacles() {
     return;
   }
 
-  // 테마별 정갈하고 고급스러운 무협 장애물 구성 (튀는 형광 초록색 대나무 배제, 흑석 석등 & 자연 암석 중심)
-  let validTypes = ['lantern', 'boulder'];
-  if (zoneCfg.theme === 'stone_fortress' || zoneCfg.propType === 'torch') {
-    validTypes = ['fence', 'lantern', 'boulder'];
-  } else {
-    validTypes = ['lantern', 'boulder'];
+  // 테마별 소품 구성 [종류, 비중]
+  if (zoneCfg.theme === 'bamboo_grove' || zoneCfg.propType === 'bamboo') {
+    obstaclePropSet = [['bamboo', 6], ['rock_small', 2], ['rock_big', 1], ['lantern', 1]];
+  } else if (zoneCfg.theme === 'blood_cavern') {
+    obstaclePropSet = [['rock_big', 3], ['rock_small', 3], ['lantern', 1]];
+  } else { // stone_fortress 등
+    obstaclePropSet = [['lantern', 3], ['rock_big', 2], ['rock_small', 2], ['fence', 1]];
   }
+  obstacleSafeCenter = { x: player.x, y: player.y };
+  obstacleSeed = (Math.random() * 1e9) | 0;
+  ensureObstacleChunks();
+}
 
-  for (let i = 0; i < 18; i++) {
-    const ang = Math.random() * Math.PI * 2;
-    const dist = 320 + Math.random() * 850;
-    const t = validTypes[i % validTypes.length];
-    obstacles.push({
-      x: player.x + Math.cos(ang) * dist,
-      y: player.y + Math.sin(ang) * dist,
-      type: t,
-      radius: t === 'boulder' ? 32 : (t === 'lantern' ? 18 : 26)
-    });
+// --- 소품을 맵 전체에 고르게 깔기 ---
+// 맵을 OBSTACLE_CHUNK 크기의 칸으로 나누고, 화면 근처 칸에 처음 들어갈 때 그 칸의 소품을 만듦.
+// 같은 칸은 늘 같은 모양(씨앗값 고정)이라 되돌아가도 소품이 바뀌지 않음.
+const OBSTACLE_CHUNK = 520;
+const OBSTACLE_RADIUS = { bamboo: 30, rock_big: 46, rock_small: 24, lantern: 20, fence: 26, boulder: 46 };
+const obstacleChunks = new Set();
+let obstaclePropSet = null;
+let obstacleSafeCenter = { x: 0, y: 0 };
+let obstacleSeed = 1;
+
+function chunkRandom(cx, cy) {
+  let s = (Math.imul(cx, 73856093) ^ Math.imul(cy, 19349663) ^ obstacleSeed) >>> 0;
+  if (s === 0) s = 1;
+  return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+}
+function pickPropType(rand) {
+  const total = obstaclePropSet.reduce((a, p) => a + p[1], 0);
+  let r = rand() * total;
+  for (const [t, w] of obstaclePropSet) { if (r < w) return t; r -= w; }
+  return obstaclePropSet[0][0];
+}
+function ensureObstacleChunks() {
+  if (!obstaclePropSet) return;
+  const m = 260;
+  const x0 = Math.floor((state.camera.x - gameWidth / 2 - m) / OBSTACLE_CHUNK);
+  const x1 = Math.floor((state.camera.x + gameWidth / 2 + m) / OBSTACLE_CHUNK);
+  const y0 = Math.floor((state.camera.y - gameHeight / 2 - m) / OBSTACLE_CHUNK);
+  const y1 = Math.floor((state.camera.y + gameHeight / 2 + m) / OBSTACLE_CHUNK);
+  for (let cx = x0; cx <= x1; cx++) {
+    for (let cy = y0; cy <= y1; cy++) {
+      const key = cx + ',' + cy;
+      if (obstacleChunks.has(key)) continue;
+      obstacleChunks.add(key);
+      const rand = chunkRandom(cx, cy);
+      // 한 칸을 2x2 작은 칸으로 나눠 각 자리에 45% 확률로 소품 하나 (뭉치지 않게)
+      for (let gx = 0; gx < 2; gx++) for (let gy = 0; gy < 2; gy++) {
+        if (rand() > 0.45) continue;
+        const half = OBSTACLE_CHUNK / 2;
+        const x = cx * OBSTACLE_CHUNK + gx * half + half * (0.2 + rand() * 0.6);
+        const y = cy * OBSTACLE_CHUNK + gy * half + half * (0.2 + rand() * 0.6);
+        // 시작 지점·신단 주변은 비워 둠
+        if (Math.hypot(x - obstacleSafeCenter.x, y - obstacleSafeCenter.y) < 300) continue;
+        if (shrines.some(s => Math.hypot(x - s.x, y - s.y) < 190)) continue;
+        const type = pickPropType(rand);
+        obstacles.push({ x, y, type, radius: OBSTACLE_RADIUS[type] || 26, flip: rand() < 0.5, scale: 0.85 + rand() * 0.3 });
+      }
+    }
   }
 }
 

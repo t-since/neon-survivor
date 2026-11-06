@@ -68,7 +68,17 @@ const SPRITE_URLS = {
   portrait_tangsoyeon: 'assets/portrait_tangsoyeon.jpg',
   portrait_enemy_assassin: 'assets/portrait_enemy_assassin.jpg',
   portrait_enemy_jiangshi: 'assets/portrait_enemy_jiangshi.jpg',
-  portrait_enemy_boss: 'assets/portrait_enemy_boss.jpg'
+  portrait_enemy_boss: 'assets/portrait_enemy_boss.jpg',
+
+  // 배경 소품 (제미나이로 서진과 같은 그림체로 생성, 2026-11)
+  prop_bamboo: 'assets/props/bamboo.png',
+  prop_rock_big: 'assets/props/rock_big.png',
+  prop_rock_small: 'assets/props/rock_small.png',
+  prop_lantern: 'assets/props/lantern.png',
+  shrine_blood_fury: 'assets/props/shrine_blood_fury.png',
+  shrine_wind_god: 'assets/props/shrine_wind_god.png',
+  shrine_invincible: 'assets/props/shrine_invincible.png',
+  shrine_infinite_blades: 'assets/props/shrine_infinite_blades.png'
 };
 const SPRITES = {};
 let loadedImagesCount = 0;

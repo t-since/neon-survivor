@@ -1809,63 +1809,63 @@ function renderOffscreenGuides() {
   });
   // droppedItems radar markers removed for smooth performance
 
+  // 화면 가장자리 길안내: 긴 글씨 띠 대신 작은 동그라미 아이콘 + 방향 화살표 + 거리
   targets.forEach(t => {
     const relX = t.x - state.camera.x;
     const relY = t.y - state.camera.y;
     const dist = Math.hypot(relX, relY);
+    if (Math.abs(relX) <= halfW && Math.abs(relY) <= halfH) return;
 
-    if (Math.abs(relX) > halfW || Math.abs(relY) > halfH) {
-      const angle = Math.atan2(relY, relX);
-      const edgeX = Math.cos(angle) * (halfW - 10);
-      const edgeY = Math.sin(angle) * (halfH - 10);
-      const distM = Math.round(dist / 10);
+    const angle = Math.atan2(relY, relX);
+    // 화면 사각형 테두리에 붙이기 (위쪽은 정보창 자리를 피해서 조금 더 안쪽)
+    const topPad = 70;
+    const c = Math.cos(angle), s = Math.sin(angle);
+    const limX = halfW - 6, limY = halfH - 6;
+    const k = Math.min(limX / Math.max(Math.abs(c), 1e-6), (s < 0 ? limY - topPad : limY) / Math.max(Math.abs(s), 1e-6));
+    const ex = c * k, ey = s * k;
+    const icon = (t.tag.match(/^\S+/) || ['•'])[0];
+    const r = t.isPriority ? 19 : 15;
 
-      ctx.save();
-      ctx.translate(state.camera.x + edgeX, state.camera.y + edgeY);
-
-      if (t.isPriority) {
-        // 보스/중간보스/포탈 전용 대형 펄싱 나침반 배너
-        const pulse = 1 + Math.sin(state.gameTime * (t.isPortal ? 9 : 7)) * (t.isPortal ? 0.12 : 0.08);
-        ctx.scale(pulse, pulse);
-
-        const bw = t.isPortal ? 188 : 150;
-        const bh = t.isPortal ? 32 : 28;
-        ctx.fillStyle = t.isPortal ? 'rgba(15, 23, 42, 0.98)' : 'rgba(15, 23, 42, 0.95)';
-        ctx.strokeStyle = t.color;
-        ctx.lineWidth = t.isPortal ? 2.8 : 2.2;
-        ctx.shadowColor = t.isPortal ? '#38bdf8' : t.color;
-        ctx.shadowBlur = t.isPortal ? 18 : 12;
-        ctx.beginPath();
-        ctx.roundRect(-bw / 2, -bh / 2, bw, bh, 14);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.shadowBlur = 0;
-        ctx.font = t.isPortal ? 'bold 12px sans-serif' : 'bold 11px sans-serif';
-        ctx.fillStyle = t.color;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`${t.tag} (${distM}m) ➤`, 0, 0);
-      } else {
-        // 일반 영약/비급함 배너
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.strokeStyle = t.color;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.roundRect(-34, -12, 68, 24, 12);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillStyle = t.color;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(t.tag, 0, 0);
-      }
-
-      ctx.restore();
+    ctx.save();
+    ctx.translate(state.camera.x + ex, state.camera.y + ey);
+    const pulse = t.isPortal || t.isPriority ? 1 + Math.sin(state.gameTime * 6) * 0.06 : 1;
+    ctx.scale(pulse, pulse);
+    // 방향 화살표
+    ctx.save();
+    ctx.rotate(angle);
+    ctx.fillStyle = t.color;
+    ctx.beginPath();
+    ctx.moveTo(r + 9, 0);
+    ctx.lineTo(r + 1, -6);
+    ctx.lineTo(r + 1, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    // 동그라미
+    ctx.fillStyle = 'rgba(10, 14, 22, 0.88)';
+    ctx.strokeStyle = t.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = `${t.isPriority ? 17 : 14}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(icon, 0, 1);
+    // 거리 (중요 표시만)
+    if (t.isPriority) {
+      ctx.font = 'bold 10px sans-serif';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      const label = `${Math.round(dist / 10)}m`;
+      ctx.strokeText(label, 0, r + 10);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(label, 0, r + 10);
     }
+    ctx.restore();
   });
+
 }
 
 

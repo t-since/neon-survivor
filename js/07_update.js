@@ -905,21 +905,21 @@ function updateGame(dt) {
   // 5.8 Update Diablo-Style Shrines (신단 / 기연 비석 상호작용)
   for (let s of shrines) {
     s.pulse = (s.pulse || 0) + dt * 3.5;
-    if (s.active && Math.hypot(player.x - s.x, player.y - s.y) < player.radius + 32) {
+    if (s.active && Math.hypot(player.x - s.x, player.y - s.y) < player.radius + 48) {
       s.active = false;
       player.activeBuffs[s.type] = s.duration;
       sound.playLevelUp();
       createShockwave(s.x, s.y, 75, s.color);
       PixelFX.spawnPickupSparkle(s.x, s.y, 'chest');
-      showPhaseBanner(`✨ [기연 신단 활성화!] ✨`, `${s.name}: ${s.desc}`, 'stage');
+      // 화면 가운데 큰 배너 대신, 머리 위 짧은 글씨 + 위쪽 버프 표시로만 알림
       damageTexts.push({
         x: player.x,
-        y: player.y - 45,
-        text: `✨ ${s.name} 획득!`,
+        y: player.y - 150,
+        text: `${s.icon} ${s.desc.split('!')[0]}`,
         color: s.color,
-        size: 18,
-        life: 2.0,
-        vy: -35
+        size: 16,
+        life: 1.8,
+        vy: -30
       });
       updateHudDebuffs();
     }
