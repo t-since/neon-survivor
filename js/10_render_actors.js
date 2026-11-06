@@ -66,24 +66,29 @@ function renderPlayer() {
     ctx.translate(-recoil * player.facing, 0);
   }
 
-  // 5. Multi-Frame Walking OR Combat Attack / Skill Animation!
-  let spriteKey = 'hero_0'; // 가만히 섰을 때는 완전히 안정된 단정한 대기 정지 자세 (걷는 모션 및 어지러운 흔들림 완전 제거)
-
-  let isSlashAtk = false;
+  // 5. 움직임: 그림 한 장을 코드로 움직임
+  //    (예전 걷기 4장은 다리 자세가 거의 같아 미끄러져 보였고, 공격 2~4번 그림은 손이 몸에서 떨어져 있었음)
+  let spriteKey = 'hero_0';
+  let bob = 0, lean = 0, skew = 0, sx = 1, sy = 1, forward = 0;
+  const t = state.gameTime;
   if (player.isAttacking) {
-    isSlashAtk = true;
-    const prog = Math.min(1, Math.max(0, 1 - (player.attackTimer / (player.attackDuration || 0.35))));
-    // 2dimg2motion 4-beat slash: Windup (0) -> Slash with Cyan Sword Qi (1) -> Extended Impact (2) -> Recovery (3)
-    const atkIndex = Math.min(3, Math.floor(prog * 4));
-    spriteKey = 'hero_atk_' + atkIndex;
-
-    // 정밀한 전방 일섬 도약 반동
-    const lunge = Math.sin(prog * Math.PI) * 10;
-    ctx.translate(lunge, 0);
+    // 몸은 기본 그림 그대로, 칼은 아래 drawHeroSword()에서 따로 그려 휘두름
+    const prog = Math.min(1, Math.max(0, 1 - (player.attackTimer / (player.attackDuration || 0.32))));
+    const wind = prog < 0.25 ? prog / 0.25 : 0;                       // 0~25%: 몸을 뒤로 젖혀 힘 모으기
+    const strike = prog >= 0.25 ? Math.max(0, 1 - (prog - 0.25) / 0.75) : 0; // 이후: 앞으로 내지르고 천천히 복귀
+    lean = -0.10 * wind + 0.15 * strike;
+    forward = -4 * wind + 12 * strike;
+    sx = 1 + 0.06 * strike;
+    sy = 1 + 0.03 * wind - 0.05 * strike;
   } else if (player.isMoving) {
-    // 실제로 이동 키를 누르고 있을 때만 4단 걷기 모션이 순환 재생됨!
-    const frameIndex = Math.floor(player.walkTimer) % 4;
-    spriteKey = 'hero_' + frameIndex;
+    const ph = player.walkTimer * 0.7;          // 걸음 박자 (빨리 달리면 빨라짐)
+    bob = Math.abs(Math.sin(ph)) * 5;           // 한 걸음마다 살짝 튀어 오름
+    lean = 0.07;                                 // 가는 방향으로 몸을 숙임
+    skew = Math.sin(ph) * 0.05;                  // 상체가 걸음에 맞춰 좌우로 흔들림
+    sy = 1 + Math.sin(ph * 2) * 0.02;            // 디딜 때 살짝 눌림
+  } else {
+    sy = 1 + Math.sin(t * 2.2) * 0.012;          // 숨쉬기
+    skew = Math.sin(t * 1.3) * 0.012;            // 옷자락 살랑
   }
   const sprite = SPRITES[spriteKey];
 
@@ -91,7 +96,11 @@ function renderPlayer() {
   const w = 88;
   const h = 144;
 
-  ctx.scale(player.facing, 1);
+  ctx.scale(player.facing, 1);   // 여기부터 +x 가 '앞쪽'
+  ctx.translate(forward, -bob);
+  ctx.rotate(lean);              // 발을 축으로 기울기
+  ctx.transform(1, 0, -skew, 1, 0, 0); // 위쪽만 좌우로 흔들기
+  ctx.scale(sx, sy);
 
   // 6. Visual Look Change Auras (장비 착용 룩변)
   if (player.equipped && player.equipped.robe) {
@@ -113,15 +122,113 @@ function renderPlayer() {
     ctx.filter = 'drop-shadow(0 0 8px #38bdf8) hue-rotate(-30deg)';
   }
 
+  // 칼을 뒤로 들어 올리는 동안(공격 앞부분)은 칼이 몸 뒤에 있도록 먼저 그림
+  const atkProg = player.isAttacking ? Math.min(1, Math.max(0, 1 - (player.attackTimer / (player.attackDuration || 0.32)))) : -1;
+  const swordBehind = atkProg >= 0 && atkProg < 0.3 && (player.attackCombo || 0) % 2 === 0;
+  if (swordBehind) drawHeroSword(atkProg, player.attackCombo || 0);
+
   const isCanvas = (typeof HTMLCanvasElement !== 'undefined' && sprite instanceof HTMLCanvasElement);
   if (sprite && (isCanvas || sprite.complete || (sprite.width > 0))) {
-    // 가만히 섰을 때는 인공적인 진동/바운스 없이 지면에 안정적으로 직립
     ctx.drawImage(sprite, -w / 2, -h + 14, w, h);
   } else {
     ctx.fillStyle = '#0ea5e9';
     ctx.fillRect(-15, -60, 30, 60);
   }
+  ctx.filter = 'none';
+  ctx.shadowBlur = 0;
 
+  if (atkProg >= 0 && !swordBehind) drawHeroSword(atkProg, player.attackCombo || 0);
+
+  ctx.restore();
+}
+
+// 서진의 칼 휘두르기 (앞쪽이 +x 인 좌표에서 호출)
+// prog 0~0.25: 칼을 뒤로 들어 올림 → 0.25~0.55: 크게 휘둘러 내림 → 이후 멈춤 & 사라짐
+// combo 가 홀수면 아래에서 위로 올려 베기
+function drawHeroSword(prog, combo) {
+  const handX = 18, handY = -62;            // 오른손 위치 (서진 그림 기준)
+  const up = -2.3, down = 0.75;             // 칼 각도 (라디안): 뒤-위 → 앞-아래
+  const reverse = combo % 2 === 1;
+  const from = reverse ? down + 0.3 : up;
+  const to = reverse ? up + 0.6 : down;
+  let a, alpha = 1;
+  if (prog < 0.25) {
+    const k = prog / 0.25;
+    a = from + (reverse ? 0.2 : -0.25) * k;          // 살짝 더 젖혀 힘 모으기
+  } else if (prog < 0.55) {
+    const k = (prog - 0.25) / 0.3;
+    const e = 1 - Math.pow(1 - k, 3);                  // 처음 빠르고 끝에서 멈추는 휘두름
+    a = from + (to - from) * e;
+  } else {
+    a = to;
+    alpha = Math.max(0, 1 - (prog - 0.55) / 0.45);
+  }
+  const L = 62;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(handX, handY);
+
+  // 휘두르는 궤적 (검기)
+  if (prog >= 0.25) {
+    const k = Math.min(1, (prog - 0.25) / 0.3);
+    const e = 1 - Math.pow(1 - k, 3);
+    const cur = from + (to - from) * e;
+    const tail = from + (to - from) * Math.max(0, e - 0.55);
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.55;
+    const g = ctx.createRadialGradient(0, 0, L * 0.35, 0, 0, L + 10);
+    g.addColorStop(0, 'rgba(186, 230, 253, 0)');
+    g.addColorStop(0.75, 'rgba(125, 211, 252, 0.55)');
+    g.addColorStop(1, 'rgba(255, 255, 255, 0.9)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, L + 10, Math.min(tail, cur), Math.max(tail, cur));
+    ctx.arc(0, 0, L * 0.35, Math.max(tail, cur), Math.min(tail, cur), true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 칼
+  ctx.rotate(a);
+  ctx.lineJoin = 'round';
+  // 손잡이
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(-14, -2.2, 14, 4.4);
+  // 코등이
+  ctx.fillStyle = '#b45309';
+  ctx.strokeStyle = '#451a03';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(-1, -6, 4, 12, 1.5);
+  ctx.fill();
+  ctx.stroke();
+  // 칼날
+  const bg = ctx.createLinearGradient(0, -3, 0, 3);
+  bg.addColorStop(0, '#f8fafc');
+  bg.addColorStop(0.5, '#cbd5e1');
+  bg.addColorStop(1, '#64748b');
+  ctx.fillStyle = bg;
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 1.2;
+  if (prog >= 0.25 && prog < 0.6) { ctx.shadowColor = '#7dd3fc'; ctx.shadowBlur = 12; }
+  ctx.beginPath();
+  ctx.moveTo(3, -2.6);
+  ctx.lineTo(L, -1.6);
+  ctx.lineTo(L + 9, 0);
+  ctx.lineTo(L, 1.6);
+  ctx.lineTo(3, 2.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // 수술
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#dc2626';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(-14, 0);
+  ctx.quadraticCurveTo(-20, 6, -18, 12);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -426,14 +533,28 @@ function renderEnemies() {
     const speedMag = Math.hypot(e.vx || 0, e.vy || 0);
     const isMoving = speedMag > 20;
     // 퉁퉁거리는 Math.abs 바운스를 없애고, 잔잔한 지면 보행 진동(1.2px)과 어깨 흔들림(0.025 rad)으로 변경
-    const bobY = isMoving ? Math.sin(runTimer) * 1.2 : Math.sin(state.gameTime * 2.5 + (e.x % 10)) * 0.8;
-    const tilt = isMoving ? Math.sin(runTimer * 0.5) * 0.025 : 0;
-    const squashY = 1.0;
-    const squashX = 1.0;
-
     if (e.hitCooldown > 0) {
       const flinch = Math.sin(e.hitCooldown * 35) * 4.5;
       ctx.translate(-facing * flinch, 0);
+    }
+
+    // 일반 몬스터 공통 걸음 연출 (종류별 성격): 걸음마다 살짝 튀고, 가는 방향으로 숙이고, 좌우로 흔들림
+    // (보스·중간보스는 각자 연출, 강시는 콩콩 뛰기가 따로 있음)
+    if (!e.isBoss && !e.isMiniBoss && e.type !== 'jiangshi') {
+      if (e.seed === undefined) e.seed = Math.random() * Math.PI * 2; // 모두 같은 박자로 움직이지 않게
+      const MOTION = {
+        assassin: [0.13, 0.03, 3.5], poison_assassin: [0.13, 0.03, 3.5], spearman: [0.08, 0.03, 3],
+        skeleton: [0.05, 0.07, 3], archer: [0.04, 0.05, 2.5], ghoul: [0.11, 0.05, 4],
+        butcher: [0.04, 0.05, 2], barbarian: [0.06, 0.06, 2.5], necromancer: [0.02, 0.02, 1.5], sorceress: [0.02, 0.02, 1.5]
+      };
+      const [leanAmt, wobble, hop] = MOTION[e.type] || [0.07, 0.03, 3];
+      if (isMoving) {
+        const ph = runTimer * 1.35 + e.seed;
+        ctx.translate(0, -Math.abs(Math.sin(ph)) * hop);
+        ctx.rotate(facing * leanAmt + Math.sin(ph) * wobble);
+      } else {
+        ctx.scale(1, 1 + Math.sin(state.gameTime * 2.4 + e.seed) * 0.015); // 숨쉬기
+      }
     }
 
     if (e.isBoss) {
