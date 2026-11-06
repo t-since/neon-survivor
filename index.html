@@ -43,7 +43,7 @@
         <span class="brand-ver">v0.8 PRE-ALPHA</span>
       </div>
       <div class="start-top-actions">
-        <button class="start-icon-btn" onclick="sound.init(); toggleCheatModal();">⚡ 무공 치트</button>
+        <button class="start-icon-btn debug-only" onclick="sound.init(); toggleCheatModal();">⚡ 무공 치트</button>
       </div>
     </div>
 
@@ -55,10 +55,10 @@
       <p class="title-epic-lore">“만겁(萬劫)의 혈겁을 뚫고, 천하제일검(天下第一劍)의 길을 열어라.”</p>
 
       <div style="margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
-        <button class="start-game-btn" onclick="navScreen('hero')">
-          <span class="btn-sword-icon">⚔️</span> 강호 입장 (협객 선택) <span class="btn-kbd-pill">ENTER / SPACE</span>
+        <button class="start-game-btn" id="quickEnterBtn" onclick="sound.init(); quickEnter();">
+          <span class="btn-sword-icon">⚔️</span> <span id="quickEnterLabel">강호 입장</span> <span class="btn-kbd-pill kbd-only">ENTER / SPACE</span>
         </button>
-        <div class="start-controls-hint">
+        <div class="start-controls-hint kbd-only">
           화면을 클릭하거나 <span>[ENTER]</span> / <span>[SPACE]</span> 키를 눌러 강호에 입장하십시오
         </div>
       </div>
@@ -74,7 +74,7 @@
       <button class="nav-back-btn" onclick="navScreen('title')">◀ 메인 대문으로</button>
       <div class="screen-step-title">✦ STEP 1 : 출전 협객 선택 <span class="step-sub">(기본 출전: 서진)</span></div>
       <div class="start-top-actions">
-        <button class="start-icon-btn" onclick="toggleCheatModal();">⚡ 치트</button>
+        <button class="start-icon-btn debug-only" onclick="toggleCheatModal();">⚡ 치트</button>
       </div>
     </div>
 
@@ -145,7 +145,7 @@
   <div id="stageScreen" class="gateway-screen" style="display: none;">
     <!-- Top Bar with Back Button & Selected Hero Pill -->
     <div class="start-top-bar">
-      <button class="nav-back-btn" onclick="navScreen('hero')">◀ 협객 다시 선택</button>
+      <button class="nav-back-btn" onclick="navScreen('title')">◀ 메인 대문으로</button>
       <div class="screen-step-title">✦ STEP 2 : 작전 구역 선택 <span class="step-sub">(클리어 구역 재도전 가능)</span></div>
       <div class="stage-hero-pill" id="stageHeroPill">
         <img id="stageHeroPillImg" src="assets/portrait_seojin.jpg" class="mini-pill-img">
@@ -183,7 +183,7 @@
         <span class="btn-sword-icon">⚔️</span> 강호 출진 (작전 개시) <span class="btn-kbd-pill">ENTER / SPACE</span>
       </button>
       <div class="start-controls-hint">
-        <span>[WASD / 마우스 이동] 보법 이동</span> • <span>[우클릭 / SPACE] 신법 질주</span> • <span>[ESC] 일시정지</span> • <span>[1, 5, 9, 0] 무공 치트</span>
+        <span>[WASD / 마우스 이동] 보법 이동</span> • <span>[우클릭 / SPACE] 신법 질주</span> • <span>[ESC] 일시정지</span><span class="debug-only"> • [1, 5, 9, 0] 무공 치트</span>
       </div>
     </div>
   </div>
@@ -191,7 +191,7 @@
   <!-- Top Controls -->
   <div class="top-controls">
     <button class="ctrl-btn" id="pixelModeBtn" title="레트로 16비트 픽셀 모드 토글 (단축키: P)" style="width: auto; padding: 0 10px; font-size: 12px; font-weight: bold; color: #94a3b8; border-color: #64748b;">👾 픽셀: OFF</button>
-    <button class="ctrl-btn test-btn" id="cheatBtn" title="무공 테스트 & 치트 (단축키: 1, 5, 9, 0)">⚡ 테스트</button>
+    <button class="ctrl-btn test-btn debug-only" id="cheatBtn" title="무공 테스트 & 치트 (단축키: 1, 5, 9, 0)">⚡ 테스트</button>
     <button class="ctrl-btn" id="soundBtn" title="배경음 / 효과음">🔊</button>
     <button class="ctrl-btn" id="pauseBtn" title="일시정지 / 정보">⏸️</button>
   </div>

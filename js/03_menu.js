@@ -90,6 +90,7 @@ function navScreen(screenName) {
   });
 
   if (screenName === 'title') {
+    refreshQuickEnterLabel();
     startTitleParticles();
   } else {
     stopTitleParticles();
@@ -238,6 +239,22 @@ function updateSectorDetails() {
   `;
 }
 
+// 타이틀의 [강호 입장] 버튼: 고를 것이 없으면 바로 게임 시작
+// - 협객 선택 화면은 협객이 2명 이상 풀릴 때까지 건너뜀
+// - 열린 구역이 1개뿐이면 구역 선택도 건너뛰고 바로 출전
+function quickEnter() {
+  if (unlockedSectors.length <= 1) {
+    selectSector(unlockedSectors[0] || 1);
+    launchExpedition();
+  } else {
+    navScreen('stage');
+  }
+}
+function refreshQuickEnterLabel() {
+  const el = document.getElementById('quickEnterLabel');
+  if (el) el.innerText = unlockedSectors.length <= 1 ? '강호 입장' : '강호 입장 (구역 선택)';
+}
+
 function launchExpedition() {
   if (!unlockedSectors.includes(currentSelectedSector)) {
     sound.playHit();
@@ -373,6 +390,7 @@ function confirmStartGame() {
 
   updateHud();
   updateHudDebuffs();
+  // 시작 포위 14마리 (화면 테두리에서 걸어 들어옴)
   spawnEnemySwarm(14);
   sound.playLevelUp();
 }

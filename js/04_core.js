@@ -3,21 +3,56 @@ const canvas = document.getElementById('gameCanvas');
 const mainCtx = canvas.getContext('2d');
 let ctx = mainCtx;
 
+// --- 테스트(치트) 모드: 주소 끝에 ?debug=1 을 붙이면 켜짐 ---
+// 예) https://t-since.github.io/neon-survivor/?debug=1
+const DEBUG_MODE = /[?&]debug=1/.test(location.search);
+document.body.classList.toggle('debug', DEBUG_MODE);
+
+// --- 화면 크기 맞춤 (PC·모바일 공통) ---
+// gameWidth / gameHeight 는 "보이는 세상의 넓이(월드 단위)" 입니다.
+// 화면의 짧은 쪽에 항상 VIEW_MIN_WORLD 만큼의 세상이 보이도록 확대/축소하므로
+// 폰에서도 PC와 비슷한 범위가 보이고, 적이 화면 밖에서 갑자기 붙지 않습니다.
+const VIEW_MIN_WORLD = 760;   // 짧은 쪽에 보이는 최소 월드 크기
+const VIEW_MAX_SCALE = 1.0;   // 큰 모니터에서는 원래 크기 이상으로 키우지 않음
+let viewScale = 1;            // 화면 1px(CSS) 당 월드 단위 배율
+let renderDpr = 1;            // 선명도(고해상도 화면) 배율
 let gameWidth = window.innerWidth;
 let gameHeight = window.innerHeight;
-canvas.width = gameWidth;
-canvas.height = gameHeight;
+
+function resizeGameView() {
+  const cssW = window.innerWidth;
+  const cssH = window.innerHeight;
+  viewScale = Math.min(VIEW_MAX_SCALE, Math.min(cssW, cssH) / VIEW_MIN_WORLD);
+  renderDpr = Math.min(2, window.devicePixelRatio || 1); // 폰 3배 화면은 2배로 제한 (속도)
+  gameWidth = cssW / viewScale;
+  gameHeight = cssH / viewScale;
+  canvas.width = Math.round(cssW * renderDpr);
+  canvas.height = Math.round(cssH * renderDpr);
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  document.body.classList.toggle('is-touch', matchMedia('(pointer: coarse)').matches);
+}
+// 화면 좌표(clientX/Y) → 월드 좌표
+function screenToWorld(clientX, clientY) {
+  return {
+    x: clientX / viewScale - (gameWidth / 2 - state.camera.x),
+    y: clientY / viewScale - (gameHeight / 2 - state.camera.y)
+  };
+}
+// 플레이어 기준 angle 방향으로, 화면 가장자리 바로 바깥까지의 거리 (적 등장 위치용)
+function offscreenSpawnDist(angle, margin = 70) {
+  const c = Math.abs(Math.cos(angle)) || 1e-6;
+  const s = Math.abs(Math.sin(angle)) || 1e-6;
+  return Math.min((gameWidth / 2) / c, (gameHeight / 2) / s) + margin;
+}
+resizeGameView();
 
 // Pixel Art Downscaler Canvas (16-bit Retro Mode)
 const pixelBufferCanvas = document.createElement('canvas');
 const pixelBufferCtx = pixelBufferCanvas.getContext('2d');
 
-window.addEventListener('resize', () => {
-  gameWidth = window.innerWidth;
-  gameHeight = window.innerHeight;
-  canvas.width = gameWidth;
-  canvas.height = gameHeight;
-});
+window.addEventListener('resize', resizeGameView);
+window.addEventListener('orientationchange', () => setTimeout(resizeGameView, 200));
 
 const state = {
   isGameStarted: false,
@@ -191,7 +226,8 @@ window.addEventListener('keydown', (e) => {
     if (currentGatewayScreen === 'title') {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
-        navScreen('hero');
+        sound.init();
+        quickEnter();
         return;
       }
     } else if (currentGatewayScreen === 'hero') {
@@ -218,7 +254,7 @@ window.addEventListener('keydown', (e) => {
       }
       if (e.key === 'Escape') {
         e.preventDefault();
-        navScreen('hero');
+        navScreen('title');
         return;
       }
       if (e.key >= '1' && e.key <= '5') {
@@ -237,7 +273,8 @@ window.addEventListener('keydown', (e) => {
   } else if (e.key === 'p' || e.key === 'P') {
     togglePixelArtMode();
   }
-  // Debug / Test Hotkeys
+  // Debug / Test Hotkeys (주소 끝에 ?debug=1 을 붙였을 때만 작동)
+  if (!DEBUG_MODE) return;
   if (e.key === '1') {
     cheatLevelUp(1);
   } else if (e.key === '5') {
@@ -270,17 +307,27 @@ let joyOriginY = 0;
 let joyInputX = 0;
 let joyInputY = 0;
 
+let lastTouchTime = 0;
 function handleTouchStart(e) {
   sound.init();
+  lastTouchTime = performance.now();
+  if (!state.isGameStarted || state.isPaused) return;
+  // 버튼·창 위를 누른 경우는 조이스틱으로 쓰지 않음
+  if (e.target && e.target.closest && e.target.closest('button, .ctrl-btn, .modal-box, .skill-card, input')) return;
   for (let i = 0; i < e.changedTouches.length; i++) {
     const t = e.changedTouches[i];
-    if (t.clientX < window.innerWidth * 0.55 && !touchActive) {
+    // 화면 왼쪽 60% 어디든 엄지를 대면 그 자리에 조이스틱이 생김 (떠다니는 조이스틱)
+    if (t.clientX < window.innerWidth * 0.6 && !touchActive) {
       touchActive = true;
       touchId = t.identifier;
-      const rect = joystickBase.getBoundingClientRect();
-      joyOriginX = rect.left + rect.width / 2;
-      joyOriginY = rect.top + rect.height / 2;
+      joyOriginX = t.clientX;
+      joyOriginY = t.clientY;
+      const zr = joystickZone.getBoundingClientRect();
+      joystickBase.style.left = (t.clientX - zr.left - joystickBase.offsetWidth / 2) + 'px';
+      joystickBase.style.top = (t.clientY - zr.top - joystickBase.offsetHeight / 2) + 'px';
+      joystickZone.classList.add('active');
       updateJoystick(t.clientX, t.clientY);
+      if (e.cancelable) e.preventDefault();
     }
   }
 }
@@ -302,6 +349,9 @@ function handleTouchEnd(e) {
       joyInputX = 0;
       joyInputY = 0;
       joystickStick.style.transform = `translate(0px, 0px)`;
+      joystickBase.style.left = '';
+      joystickBase.style.top = '';
+      joystickZone.classList.remove('active');
     }
   }
 }
@@ -331,11 +381,11 @@ let clickMarkers = [];
 
 window.addEventListener('mousedown', (e) => {
   if (e.target.closest('.ctrl-btn, .modal-box, #mobileControls, .skill-card, button, input')) return;
+  if (performance.now() - lastTouchTime < 800) return; // 터치 뒤 따라오는 가짜 마우스 클릭 무시
   sound.init();
   if (e.button === 0) {
     isMouseDown = true;
-    const worldX = e.clientX - (gameWidth / 2 - state.camera.x);
-    const worldY = e.clientY - (gameHeight / 2 - state.camera.y);
+    const { x: worldX, y: worldY } = screenToWorld(e.clientX, e.clientY);
 
     // 마우스 좌클릭 시 목표 지점으로 이동 설정 (지면 클릭 마커 생성)
     setMouseTarget(e.clientX, e.clientY, true);
@@ -347,8 +397,7 @@ window.addEventListener('mousedown', (e) => {
     }
   } else if (e.button === 2) {
     e.preventDefault();
-    const worldX = e.clientX - (gameWidth / 2 - state.camera.x);
-    const worldY = e.clientY - (gameHeight / 2 - state.camera.y);
+    const { x: worldX, y: worldY } = screenToWorld(e.clientX, e.clientY);
     const dx = worldX - player.x;
     const dy = worldY - player.y;
     const dist = Math.hypot(dx, dy) || 1;
@@ -376,8 +425,7 @@ window.addEventListener('contextmenu', (e) => {
 });
 
 function setMouseTarget(screenX, screenY, spawnMarker = true) {
-  const worldX = screenX - (gameWidth / 2 - state.camera.x);
-  const worldY = screenY - (gameHeight / 2 - state.camera.y);
+  const { x: worldX, y: worldY } = screenToWorld(screenX, screenY);
   mouseTarget = { x: worldX, y: worldY };
 
   if (spawnMarker) {

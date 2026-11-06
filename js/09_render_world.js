@@ -80,6 +80,8 @@ function renderWorldContents() {
 }
 
 function renderGame() {
+  // 화면 배율(viewScale) × 선명도(renderDpr)를 기본으로 깔고, 그 위는 모두 월드 단위로 그림
+  mainCtx.setTransform(viewScale * renderDpr, 0, 0, viewScale * renderDpr, 0, 0);
   if (state.isPixelArtMode) {
     const scale = state.pixelScale || 2.2;
     const pW = Math.max(1, Math.floor(gameWidth / scale));

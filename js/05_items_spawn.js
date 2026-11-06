@@ -327,7 +327,8 @@ function getStageEnemyDistribution() {
 
 function spawnEnemyPack() {
   const angle = Math.random() * Math.PI * 2;
-  const dist = 320 + Math.random() * 120;
+  // 화면 가장자리 바로 바깥에서 등장 (화면 안에서 갑자기 생기지 않도록)
+  const dist = offscreenSpawnDist(angle, 60) + Math.random() * 80;
   const spawnX = player.x + Math.cos(angle) * dist;
   const spawnY = player.y + Math.sin(angle) * dist;
 
@@ -517,7 +518,7 @@ function spawnEnemySwarm(count = 20) {
   const pool = getStageEnemyDistribution();
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * Math.PI * 2 + Math.random() * 0.2;
-    const dist = 280 + Math.random() * 140;
+    const dist = offscreenSpawnDist(angle, 10) + Math.random() * 60; // 화면 테두리에서 포위해 들어옴
     const chosen = pool[Math.floor(Math.random() * pool.length)];
     const sType = chosen.type;
     const sName = chosen.name;
