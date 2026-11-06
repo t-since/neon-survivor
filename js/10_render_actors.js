@@ -1805,7 +1805,7 @@ function renderOffscreenGuides() {
   herbs.forEach(h => targets.push({ x: h.x, y: h.y, tag: '🌿 영약', color: '#34d399' }));
   chests.forEach(c => targets.push({ x: c.x, y: c.y, tag: '📦 비급함', color: '#fbbf24' }));
   shrines.forEach(s => {
-    if (s.active) targets.push({ x: s.x, y: s.y, tag: `✨ ${s.name}`, color: s.color, isPriority: true });
+    if (s.active) targets.push({ x: s.x, y: s.y, tag: `${s.icon} ${s.name}`, color: s.color, isPriority: true });
   });
   // droppedItems radar markers removed for smooth performance
 
