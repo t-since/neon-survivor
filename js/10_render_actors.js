@@ -439,27 +439,35 @@ function renderEnemies() {
     if (e.isBoss) {
       // --- Final Sector Boss (구역 군주) ---
       // 인위적인 선형식 회전선 제거 -> 바닥에 스며드는 묵직한 혈마 진기 안개
+      // 쿵쿵 걸음 연출 (걸음 박자는 07_update.js 의 e.gaitPhase: 0=발 디딤 → 1=다음 발 디딤)
+      const ph = e.gaitPhase || 0;
+      const walking = isMoving;
+      const lift = walking ? Math.sin(Math.PI * ph) * 8 : 0;            // 걸음 중간에 몸이 살짝 올라감
+      const land = walking ? Math.max(0, 1 - ph / 0.2) : 0;              // 디딘 직후 눌림
+      const rock = walking ? Math.sin(Math.PI * ph) * 0.05 * (e.stepSide || 1) : 0; // 좌우로 기우뚱
+      const breathe = walking ? 0 : Math.sin(state.gameTime * 1.8) * 0.012;
+
+      // 발밑 그림자 + 혈기 안개 (몸이 올라가면 그림자가 작아짐)
       ctx.save();
-      const now = state.gameTime * 3.0;
-      const bPulse = 1.0 + Math.sin(now) * 0.08;
-      ctx.fillStyle = 'rgba(185, 28, 28, 0.28)';
-      ctx.shadowColor = '#b91c1c';
-      ctx.shadowBlur = 18;
+      const shadowK = 1 - lift / 40;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.beginPath();
-      ctx.ellipse(0, 4, 64 * bPulse, 30 * bPulse, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 4, 58 * shadowK, 20 * shadowK, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(185, 28, 28, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 74, 30, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
-      const bossBob = isMoving ? Math.abs(Math.sin(runTimer * 0.45)) * 5.0 : Math.sin(state.gameTime * 2.5) * 2;
-      ctx.translate(0, -bossBob);
-      ctx.scale(facing, 1);
+      ctx.translate(0, -lift);
+      ctx.rotate(rock);
+      ctx.scale(facing * (1 + land * 0.04), 1 - land * 0.05 + breathe); // 발 기준으로 눌렸다 펴짐
       // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       const bossImg = SPRITES.boss_demon;
       const bw = 180;
       const bh = 240; // 795x1060 해상도 비율에 맞춘 웅장한 위압감 (3:4 비율)
-      const bossPulse = 1.0 + Math.sin(state.gameTime * 4.5) * 0.035;
-      ctx.scale(bossPulse, bossPulse);
       if (bossImg && bossImg.complete) {
         ctx.drawImage(bossImg, -bw / 2, -bh + 20, bw, bh);
       } else {
@@ -473,24 +481,7 @@ function renderEnemies() {
       ctx.scale(facing, 1);
       ctx.filter = 'none';
 
-      // Title badge
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 2.2;
-      ctx.shadowColor = '#dc2626';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.roundRect(-85, -bh - 22, 170, 26, 6);
-      ctx.fill();
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillStyle = '#f87171';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`☠️ [구역 군주] ${e.name}`, 0, -bh - 9);
-
+      // (머리 위 이름표는 뺌 — 화면 위쪽 보스 체력바에 이름이 이미 나옴)
       // HP Bar
       const hpPct = Math.max(0, e.hp / e.maxHp);
       const barW = 140;

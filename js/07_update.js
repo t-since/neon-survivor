@@ -646,8 +646,20 @@ function updateGame(dt) {
       e.vy = (e.vy || 0) + ((tvy + sepY) - (e.vy || 0)) * Math.min(1, accel * dt);
     }
 
-    e.x += (e.vx || 0) * dt;
-    e.y += (e.vy || 0) * dt;
+    // 최종보스 쿵쿵 걸음: 발을 드는 동안 앞으로 나아가고, 디딜 때는 거의 멈춤 (평균 속도는 그대로)
+    let gaitMul = 1;
+    if (e.isBoss) {
+      const spd = Math.hypot(e.vx || 0, e.vy || 0);
+      if (spd > 15) {
+        const prev = e.gait || 0;
+        e.gait = prev + dt / 0.8; // 0.8초에 한 걸음
+        gaitMul = 0.2 + 1.25 * Math.sin(Math.PI * (e.gait % 1));
+        if (Math.floor(e.gait) !== Math.floor(prev)) bossFootstep(e);
+      }
+      e.gaitPhase = (e.gait || 0) % 1;
+    }
+    e.x += (e.vx || 0) * gaitMul * dt;
+    e.y += (e.vy || 0) * gaitMul * dt;
 
     // 자연스러운 보행 애니메이션 진행 타이머
     const actualSpeed = Math.hypot(e.vx || 0, e.vy || 0);
@@ -1185,6 +1197,30 @@ function updateGame(dt) {
   });
 
   updateEnemySpawning(dt);
+}
+
+// 최종보스가 발을 디딜 때: 흙먼지 + 바닥 울림 + 가까우면 화면 흔들림
+function bossFootstep(e) {
+  e.stepSide = -(e.stepSide || 1); // 왼발/오른발 번갈아
+  const footX = e.x + e.stepSide * 22;
+  const footY = e.y + 4;
+  for (let k = 0; k < 10; k++) {
+    const a = Math.PI + Math.random() * Math.PI; // 위쪽 반원으로 퍼짐
+    const sp = 40 + Math.random() * 70;
+    particles.push({
+      x: footX + (Math.random() - 0.5) * 30,
+      y: footY,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp * 0.35,
+      color: Math.random() < 0.5 ? 'rgba(120, 104, 86, 0.75)' : 'rgba(80, 70, 60, 0.7)',
+      radius: 3 + Math.random() * 4,
+      life: 0.55,
+      maxLife: 0.55
+    });
+  }
+  createShockwave(footX, footY, 46, '#57534e');
+  const d = Math.hypot(player.x - e.x, player.y - e.y);
+  if (d < 700) state.screenShake = Math.max(state.screenShake || 0, 6 * (1 - d / 700) + 1.5);
 }
 
 function playerTakeDamage(amount) {
