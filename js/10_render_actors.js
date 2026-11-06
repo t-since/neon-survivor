@@ -134,7 +134,10 @@ function renderPlayer() {
 // 몬스터 종류별 새 그림 (key: assets/mobs 이름, h: 게임 속 키(월드 단위), filter: 색 바꾸기)
 const ENEMY_ART = {
   assassin: { key: 'mob_assassin', h: 140 },
-  poison_assassin: { key: 'mob_assassin', h: 140, filter: 'hue-rotate(110deg) saturate(1.6)' }
+  poison_assassin: { key: 'mob_assassin', h: 140, filter: 'hue-rotate(110deg) saturate(1.6)' },
+  archer: { key: 'mob_archer', h: 145 },          // 죽림 암살궁수 (예전: 해골 궁수 그림)
+  spearman: { key: 'mob_dartman', h: 140 },       // 청죽 암기살수 (표창)
+  jiangshi: { key: 'mob_jiangshi', h: 150, hop: true } // 혈강시: 걷기 대신 뛰기 4동작
 };
 function enemyHasArt(e) {
   const art = ENEMY_ART[e.type];
@@ -148,6 +151,10 @@ function drawEnemyArt(e, art, facing, isMoving, runTimer) {
   if (e.animAtk > 0 && SPRITES[art.key + '_attack_0']) {
     const prog = 1 - e.animAtk / (e.animAtkMax || 0.5);
     key = art.key + '_attack_' + Math.max(0, Math.min(3, Math.floor(prog * 4)));
+  } else if (art.hop) {
+    const ph = (((e.hopTimer || 0) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / (Math.PI * 2);
+    const f = ph < 0.12 ? 1 : ph < 0.38 ? 2 : ph < 0.5 ? 3 : 0;
+    key = art.key + '_walk_' + f;
   } else if (isMoving) {
     key = art.key + '_walk_' + (Math.floor(runTimer * 0.9 + (e.seed || 0)) % 4);
   } else {
