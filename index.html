@@ -5118,7 +5118,7 @@ function onEnemyKilled(target) {
     life: 7.5,
     maxLife: 7.5
   });
-  if (corpses.length > 65) corpses.shift(); // 60프레임 최적화 유지
+  if (corpses.length > 30) corpses.shift(); // 60프레임 최적화 유지 (최대 30구 잔존)
 
   expGems.push({
     x: target.x,
@@ -6658,7 +6658,21 @@ function updateGame(dt) {
     state.screenShake = Math.max(0, state.screenShake - dt * 25);
   }
 
-  // 6. Update Exp Gems & Magnet
+  // 6. Update Exp Gems & Magnet (60FPS Gem Compression)
+  if (expGems.length > 60) {
+    for (let i = expGems.length - 1; i > 0; i -= 2) {
+      const g1 = expGems[i];
+      const g2 = expGems[i - 1];
+      if (g1 && g2 && !g1.isHeal && !g2.isHeal) {
+        g2.val = (g2.val || 2) + (g1.val || 2);
+        g2.radius = Math.min(13, g2.radius + 1.2);
+        g2.color = '#f59e0b';
+        expGems.splice(i, 1);
+        if (expGems.length <= 45) break;
+      }
+    }
+  }
+
   for (let i = expGems.length - 1; i >= 0; i--) {
     const gem = expGems[i];
     const dx = player.x - gem.x;
@@ -6781,7 +6795,10 @@ function updateGame(dt) {
     }
   }
 
-  // 7. Update Particles (with PixelFX Physics)
+  // 7. Update Particles (with PixelFX Physics) - 60FPS Hard Cap
+  if (particles.length > 130) {
+    particles.splice(0, particles.length - 130);
+  }
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     if (p.gravity) p.vy += p.gravity * dt;
@@ -6793,7 +6810,10 @@ function updateGame(dt) {
     }
   }
 
-  // 8. Update Damage Texts
+  // 8. Update Damage Texts - 60FPS Hard Cap
+  if (damageTexts.length > 32) {
+    damageTexts.splice(0, damageTexts.length - 32);
+  }
   for (let i = damageTexts.length - 1; i >= 0; i--) {
     const d = damageTexts[i];
     d.y += d.vy * dt;
@@ -7512,8 +7532,13 @@ function updateCorpses(dt) {
 
 function renderCorpses() {
   if (!corpses || corpses.length === 0) return;
+  const camX = state.camera.x;
+  const camY = state.camera.y;
+  const cullW = gameWidth / 2 + 90;
+  const cullH = gameHeight / 2 + 90;
 
   corpses.forEach(c => {
+    if (Math.abs(c.x - camX) > cullW || Math.abs(c.y - camY) > cullH) return;
     ctx.save();
     ctx.translate(c.x, c.y);
     ctx.scale(c.facing, 1);
@@ -7808,7 +7833,13 @@ function renderGround() {
 // 2.5D Isometric Obstacles (고풍 3단 석등, 이끼 거암, 대나무 군락, 방어 목책)
 function renderObstacles() {
   if (!obstacles || obstacles.length === 0) return;
+  const camX = state.camera.x;
+  const camY = state.camera.y;
+  const cullW = gameWidth / 2 + 100;
+  const cullH = gameHeight / 2 + 100;
+
   obstacles.forEach(obs => {
+    if (Math.abs(obs.x - camX) > cullW || Math.abs(obs.y - camY) > cullH) return;
     ctx.save();
     ctx.translate(obs.x, obs.y);
 
@@ -8564,7 +8595,13 @@ function renderPoisonZones() {
 }
 
 function renderExpGems() {
+  const camX = state.camera.x;
+  const camY = state.camera.y;
+  const cullW = gameWidth / 2 + 80;
+  const cullH = gameHeight / 2 + 80;
+
   expGems.forEach(gem => {
+    if (Math.abs(gem.x - camX) > cullW || Math.abs(gem.y - camY) > cullH) return;
     if (gem.isHeal) {
       ctx.save();
       ctx.translate(gem.x, gem.y);
@@ -8779,7 +8816,15 @@ function renderPlayer() {
 }
 
 function renderEnemies() {
+  const camX = state.camera.x;
+  const camY = state.camera.y;
+  const cullW = gameWidth / 2 + 130;
+  const cullH = gameHeight / 2 + 130;
+
   enemies.forEach(e => {
+    if (!e.isBoss && !e.isMiniBoss) {
+      if (Math.abs(e.x - camX) > cullW || Math.abs(e.y - camY) > cullH) return;
+    }
     ctx.save();
     ctx.translate(e.x, e.y);
 
@@ -9098,7 +9143,7 @@ function renderEnemies() {
       const bossBob = isMoving ? Math.abs(Math.sin(runTimer * 0.45)) * 5.0 : Math.sin(state.gameTime * 2.5) * 2;
       ctx.translate(0, -bossBob);
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(2.0) drop-shadow(0 0 10px #ef4444)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       const bossImg = SPRITES.boss_demon;
       const bw = 180;
@@ -9164,7 +9209,7 @@ function renderEnemies() {
       const heavyBounce = isMoving ? Math.sin(runTimer * 2.5) * 2.2 : 0;
       ctx.translate(0, heavyBounce);
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(2.0) drop-shadow(0 0 10px #f59e0b)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       // 2. 흑철 참마도장 전용 4단 전진/질주 스프라이트 애니메이션! (1.3배: 192x312 px - 거대한 위압감)
       const mbFrame = isMoving ? (Math.floor(runTimer * 1.25) % 4) : 0;
@@ -9217,7 +9262,7 @@ function renderEnemies() {
 
     } else if (e.type === 'jiangshi') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #ef4444)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       // 강시 전용 4단 도약 스프라이트: 지면도약준비(0) -> 공중상승(1) -> 정점비상(2) -> 착지흡수(3)!
       let jFrame = 0;
@@ -9243,7 +9288,7 @@ function renderEnemies() {
       }
     } else if (e.type === 'skeleton') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #ef4444)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       if (e.isAttacking) {
         // 2dimg2motion 해골 백골병 4단 참격 모션: 치켜들기(0) -> 내리찍기(1) -> 바닥강타(2) -> 수검(3)
@@ -9283,7 +9328,7 @@ function renderEnemies() {
       }
     } else if (e.type === 'ghoul') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #10b981)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       // 부패시귀 전용 4단 포복 맹수 질주 스프라이트! (접지 -> 코일 -> 맹수도약 -> 전방착지)
       const runFrame = isMoving ? (Math.floor(runTimer * 1.5) % 4) : 0;
@@ -9302,7 +9347,7 @@ function renderEnemies() {
       }
     } else if (e.type === 'necromancer') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #10b981)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       // 1. 고요하고 장엄한 순수 수직 공중부양 (뒤뚱거리는 회전 흔들림 완전히 제거!)
       const floatY = 16 + Math.sin(state.gameTime * 2.2 + ((e.seed || e.x) % 7)) * 5.0;
@@ -9366,7 +9411,7 @@ function renderEnemies() {
       ctx.restore();
     } else if (e.type === 'butcher') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(2.0) drop-shadow(0 0 8px #ef4444)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       // 혈마 도살마인 전용 4단 중장 강타 돌진 스프라이트! (155x185 거구)
       const runFrame = isMoving ? (Math.floor(runTimer * 1.15) % 4) : 0;
@@ -9385,7 +9430,7 @@ function renderEnemies() {
       }
     } else if (e.type === 'barbarian') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #f59e0b)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       // 광폭 쌍도객 전용 4단 쌍도 돌진 스프라이트! (108x172)
       const runFrame = isMoving ? (Math.floor(runTimer * 1.35) % 4) : 0;
@@ -9404,7 +9449,7 @@ function renderEnemies() {
       }
     } else if (e.type === 'sorceress') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #f43f5e)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
       // 순수 수직 공중부양 (뒤뚱거리는 회전 흔들림 완전 제거)
       const floatY = 14 + Math.sin(state.gameTime * 2.2 + ((e.seed || e.x) % 7)) * 5.0;
       ctx.translate(0, -floatY);
@@ -9433,7 +9478,7 @@ function renderEnemies() {
       }
     } else if (e.type === 'archer') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #ef4444)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
       const aw = 96, ah = 156;
 
       if (e.isAiming || e.shootTimer <= 0.85 || e.recoilTimer > 0) {
@@ -9482,7 +9527,7 @@ function renderEnemies() {
       }
     } else if (e.type === 'poison_assassin') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #10b981)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
       const runFrame = isMoving ? (Math.floor(runTimer * 1.35) % 4) : 0;
       const aImg = SPRITES['assassin_run_' + runFrame] || SPRITES.assassin;
       const aw = 96, ah = 156;
@@ -9505,7 +9550,7 @@ function renderEnemies() {
       ctx.fillRect(18, -26 + daggerBob, 12, 3.5);
     } else if (e.type === 'spearman') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #ef4444)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
       const runFrame = isMoving ? (Math.floor(runTimer * 1.35) % 4) : 0;
       const aImg = SPRITES['assassin_run_' + runFrame] || SPRITES.assassin;
       const aw = 96, ah = 156;
@@ -9536,7 +9581,7 @@ function renderEnemies() {
       ctx.restore();
     } else if (e.type === 'curse_mage') {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #a855f7)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
       // 1. 고요하고 장엄한 순수 수직 공중부양 (뒤뚱거리는 회전 흔들림 완전히 제거!)
       const floatY = 14 + Math.sin(state.gameTime * 2.2 + ((e.seed || e.x) % 7)) * 5.0;
       ctx.translate(0, -floatY);
@@ -9581,7 +9626,7 @@ function renderEnemies() {
       ctx.shadowBlur = 0;
     } else {
       ctx.scale(facing, 1);
-      if (e.hitCooldown > 0) ctx.filter = 'brightness(1.8) drop-shadow(0 0 6px #ef4444)';
+      // 60FPS Hit Flash: Handled via lightweight GPU blend
 
       // 흑풍 살수: 캐릭터보다 크고 늠름한 4단 전력 질주 애니메이션! (96x156)
       const runFrame = isMoving ? (Math.floor(runTimer * 1.35) % 4) : 0;
@@ -9600,6 +9645,19 @@ function renderEnemies() {
         ctx.fill();
       }
     }
+
+    // 60FPS Hardware Hit-Flash (기존 무거운 ctx.filter 소프트웨어 래스터라이저 완전 대체)
+    if (e.hitCooldown > 0) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = e.isBoss ? 'rgba(239, 68, 68, 0.5)' : (e.isMiniBoss ? 'rgba(245, 158, 11, 0.5)' : 'rgba(255, 255, 255, 0.45)');
+      ctx.beginPath();
+      ctx.arc(0, -e.radius, e.radius * 1.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     ctx.restore();
   });
 }
@@ -9621,9 +9679,9 @@ function renderProjectiles() {
     else if (look === 'blood_blade') mainColor = '#ef4444';
     else if (look === 'thunder_blade') mainColor = '#c084fc';
 
-    // Glowing Sword Qi Aura
+    // Glowing Sword Qi Aura (60FPS 최적화된 블러)
     ctx.shadowColor = mainColor;
-    ctx.shadowBlur = sw.isLaunching ? (sw.isEvo ? 24 : 18) : (sw.isEvo ? 14 : 8);
+    ctx.shadowBlur = sw.isLaunching ? 6 : 0;
 
     if (sw.isLaunching) {
       ctx.strokeStyle = mainColor;
@@ -9729,7 +9787,13 @@ function renderProjectiles() {
   });
 
   // 2. Projectiles (Formless Gale, Buddha Palm, Golden Ki, Blood Bullets, Poison Shards)
+  const pCamX = state.camera.x;
+  const pCamY = state.camera.y;
+  const pCullW = gameWidth / 2 + 100;
+  const pCullH = gameHeight / 2 + 100;
+
   projectiles.forEach(p => {
+    if (Math.abs(p.x - pCamX) > pCullW || Math.abs(p.y - pCamY) > pCullH) return;
     ctx.save();
     ctx.translate(p.x, p.y);
 
@@ -10134,7 +10198,15 @@ function renderFallingNeedles() {
 }
 
 function renderParticles() {
+  const camX = state.camera.x;
+  const camY = state.camera.y;
+  const cullW = gameWidth / 2 + 90;
+  const cullH = gameHeight / 2 + 90;
+
   particles.forEach(p => {
+    // 60FPS Frustum Culling
+    if (Math.abs(p.x - camX) > cullW || Math.abs(p.y - camY) > cullH) return;
+
     ctx.save();
     if (p.isPixelCross) {
       // 십자 다이아몬드 코어 플레어 (pixelfx/impacts/hit-spark)
@@ -10144,8 +10216,6 @@ function renderParticles() {
       ctx.rotate(p.angle);
       // 다이아몬드 중심 코어
       ctx.fillStyle = p.color;
-      ctx.shadowColor = p.glowColor;
-      ctx.shadowBlur = 10;
       ctx.beginPath();
       ctx.moveTo(0, -sz * 0.38);
       ctx.lineTo(sz * 0.38, 0);
@@ -10165,8 +10235,6 @@ function renderParticles() {
       ctx.rotate(p.angle);
       ctx.strokeStyle = p.color;
       ctx.lineWidth = 4.5 * (1 - prog);
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 12;
       ctx.beginPath();
       ctx.arc(0, 0, p.radius, -0.65, 0.65);
       ctx.stroke();
@@ -10191,9 +10259,7 @@ function renderParticles() {
       ctx.scale(p.facing, 1);
       const prog = 1 - p.life / p.maxLife;
       ctx.strokeStyle = '#38bdf8';
-      ctx.shadowColor = '#0284c7';
-      ctx.shadowBlur = 18;
-      ctx.lineWidth = 7 * (1 - prog);
+      ctx.lineWidth = 6 * (1 - prog);
       ctx.globalAlpha = 1 - prog;
 
       ctx.beginPath();
@@ -10322,11 +10388,13 @@ function renderParticles() {
   damageTexts.forEach(d => {
     ctx.save();
     ctx.font = `bold ${d.size}px -apple-system, sans-serif`;
-    ctx.fillStyle = d.color;
-    ctx.shadowColor = '#000';
-    ctx.shadowBlur = 4;
     ctx.textAlign = 'center';
     ctx.globalAlpha = Math.min(1, d.life * 2);
+    // 60FPS Crisp Text Outline (무거운 shadowBlur 래스터라이저 제거)
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2.5;
+    ctx.strokeText(d.text, d.x, d.y);
+    ctx.fillStyle = d.color;
     ctx.fillText(d.text, d.x, d.y);
     ctx.restore();
   });
