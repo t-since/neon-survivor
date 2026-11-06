@@ -3332,6 +3332,7 @@ function confirmStartGame() {
   groundBombs.length = 0;
   fallingNeedles.length = 0;
   poisonZones.length = 0;
+  groundDecals.length = 0;
   corpses.length = 0;
   herbs.length = 0;
   chests.length = 0;
@@ -3422,6 +3423,7 @@ function continueToNextSector() {
   groundBombs.length = 0;
   fallingNeedles.length = 0;
   poisonZones.length = 0;
+  groundDecals.length = 0;
   corpses.length = 0;
   herbs.length = 0;
   chests.length = 0;
@@ -3623,6 +3625,7 @@ let projectiles = [];
 let groundBombs = [];
 let fallingNeedles = [];
 let poisonZones = [];
+let groundDecals = []; // 지열혈파 지면 대지 균열 및 지속 마법진 데칼
 let corpses = []; // 몬스터 사망 시 일정 시간 잔존하는 시체 및 백골 잔해
 let enemies = [];
 let particles = [];
@@ -4622,7 +4625,7 @@ function spawnMiniBoss(name) {
     hp: 1400 + state.gameTime * 18,
     maxHp: 1400 + state.gameTime * 18,
     speed: 135,
-    radius: 48,
+    radius: 62, // 1.3배 크기 확대
     damage: 26,
     runTimer: 0,
     hitCooldown: 0,
@@ -6292,35 +6295,115 @@ function updateGame(dt) {
         if (t.type === 'dash_slash') {
           sound.playSwordSlash();
           const dashAng = Math.atan2(t.targetY - e.y, t.targetX - e.x);
-          e.x += Math.cos(dashAng) * 160;
-          e.y += Math.sin(dashAng) * 160;
-          createShockwave(e.x, e.y, 80, '#ef4444');
-          if (Math.hypot(player.x - e.x, player.y - e.y) < player.radius + 50) {
-            playerTakeDamage(26);
+          const startX = e.x;
+          const startY = e.y;
+          const dashDist = 190;
+          e.x += Math.cos(dashAng) * dashDist;
+          e.y += Math.sin(dashAng) * dashDist;
+
+          // 1. 흑철 참마도장 잔상 3연참 (Shadow afterimages)
+          const mbImg = SPRITES['miniboss_run_0'] || SPRITES.miniboss;
+          for (let step = 1; step <= 3; step++) {
+            const frac = step / 4;
+            particles.push({
+              isMbAfterimage: true,
+              x: startX + (e.x - startX) * frac,
+              y: startY + (e.y - startY) * frac,
+              sprite: mbImg,
+              mw: 192,
+              mh: 312,
+              facing: e.facing,
+              life: 0.45 - step * 0.08,
+              maxLife: 0.45
+            });
+          }
+
+          // 2. 종점 전방 거대 흑풍 혈참 검기파 (Colossal Crimson Crescent Slash Wave)
+          particles.push({
+            isMbSlashWave: true,
+            x: e.x,
+            y: e.y,
+            angle: dashAng,
+            radius: 145,
+            life: 0.38,
+            maxLife: 0.38
+          });
+
+          createShockwave(e.x, e.y, 110, '#ef4444');
+          createShockwave(startX, startY, 70, 'rgba(239, 68, 68, 0.5)');
+          PixelFX.spawnHitSparks(e.x, e.y, '#ef4444', 16);
+          state.cameraShake = Math.max(state.cameraShake, 0.45);
+
+          if (Math.hypot(player.x - e.x, player.y - e.y) < player.radius + 60) {
+            playerTakeDamage(28);
           }
         } else if (t.type === 'needle_burst') {
           sound.playPalmBlast();
+          createShockwave(e.x, e.y, 140, '#a855f7');
+          createShockwave(e.x, e.y, 85, '#10b981');
+          PixelFX.spawnHitSparks(e.x, e.y, '#c084fc', 18);
+          state.cameraShake = Math.max(state.cameraShake, 0.35);
+
           for (let n = 0; n < 12; n++) {
             const nAng = (n / 12) * Math.PI * 2;
             projectiles.push({
               type: 'poison_shuriken',
               isEnemy: true,
+              isMiniBossStar: true,
               debuff: 'poison',
               x: e.x,
               y: e.y,
               vx: Math.cos(nAng) * 280,
               vy: Math.sin(nAng) * 280,
-              life: 1.8,
-              damage: 14,
-              radius: 6,
-              color: '#10b981'
+              life: 2.2,
+              damage: 16,
+              radius: 12,
+              color: '#a855f7'
             });
           }
         } else if (t.type === 'blood_quake') {
           sound.playPalmBlast();
-          createShockwave(t.targetX, t.targetY, 95, '#ef4444');
-          if (Math.hypot(player.x - t.targetX, player.y - t.targetY) < 95) {
-            playerTakeDamage(30);
+          // 지열혈파 (地裂血波) 대폭발 & 지면 균열 혈암 융기 이펙트!
+          // 1. 지속형 지면 암석 균열 데칼 (2.2초 잔존)
+          groundDecals.push({
+            type: 'blood_fissure',
+            x: t.targetX,
+            y: t.targetY,
+            radius: 110,
+            life: 2.2,
+            maxLife: 2.2,
+            seed: Math.random() * 100
+          });
+
+          // 2. 솟구치는 9개의 뾰족한 혈암 바위 가시 (Towering Erupting Blood & Obsidian Rock Spikes)
+          for (let s = 0; s < 9; s++) {
+            const sAng = (s / 9) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+            const sDist = Math.random() * 70 + 12;
+            particles.push({
+              isBloodSpike: true,
+              x: t.targetX + Math.cos(sAng) * sDist,
+              y: t.targetY + Math.sin(sAng) * (sDist * 0.58),
+              height: 0,
+              maxHeight: 55 + Math.random() * 45,
+              width: 16 + Math.random() * 12,
+              angle: (Math.random() - 0.5) * 0.35,
+              life: 1.0 + Math.random() * 0.3,
+              maxLife: 1.2,
+              color: Math.random() < 0.5 ? '#991b1b' : '#dc2626'
+            });
+          }
+
+          // 3. 다중 혈풍 충격파 및 화약/혈석 파편 폭발
+          createShockwave(t.targetX, t.targetY, 110, '#ef4444');
+          createShockwave(t.targetX, t.targetY, 160, 'rgba(239, 68, 68, 0.5)');
+          PixelFX.spawnThunderBombExplosion(t.targetX, t.targetY, 110);
+          PixelFX.spawnHitSparks(t.targetX, t.targetY, '#ef4444', 24);
+
+          state.cameraShake = Math.max(state.cameraShake, 0.75);
+          state.screenShake = Math.max(state.screenShake, 24);
+
+          if (Math.hypot(player.x - t.targetX, player.y - t.targetY) < 105) {
+            playerTakeDamage(32);
           }
         } else if (t.type === 'necromancer_blast' || t.type === 'curse_blast') {
           // 幽冥 怨魂彈 (원혼탄) 거대 영혼 두개골 발사!
@@ -6640,6 +6723,15 @@ function updateGame(dt) {
   // 6.95 Update Zone Transition Timer (화면 전환 페이드)
   if (state.zoneTransitionTimer > 0) {
     state.zoneTransitionTimer = Math.max(0, state.zoneTransitionTimer - dt);
+  }
+
+  // 6.96 Update Ground Decals (지면 균열 및 잔존 마법진)
+  for (let i = groundDecals.length - 1; i >= 0; i--) {
+    const gd = groundDecals[i];
+    gd.life -= dt;
+    if (gd.life <= 0) {
+      groundDecals.splice(i, 1);
+    }
   }
 
   // 7. Update Particles (with PixelFX Physics)
@@ -6988,6 +7080,9 @@ function renderWorldContents() {
 
   // 1.01 Draw Battlefield Corpses & Skeleton Remains (전장에 남는 몬스터 시체 및 백골 잔해)
   renderCorpses();
+
+  // 1.02 Draw Persistent Ground Decals & Fissures (지열혈파 지면 대지 균열)
+  renderGroundDecals();
 
   // 1.05 Draw Boss Arena Magic Seal (Zone 4 결전장)
   if (state.currentZone === 4) {
@@ -7536,6 +7631,72 @@ function renderCorpses() {
       ctx.restore();
     }
 
+    ctx.restore();
+  });
+}
+
+// 지면 균열선 지그재그 분기 렌더러 (2.5D Isometric Perspective)
+function drawFissureLines(ctx, radius, seed) {
+  const branches = 7;
+  for (let b = 0; b < branches; b++) {
+    const baseAng = (b / branches) * Math.PI * 2 + (seed * 0.1);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    let curR = 0;
+    let curAng = baseAng;
+    const segs = 4;
+    for (let s = 1; s <= segs; s++) {
+      curR += (radius / segs) * (0.8 + Math.sin(seed + b * 3 + s) * 0.3);
+      curAng += Math.sin(seed * 2 + b + s * 2) * 0.35;
+      const fx = Math.cos(curAng) * curR;
+      const fy = Math.sin(curAng) * (curR * 0.6); // 2.5D 입체 바닥 비율
+      ctx.lineTo(fx, fy);
+    }
+    ctx.stroke();
+  }
+}
+
+// 지열혈파 지속 지면 파쇄 및 마법진 데칼
+function renderGroundDecals() {
+  if (!groundDecals || groundDecals.length === 0) return;
+  groundDecals.forEach(d => {
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    const alpha = Math.min(1.0, d.life / 0.6);
+    ctx.globalAlpha = alpha;
+
+    if (d.type === 'blood_fissure') {
+      // 1. 그을린 분화구 암흑 적색 베이스
+      const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, d.radius);
+      grad.addColorStop(0, 'rgba(153, 27, 27, 0.45)');
+      grad.addColorStop(0.55, 'rgba(69, 10, 10, 0.3)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, d.radius, d.radius * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. 바깥쪽 암흑 흑요석 균열 (Charred jagged fracture)
+      ctx.save();
+      ctx.strokeStyle = '#2b0707';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawFissureLines(ctx, d.radius, d.seed);
+
+      // 3. 중심부 핏빛 용암 발광 균열 (Molten blood crimson cracks)
+      ctx.strokeStyle = '#ef4444';
+      ctx.shadowColor = '#dc2626';
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = 2.6;
+      drawFissureLines(ctx, d.radius, d.seed);
+
+      // 4. 최심부 고열 백색-연분홍 심핵선
+      ctx.strokeStyle = '#fecaca';
+      ctx.lineWidth = 1.2;
+      drawFissureLines(ctx, d.radius * 0.65, d.seed);
+      ctx.restore();
+    }
     ctx.restore();
   });
 }
@@ -8449,44 +8610,119 @@ function renderEnemies() {
 
         ctx.rotate(ang);
         ctx.fillStyle = `rgba(239, 68, 68, ${0.15 + progress * 0.35})`;
-        ctx.fillRect(0, -22, dist, 44);
+        ctx.fillRect(0, -26, dist, 52);
 
         ctx.strokeStyle = '#ef4444';
         ctx.setLineDash([8, 6]);
         ctx.lineWidth = 2.5;
-        ctx.strokeRect(0, -22, dist, 44);
+        ctx.strokeRect(0, -26, dist, 52);
+
+        // 전방 돌진 기운 화살표 스트림
+        const flowOff = (state.gameTime * 280) % 36;
+        for (let fx = flowOff; fx < dist - 25; fx += 36) {
+          ctx.strokeStyle = `rgba(254, 202, 202, ${0.35 + progress * 0.45})`;
+          ctx.lineWidth = 2.0;
+          ctx.beginPath();
+          ctx.moveTo(fx - 10, -16);
+          ctx.lineTo(fx, 0);
+          ctx.lineTo(fx - 10, 16);
+          ctx.stroke();
+        }
 
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
         ctx.moveTo(dist, 0);
-        ctx.lineTo(dist - 20, -18);
-        ctx.lineTo(dist - 20, 18);
+        ctx.lineTo(dist - 22, -20);
+        ctx.lineTo(dist - 22, 20);
         ctx.closePath();
         ctx.fill();
+
+        // 머리 위 스킬명 예고 배너
+        ctx.save();
+        ctx.rotate(-ang);
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillStyle = '#fca5a5';
+        ctx.shadowColor = '#dc2626';
+        ctx.shadowBlur = 8;
+        ctx.textAlign = 'center';
+        ctx.fillText('⚡【 흑풍삼단참 (黑風三段斬) 】', 0, -e.radius - 36);
+        ctx.restore();
+
       } else if (t.type === 'needle_burst') {
+        const rad = t.radius || 180;
         ctx.strokeStyle = `rgba(168, 85, 247, ${0.4 + progress * 0.5})`;
         ctx.lineWidth = 2.5;
         ctx.setLineDash([6, 6]);
         ctx.beginPath();
-        ctx.arc(0, 0, (t.radius || 180) * progress, 0, Math.PI * 2);
+        ctx.arc(0, 0, rad * progress, 0, Math.PI * 2);
         ctx.stroke();
 
         ctx.fillStyle = `rgba(168, 85, 247, 0.12)`;
         ctx.beginPath();
-        ctx.arc(0, 0, t.radius || 180, 0, Math.PI * 2);
+        ctx.arc(0, 0, rad, 0, Math.PI * 2);
         ctx.fill();
+
+        // 12방향 암기 궤적 예고선
+        for (let n = 0; n < 12; n++) {
+          const nAng = (n / 12) * Math.PI * 2;
+          ctx.strokeStyle = `rgba(192, 132, 252, ${0.45 + progress * 0.45})`;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(nAng) * (rad * 0.35), Math.sin(nAng) * (rad * 0.35));
+          ctx.lineTo(Math.cos(nAng) * rad, Math.sin(nAng) * rad);
+          ctx.stroke();
+        }
+
+        // 스킬명 예고 배너
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillStyle = '#d8b4fe';
+        ctx.shadowColor = '#7e22ce';
+        ctx.shadowBlur = 8;
+        ctx.textAlign = 'center';
+        ctx.fillText('🕸️【 천라지망 (天羅地網) 】', 0, -e.radius - 36);
+
       } else if (t.type === 'blood_quake') {
         const qx = t.targetX - e.x;
         const qy = t.targetY - e.y;
         ctx.save();
         ctx.translate(qx, qy);
-        ctx.fillStyle = `rgba(220, 38, 38, ${0.2 + progress * 0.4})`;
+        const rad = t.radius || 95;
+
+        // 충전되는 붉은 피바닥 영역
+        ctx.fillStyle = `rgba(220, 38, 38, ${0.18 + progress * 0.38})`;
         ctx.beginPath();
-        ctx.ellipse(0, 0, (t.radius || 95) * progress, (t.radius || 95) * 0.55 * progress, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, rad * progress, rad * 0.58 * progress, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        // 외곽 위험 경계선
         ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.4;
+        ctx.setLineDash([8, 6]);
+        ctx.shadowColor = '#dc2626';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rad, rad * 0.58, 0, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 폭발 직전 지면 암석이 갈라지며 핏빛 마그마가 새어나오는 사전 균열!
+        if (progress > 0.25) {
+          const crackProg = (progress - 0.25) / 0.75;
+          ctx.strokeStyle = `rgba(254, 202, 202, ${crackProg})`;
+          ctx.lineWidth = 2.0;
+          ctx.shadowBlur = 8;
+          drawFissureLines(ctx, rad * crackProg * 0.88, 42);
+        }
+
+        // 지면 중심 경고 배너
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillStyle = '#fee2e2';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 10;
+        ctx.textAlign = 'center';
+        ctx.fillText('💥【 지열혈파 (地裂血波) 】', 0, -rad * 0.58 - 14);
+
         ctx.restore();
       } else if (t.type === 'necromancer_blast' || t.type === 'curse_blast') {
         // --- 幽冥 怨魂彈 (원혼탄) 시전 예고: 회전하는 구궁팔괘진 + 플레이어 방향 유도 궤적 빔 ---
@@ -8727,15 +8963,14 @@ function renderEnemies() {
       ctx.strokeRect(-barW / 2, -bh + 8, barW, barH);
 
     } else if (e.isMiniBoss) {
-      // --- Intermediate Mini-Boss (흑철 참마도장 전용 렌더링 - 묵직한 중장 전진 & 자연스러운 지면 기운) ---
-      // 인위적인 선형식 네온 회전 링 제거 -> 자연스럽게 바닥에 스며드는 호박색 무공 기운
+      // --- Intermediate Mini-Boss (흑철 참마도장 전용 렌더링 - 1.3배 거대화 & 묵직한 중장 전진 & 자연스러운 지면 기운) ---
       ctx.save();
       const pulse = 1.0 + Math.sin(state.gameTime * 4) * 0.06;
-      ctx.fillStyle = 'rgba(217, 119, 6, 0.22)';
+      ctx.fillStyle = 'rgba(217, 119, 6, 0.26)';
       ctx.shadowColor = '#d97706';
-      ctx.shadowBlur = 16;
+      ctx.shadowBlur = 22;
       ctx.beginPath();
-      ctx.ellipse(0, 4, 56 * pulse, 26 * pulse, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 6, 73 * pulse, 34 * pulse, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
@@ -8745,18 +8980,18 @@ function renderEnemies() {
       ctx.scale(facing, 1);
       if (e.hitCooldown > 0) ctx.filter = 'brightness(2.0) drop-shadow(0 0 10px #f59e0b)';
 
-      // 2. 흑철 참마도장 전용 4단 전진/질주 스프라이트 애니메이션! (148x240 px - 거대한 위압감)
+      // 2. 흑철 참마도장 전용 4단 전진/질주 스프라이트 애니메이션! (1.3배: 192x312 px - 거대한 위압감)
       const mbFrame = isMoving ? (Math.floor(runTimer * 1.25) % 4) : 0;
       const mbImg = SPRITES['miniboss_run_' + mbFrame] || SPRITES.miniboss_run_0 || SPRITES[e.customSprite] || SPRITES.assassin;
-      const mw = 148;
-      const mh = 240;
+      const mw = 192;
+      const mh = 312;
 
       if (mbImg && mbImg.complete) {
         ctx.drawImage(mbImg, -mw / 2, -mh + 22, mw, mh);
       } else {
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
-        ctx.arc(0, -60, 52, 0, Math.PI * 2);
+        ctx.arc(0, -80, 68, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -8764,14 +8999,14 @@ function renderEnemies() {
       ctx.scale(facing, 1);
       ctx.filter = 'none';
 
-      // Title badge (뿔투구 위에 안정적으로 위치)
+      // Title badge (1.3배 거대 보스의 뿔투구 위에 안정적으로 위치)
       ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 2.2;
       ctx.shadowColor = '#d97706';
       ctx.shadowBlur = 10;
       ctx.beginPath();
-      ctx.roundRect(-85, -mh - 22, 170, 24, 6);
+      ctx.roundRect(-95, -mh - 22, 190, 24, 6);
       ctx.fill();
       ctx.stroke();
       ctx.shadowBlur = 0;
@@ -8784,7 +9019,7 @@ function renderEnemies() {
 
       // HP Bar
       const hpPct = Math.max(0, e.hp / e.maxHp);
-      const barW = 120;
+      const barW = 140;
       const barH = 8;
       ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
       ctx.fillRect(-barW / 2, -mh + 8, barW, barH);
@@ -9524,26 +9759,57 @@ function renderProjectiles() {
       ctx.closePath();
       ctx.fill();
     } else if (p.type === 'poison_shuriken') {
-      // 2. Poison Assassin Shuriken (독표창)
-      const rot = state.gameTime * 24 + p.x;
+      // 2. Poison Assassin Shuriken / Mini-Boss Demonic Star (독표창 / 천라지망 마교 암기)
+      const isMB = !!p.isMiniBossStar;
+      const rot = state.gameTime * (isMB ? 32 : 24) + p.x;
       ctx.rotate(rot);
-      ctx.fillStyle = '#22c55e';
-      ctx.shadowColor = '#15803d';
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      for (let k = 0; k < 4; k++) {
-        const ka = (k / 4) * Math.PI * 2;
-        ctx.moveTo(0, 0);
-        ctx.lineTo(Math.cos(ka - 0.2) * 5, Math.sin(ka - 0.2) * 5);
-        ctx.lineTo(Math.cos(ka) * 14, Math.sin(ka) * 14);
-        ctx.lineTo(Math.cos(ka + 0.2) * 5, Math.sin(ka + 0.2) * 5);
+
+      if (isMB) {
+        // 천라지망 8각 마기 비도 (Demonic 8-Point Star Blade)
+        const sz = 16;
+        ctx.fillStyle = '#a855f7';
+        ctx.shadowColor = '#7e22ce';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        for (let k = 0; k < 8; k++) {
+          const ka = (k / 8) * Math.PI * 2;
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(ka - 0.15) * (sz * 0.35), Math.sin(ka - 0.15) * (sz * 0.35));
+          ctx.lineTo(Math.cos(ka) * sz, Math.sin(ka) * sz);
+          ctx.lineTo(Math.cos(ka + 0.15) * (sz * 0.35), Math.sin(ka + 0.15) * (sz * 0.35));
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        // 중심 독기 코어
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#22c55e';
+        ctx.shadowColor = '#15803d';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        for (let k = 0; k < 4; k++) {
+          const ka = (k / 4) * Math.PI * 2;
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(ka - 0.2) * 5, Math.sin(ka - 0.2) * 5);
+          ctx.lineTo(Math.cos(ka) * 14, Math.sin(ka) * 14);
+          ctx.lineTo(Math.cos(ka + 0.2) * 5, Math.sin(ka + 0.2) * 5);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(0, 0, 3, 0, Math.PI * 2);
-      ctx.fill();
     } else if (p.type === 'steel_shuriken' || p.type === 'enemy_javelin') {
       // 3. Shuriken Assassin - High-Speed Rotating Steel 8-Point Shuriken (고속 회전 강철 8각 수리검)
       const rot = state.gameTime * 28 + p.x;
@@ -9751,6 +10017,103 @@ function renderParticles() {
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2.5 * (1 - prog);
       ctx.stroke();
+
+    } else if (p.isBloodSpike) {
+      // 지열혈파 (地裂血波) 솟구치는 거대 혈암 바위 가시 (Towering Erupting Blood & Obsidian Rock Spikes)
+      const prog = 1 - p.life / p.maxLife;
+      let currentH = 0;
+      if (prog < 0.16) {
+        currentH = (prog / 0.16) * p.maxHeight;
+      } else if (prog < 0.68) {
+        currentH = p.maxHeight + Math.sin(prog * 35) * 2;
+      } else {
+        currentH = p.maxHeight * (1 - (prog - 0.68) / 0.32);
+      }
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      const alpha = Math.min(1.0, p.life / 0.25);
+      ctx.globalAlpha = alpha;
+
+      // 접지면 타원 그림자
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(0, 2, p.width * 0.75, p.width * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 뾰족한 삼각 혈암 바위 기둥 (음영 분할 입체 표현)
+      const halfW = p.width / 2;
+      ctx.fillStyle = '#1e1b4b'; // 어두운 흑요석 면
+      ctx.beginPath();
+      ctx.moveTo(0, -currentH);
+      ctx.lineTo(-halfW, 0);
+      ctx.lineTo(0, 3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = p.color; // 붉은 혈석 발광면
+      ctx.beginPath();
+      ctx.moveTo(0, -currentH);
+      ctx.lineTo(halfW, 0);
+      ctx.lineTo(0, 3);
+      ctx.closePath();
+      ctx.fill();
+
+      // 기둥 중심 핏빛 균열 맥
+      ctx.strokeStyle = '#fca5a5';
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 10;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(0, -currentH);
+      ctx.lineTo(2, -currentH * 0.5);
+      ctx.lineTo(0, 0);
+      ctx.stroke();
+
+      ctx.restore();
+
+    } else if (p.isMbAfterimage) {
+      // 흑풍삼단참 돌진 붉은 잔상 (Mini-Boss Dash Afterimage)
+      const alpha = (p.life / p.maxLife) * 0.65;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.scale(p.facing, 1);
+      ctx.globalAlpha = alpha;
+      ctx.filter = 'brightness(0.5) sepia(1) hue-rotate(310deg) saturate(6)';
+      if (p.sprite && (p.sprite.complete || p.sprite.width > 0)) {
+        ctx.drawImage(p.sprite, -p.mw / 2, -p.mh + 22, p.mw, p.mh);
+      }
+      ctx.restore();
+
+    } else if (p.isMbSlashWave) {
+      // 흑풍삼단참 종점 거대 혈풍 초승달 검기파 (Colossal Crimson Crescent Slash Wave)
+      const prog = 1 - p.life / p.maxLife;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      const alpha = Math.min(1.0, (1 - prog) * 1.6);
+      ctx.globalAlpha = alpha;
+
+      // 외곽 거대 혈풍 초승달 검기호
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 15 * (1 - prog * 0.5);
+      ctx.shadowColor = '#dc2626';
+      ctx.shadowBlur = 26;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.radius * (0.8 + prog * 0.3), -Math.PI * 0.55, Math.PI * 0.55);
+      ctx.stroke();
+
+      // 내부 백열 절단 광인
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4 * (1 - prog * 0.5);
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.radius * (0.8 + prog * 0.3), -Math.PI * 0.45, Math.PI * 0.45);
+      ctx.stroke();
+
+      ctx.restore();
+
     } else if (p.isRing) {
       const progress = 1 - p.life / p.maxLife;
       const currentR = p.r + (p.maxR - p.r) * progress;
