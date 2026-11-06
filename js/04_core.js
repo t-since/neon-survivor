@@ -1,0 +1,536 @@
+// 캔버스, 게임 상태, 플레이어, 조작(키보드·조이스틱·마우스), 신단·장애물
+const canvas = document.getElementById('gameCanvas');
+const mainCtx = canvas.getContext('2d');
+let ctx = mainCtx;
+
+let gameWidth = window.innerWidth;
+let gameHeight = window.innerHeight;
+canvas.width = gameWidth;
+canvas.height = gameHeight;
+
+// Pixel Art Downscaler Canvas (16-bit Retro Mode)
+const pixelBufferCanvas = document.createElement('canvas');
+const pixelBufferCtx = pixelBufferCanvas.getContext('2d');
+
+window.addEventListener('resize', () => {
+  gameWidth = window.innerWidth;
+  gameHeight = window.innerHeight;
+  canvas.width = gameWidth;
+  canvas.height = gameHeight;
+});
+
+const state = {
+  isGameStarted: false,
+  isPaused: false,
+  isGameOver: false,
+  isLevelingUp: false,
+  isGodMode: false,
+  isPixelArtMode: false, // 픽셀 모드는 기본 OFF (고해상도 원본 및 부드러운 애니메이션 유지)
+  pixelScale: 2.2,
+  gameTime: 0,
+  kills: 0,
+  camera: { x: 0, y: 0 },
+  screenShake: 0,
+  spawnEnemies: true,
+  bossDefeated: false,
+  boss: null,
+  currentPhase: 1,
+  currentZone: 1,
+  zoneTime: 0,
+  zoneTransitionTimer: 0,
+  zoneMiniBossSpawned: [false, false, false, false],
+  victoryPortal: null,
+  phase2Triggered: false,
+  phase3Triggered: false,
+  phase4Triggered: false,
+  bossWaveCount: 0
+};
+
+// World Entities for Shrines, Obstacles, and Dropped Items
+const shrines = [];
+const obstacles = [];
+const droppedItems = [];
+
+function togglePixelArtMode() {
+  state.isPixelArtMode = !state.isPixelArtMode;
+  const btn = document.getElementById('pixelModeBtn');
+  if (btn) {
+    btn.innerHTML = state.isPixelArtMode ? '👾 픽셀: ON' : '🖼️ 픽셀: OFF';
+    btn.style.color = state.isPixelArtMode ? '#38bdf8' : '#94a3b8';
+    btn.style.borderColor = state.isPixelArtMode ? '#0284c7' : '#64748b';
+  }
+  showPhaseBanner(
+    state.isPixelArtMode ? '👾 레트로 16비트 픽셀 모드 활성화!' : '🖼️ 고화질 HD 모드 전환!',
+    state.isPixelArtMode ? '캐릭터, 몬스터, 배경이 일체감 있는 고전 명작 도트로 렌더링됩니다.' : '고해상도 원본 그래픽으로 렌더링됩니다.'
+  );
+}
+
+// --- Player Object ---
+const player = {
+  heroId: 'seojin',
+  dmgReduction: 0.0,
+  critMultiplier: 2.1,
+  bonusProjectile: 0,
+  poisonDmgMult: 1.0,
+  knockbackMult: 1.0,
+  x: 0,
+  y: 0,
+  vx: 0,
+  vy: 0,
+  radius: 20,
+  maxHp: 100,
+  hp: 100,
+  level: 1,
+  exp: 0,
+  nextExp: 10,
+  baseSpeed: 195,
+  speed: 195,
+  speedBuffTimer: 0,
+  hitFlashTimer: 0, // 피격 시 번쩍임 및 피격 넉백
+  debuffs: { poison: 0, slow: 0 }, // 적 스킬 디버프
+  activeBuffs: {}, // 디아블로식 신단 버프
+  equipped: { weapon: null, robe: null }, // 장비 및 룩변 외형
+  facing: 1, // 1: right, -1: left
+  walkTimer: 0,
+  isMoving: false,
+  critRate: 0.25,
+  atkMultiplier: 1.0,
+  magnetRadius: 140,
+
+  // Dash (경공)
+  dashCooldown: 2.2,
+  dashTimer: 0,
+  isDashing: false,
+  dashDuration: 0.22,
+  dashElapsed: 0,
+  dashVx: 0,
+  dashVy: 0,
+  dashSpeed: 550,
+
+  // Skills & Evolutions
+  skills: {
+    flying_swords: 1,
+    dagger_rain: 0,
+    palm_blast: 0,
+    thunder_bomb: 0,
+    qinggong_dash: 0,
+    vajra_shield: 0,
+    qi_magnet: 0
+  },
+  evolutions: {}, // e.g. { evo_flying_swords: true }
+
+  // Timers for attacks
+  timers: {
+    flying_swords: 0,
+    dagger_rain: 0,
+    palm_blast: 0,
+    thunder_bomb: 0,
+    vajra_shield: 0
+  },
+  evoTimer: {
+    flying_swords: 0,
+    vajra_shield: 0
+  },
+
+  // Combat Attack Animation States
+  isAttacking: false,
+  skillPose: null,
+  attackTimer: 0,
+  attackDuration: 0.32,
+  attackCooldownTimer: 0,
+  attackCombo: 0,
+
+  afterImages: []
+};
+
+let flyingSwords = [];
+let projectiles = [];
+let groundBombs = [];
+let fallingNeedles = [];
+let poisonZones = [];
+let groundDecals = []; // 지열혈파 지면 대지 균열 및 지속 마법진 데칼
+let corpses = []; // 몬스터 사망 시 일정 시간 잔존하는 시체 및 백골 잔해
+let enemies = [];
+let particles = [];
+let damageTexts = [];
+let expGems = [];
+let herbs = [];
+let chests = [];
+let environmentPetals = [];
+
+// Initialize Environment Plum Blossoms (매화 꽃잎 배경 파티클)
+for (let i = 0; i < 45; i++) {
+  environmentPetals.push({
+    x: (Math.random() - 0.5) * 3000,
+    y: (Math.random() - 0.5) * 3000,
+    speedX: 25 + Math.random() * 30,
+    speedY: 40 + Math.random() * 40,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 2,
+    size: 4 + Math.random() * 4,
+    opacity: 0.3 + Math.random() * 0.4
+  });
+}
+
+// --- Controls Handling ---
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.key] = true;
+
+  // Three.js Cutscene active: Skip with Escape, Space, or Enter
+  if (typeof ThreeCutsceneEngine !== 'undefined' && ThreeCutsceneEngine.active) {
+    if (e.key === 'Escape' || e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+      e.preventDefault();
+      ThreeCutsceneEngine.skip();
+      return;
+    }
+  }
+
+  // Title / Gateway Screen Key Controls (3-Step Navigation)
+  if (!state.isGameStarted) {
+    if (currentGatewayScreen === 'title') {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        navScreen('hero');
+        return;
+      }
+    } else if (currentGatewayScreen === 'hero') {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        navScreen('stage');
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        navScreen('title');
+        return;
+      }
+      if (e.key === '1') { selectHero('seojin'); return; }
+      if (e.key === '2' || e.key === '3') {
+        // 배포판 준비 중 협객
+        return;
+      }
+    } else if (currentGatewayScreen === 'stage') {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        launchExpedition();
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        navScreen('hero');
+        return;
+      }
+      if (e.key >= '1' && e.key <= '5') {
+        selectSector(parseInt(e.key));
+        return;
+      }
+    }
+    return;
+  }
+
+  if (e.key === ' ' || e.key === 'Shift') {
+    triggerDash();
+  }
+  if (e.key === 'Escape') {
+    togglePause();
+  } else if (e.key === 'p' || e.key === 'P') {
+    togglePixelArtMode();
+  }
+  // Debug / Test Hotkeys
+  if (e.key === '1') {
+    cheatLevelUp(1);
+  } else if (e.key === '5') {
+    cheatLevelUp(5);
+  } else if (e.key === '9') {
+    cheatMaxAll();
+  } else if (e.key === '0') {
+    cheatToggleGod();
+  } else if (e.key === 'b' || e.key === 'B') {
+    spawnBossDemon();
+  } else if (e.key === 'm' || e.key === 'M') {
+    spawnEnemySwarm(20);
+  }
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+});
+
+// Joystick
+const joystickZone = document.getElementById('joystickZone');
+const joystickBase = document.getElementById('joystickBase');
+const joystickStick = document.getElementById('joystickStick');
+const dashBtn = document.getElementById('dashBtn');
+const dashCooldownText = document.getElementById('dashCooldownText');
+
+let touchActive = false;
+let touchId = null;
+let joyOriginX = 0;
+let joyOriginY = 0;
+let joyInputX = 0;
+let joyInputY = 0;
+
+function handleTouchStart(e) {
+  sound.init();
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    if (t.clientX < window.innerWidth * 0.55 && !touchActive) {
+      touchActive = true;
+      touchId = t.identifier;
+      const rect = joystickBase.getBoundingClientRect();
+      joyOriginX = rect.left + rect.width / 2;
+      joyOriginY = rect.top + rect.height / 2;
+      updateJoystick(t.clientX, t.clientY);
+    }
+  }
+}
+function handleTouchMove(e) {
+  if (!touchActive) return;
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    if (t.identifier === touchId) {
+      updateJoystick(t.clientX, t.clientY);
+    }
+  }
+}
+function handleTouchEnd(e) {
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    if (t.identifier === touchId) {
+      touchActive = false;
+      touchId = null;
+      joyInputX = 0;
+      joyInputY = 0;
+      joystickStick.style.transform = `translate(0px, 0px)`;
+    }
+  }
+}
+function updateJoystick(cx, cy) {
+  const dx = cx - joyOriginX;
+  const dy = cy - joyOriginY;
+  const dist = Math.hypot(dx, dy);
+  const maxR = 45;
+  const angle = Math.atan2(dy, dx);
+  const clampedDist = Math.min(dist, maxR);
+  const stickX = Math.cos(angle) * clampedDist;
+  const stickY = Math.sin(angle) * clampedDist;
+  joystickStick.style.transform = `translate(${stickX}px, ${stickY}px)`;
+  joyInputX = stickX / maxR;
+  joyInputY = stickY / maxR;
+}
+
+window.addEventListener('touchstart', handleTouchStart, { passive: false });
+window.addEventListener('touchmove', handleTouchMove, { passive: false });
+window.addEventListener('touchend', handleTouchEnd, { passive: false });
+window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+// Mouse Controls (클릭 이동 / 드래그 이동 / 우클릭 경공 대시)
+let isMouseDown = false;
+let mouseTarget = null;
+let clickMarkers = [];
+
+window.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.ctrl-btn, .modal-box, #mobileControls, .skill-card, button, input')) return;
+  sound.init();
+  if (e.button === 0) {
+    isMouseDown = true;
+    const worldX = e.clientX - (gameWidth / 2 - state.camera.x);
+    const worldY = e.clientY - (gameHeight / 2 - state.camera.y);
+
+    // 마우스 좌클릭 시 목표 지점으로 이동 설정 (지면 클릭 마커 생성)
+    setMouseTarget(e.clientX, e.clientY, true);
+
+    // 클릭 지점 주변(120px 이내)에 적이 있다면 검격 공격도 즉시 연계 발동
+    const nearbyEnemy = findClosestEnemy(worldX, worldY, 120);
+    if (nearbyEnemy) {
+      triggerMeleeAttack(nearbyEnemy);
+    }
+  } else if (e.button === 2) {
+    e.preventDefault();
+    const worldX = e.clientX - (gameWidth / 2 - state.camera.x);
+    const worldY = e.clientY - (gameHeight / 2 - state.camera.y);
+    const dx = worldX - player.x;
+    const dy = worldY - player.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    player.vx = (dx / dist) * player.speed;
+    player.vy = (dy / dist) * player.speed;
+    triggerDash();
+  }
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (isMouseDown) {
+    // 마우스 좌클릭을 누른 채로 드래그하면 커서 방향으로 계속 부드럽게 이동
+    setMouseTarget(e.clientX, e.clientY, false);
+  }
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (e.button === 0) {
+    isMouseDown = false;
+  }
+});
+
+window.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+});
+
+function setMouseTarget(screenX, screenY, spawnMarker = true) {
+  const worldX = screenX - (gameWidth / 2 - state.camera.x);
+  const worldY = screenY - (gameHeight / 2 - state.camera.y);
+  mouseTarget = { x: worldX, y: worldY };
+
+  if (spawnMarker) {
+    clickMarkers.push({
+      x: worldX,
+      y: worldY,
+      r: 6,
+      maxR: 24,
+      life: 0.45,
+      maxLife: 0.45
+    });
+  }
+}
+
+dashBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  sound.init();
+  triggerDash();
+});
+dashBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  sound.init();
+  triggerDash();
+});
+
+function triggerDash() {
+  if (player.dashTimer > 0 || player.isDashing || state.isPaused || state.isGameOver) return;
+  player.isDashing = true;
+  player.dashElapsed = 0;
+  player.dashTimer = Math.max(0.8, player.dashCooldown - player.skills.qinggong_dash * 0.35);
+
+  let dirX = player.vx;
+  let dirY = player.vy;
+  if (Math.hypot(dirX, dirY) < 0.1) {
+    dirX = player.facing;
+    dirY = 0;
+  }
+  const len = Math.hypot(dirX, dirY);
+  player.dashVx = (dirX / len) * player.dashSpeed;
+  player.dashVy = (dirY / len) * player.dashSpeed;
+
+  sound.playDash();
+  createInkDashEffect();
+  // pixelfx: 지면 흙먼지 픽셀 폭발 (dust-dash)
+  PixelFX.spawnDashDust(player.x, player.y, player.dashVx, player.dashVy);
+}
+
+function createInkDashEffect() {
+  for (let i = 0; i < 4; i++) {
+    player.afterImages.push({
+      x: player.x - player.dashVx * (i * 0.04),
+      y: player.y - player.dashVy * (i * 0.04),
+      facing: player.facing,
+      frame: Math.floor(player.walkTimer) % 4,
+      alpha: 0.6 - i * 0.12,
+      scale: 1.0 - i * 0.05
+    });
+  }
+}
+
+// --- Cinematic Phase, Stage & Boss Banner System ---
+let phaseBannerTimeout = null;
+function showPhaseBanner(title, sub, type = 'normal') {
+  const el = document.getElementById('phaseBanner');
+  if (!el) return;
+  el.classList.remove('stage-entry', 'boss-alert');
+  if (type === 'stage') el.classList.add('stage-entry');
+  if (type === 'boss') {
+    el.classList.add('boss-alert');
+    state.screenShake = 6;
+    triggerScreenFlash('rgba(185, 28, 28, 0.22)');
+  }
+  document.getElementById('phaseBannerTitle').innerText = title;
+  document.getElementById('phaseBannerSub').innerText = sub;
+  el.classList.add('visible');
+  if (phaseBannerTimeout) clearTimeout(phaseBannerTimeout);
+  phaseBannerTimeout = setTimeout(() => {
+    el.classList.remove('visible', 'stage-entry', 'boss-alert');
+  }, type === 'boss' ? 5200 : 4200);
+  sound.playLevelUp();
+}
+
+// --- Diablo-style Shrines (신단 / 기연 비석) ---
+function initShrines() {
+  shrines.length = 0;
+  const shrineDefs = [
+    { type: 'blood_fury', name: '태을혈기신단 (太乙血氣壇)', icon: '🔥', desc: '25초간 공격력 2배 & 공격속도 1.5배!', color: '#ef4444', duration: 25 },
+    { type: 'wind_god', name: '풍신선풍신단 (風神旋風壇)', icon: '🌪️', desc: '25초간 이동속도 +60% & 대시 쿨타임 -50%!', color: '#10b981', duration: 25 },
+    { type: 'invincible', name: '금강불괴신단 (金剛不壞壇)', icon: '🛡️', desc: '12초간 완전 무적 & 접근 적 충격파!', color: '#f59e0b', duration: 12 },
+    { type: 'infinite_blades', name: '만천비검신단 (萬天飛劍壇)', icon: '🗡️', desc: '25초간 비검 투사체 +3 & 발사속도 대폭 증가!', color: '#38bdf8', duration: 25 }
+  ];
+
+  for (let i = 0; i < 4; i++) {
+    const ang = (i / 4) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    const dist = 380 + Math.random() * 300;
+    const def = shrineDefs[i % shrineDefs.length];
+    shrines.push({
+      id: 'shrine_' + i,
+      x: player.x + Math.cos(ang) * dist,
+      y: player.y + Math.sin(ang) * dist,
+      type: def.type,
+      name: def.name,
+      icon: def.icon,
+      desc: def.desc,
+      color: def.color,
+      duration: def.duration,
+      active: true,
+      pulse: Math.random() * Math.PI
+    });
+  }
+}
+
+// --- 2.5D Isometric Obstacles (쿼터뷰 지형지물 & 입체감) ---
+function initObstacles() {
+  obstacles.length = 0;
+  const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
+  const curZone = state.currentZone || 1;
+  const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][curZone - 1]) ? ZONE_CONFIGS[secIdx][curZone - 1] : ZONE_CONFIGS[0][0];
+
+  // 마교 본단/의식 제단 (demon_sanctum / altar)에서는 부자연스러운 대나무나 목책 프랍 완전 배제!
+  if (zoneCfg.theme === 'demon_sanctum' || zoneCfg.propType === 'altar') {
+    // 결전장 중앙 의식 제단(반경 550)을 깨끗하게 유지하고, 외곽(반경 680)에만 고풍 석등 8개 정렬
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2;
+      obstacles.push({
+        x: Math.cos(ang) * 680,
+        y: Math.sin(ang) * 680,
+        type: 'lantern',
+        radius: 20
+      });
+    }
+    return;
+  }
+
+  // 테마별 정갈하고 고급스러운 무협 장애물 구성 (튀는 형광 초록색 대나무 배제, 흑석 석등 & 자연 암석 중심)
+  let validTypes = ['lantern', 'boulder'];
+  if (zoneCfg.theme === 'stone_fortress' || zoneCfg.propType === 'torch') {
+    validTypes = ['fence', 'lantern', 'boulder'];
+  } else {
+    validTypes = ['lantern', 'boulder'];
+  }
+
+  for (let i = 0; i < 18; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const dist = 320 + Math.random() * 850;
+    const t = validTypes[i % validTypes.length];
+    obstacles.push({
+      x: player.x + Math.cos(ang) * dist,
+      y: player.y + Math.sin(ang) * dist,
+      type: t,
+      radius: t === 'boulder' ? 32 : (t === 'lantern' ? 18 : 26)
+    });
+  }
+}
+
+// --- Item Drops & Visual Look Change (장비 옵션 및 룩변) ---

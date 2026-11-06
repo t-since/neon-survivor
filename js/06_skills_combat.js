@@ -1,0 +1,939 @@
+// 무공, 근접 공격, 데미지, 레벨업, 보물상자, 승리, 치트
+function updateSkills(dt) {
+  // 1. Flying Swords (어검술) & 만검귀종 (초월)
+  if (player.skills.flying_swords > 0) {
+    const isEvo = !!player.evolutions.evo_flying_swords;
+    const swordCount = isEvo ? 8 : (1 + player.skills.flying_swords);
+    while (flyingSwords.length < swordCount) {
+      flyingSwords.push({
+        angle: (flyingSwords.length / swordCount) * Math.PI * 2,
+        orbitDist: isEvo ? 75 : 60,
+        orbitSpeed: isEvo ? 4.8 : 3.5,
+        target: null,
+        isLaunching: false,
+        x: player.x,
+        y: player.y,
+        vx: 0,
+        vy: 0,
+        cooldown: 0,
+        isEvo: isEvo
+      });
+    }
+
+    flyingSwords.forEach((sw) => {
+      sw.isEvo = isEvo;
+      if (!sw.isLaunching) {
+        sw.angle += sw.orbitSpeed * dt;
+        sw.orbitDist = isEvo ? 75 : 60;
+        sw.x = player.x + Math.cos(sw.angle) * sw.orbitDist;
+        sw.y = player.y + Math.sin(sw.angle) * sw.orbitDist;
+        sw.cooldown -= dt;
+
+        if (sw.cooldown <= 0 && enemies.length > 0) {
+          const closest = findClosestEnemy(sw.x, sw.y, 480);
+          if (closest) {
+            sw.isLaunching = true;
+            triggerSkillMotion('sword', 0.22);
+            sw.cooldown = 1.0 / (1 + (isEvo ? 7 : player.skills.flying_swords) * 0.18);
+            const dx = closest.x - sw.x;
+            const dy = closest.y - sw.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const speed = isEvo ? 720 : 580;
+            sw.vx = (dx / len) * speed;
+            sw.vy = (dy / len) * speed;
+            sw.life = 1.3;
+            sound.playSwordSlash();
+          }
+        }
+      } else {
+        sw.x += sw.vx * dt;
+        sw.y += sw.vy * dt;
+        sw.life -= dt;
+
+        for (let e of enemies) {
+          if (Math.hypot(e.x - sw.x, e.y - sw.y) < e.radius + 16) {
+            dealDamage(e, (isEvo ? 85 : 42) * player.atkMultiplier, true);
+            createHitSparks(sw.x, sw.y, isEvo ? '#fbbf24' : '#38bdf8');
+            sw.isLaunching = false;
+            sw.orbitDist = isEvo ? 75 : 60;
+            break;
+          }
+        }
+        if (sw.life <= 0) {
+          sw.isLaunching = false;
+        }
+      }
+    });
+
+    // 만검귀종 궁극 오의: 2.5초마다 12방향 전방위 황금 검기 방출
+    if (isEvo) {
+      player.evoTimer.flying_swords = (player.evoTimer.flying_swords || 0) + dt;
+      if (player.evoTimer.flying_swords >= 2.5) {
+        player.evoTimer.flying_swords = 0;
+        castManGeomGwiJong();
+      }
+    }
+  }
+
+  // 2. Dagger Rain (만천화우)
+  if (player.skills.dagger_rain > 0) {
+    player.timers.dagger_rain += dt;
+    const interval = Math.max(1.0, 3.0 - player.skills.dagger_rain * 0.4);
+    if (player.timers.dagger_rain >= interval) {
+      player.timers.dagger_rain = 0;
+      castDaggerRain();
+    }
+  }
+
+  // 3. Palm Blast (벽공장 / 여래신장)
+  if (player.skills.palm_blast > 0) {
+    player.timers.palm_blast += dt;
+    const interval = Math.max(1.5, 3.8 - player.skills.palm_blast * 0.5);
+    if (player.timers.palm_blast >= interval) {
+      player.timers.palm_blast = 0;
+      castPalmBlast();
+    }
+  }
+
+  // 4. Thunder Bomb (벽력탄)
+  if (player.skills.thunder_bomb > 0) {
+    player.timers.thunder_bomb += dt;
+    const interval = Math.max(1.2, 3.5 - player.skills.thunder_bomb * 0.4);
+    if (player.timers.thunder_bomb >= interval) {
+      player.timers.thunder_bomb = 0;
+      castThunderBomb();
+    }
+  }
+
+  // 5. Vajra Shield pulse (금강불괴 / 무적신공)
+  if (player.skills.vajra_shield > 0) {
+    player.timers.vajra_shield += dt;
+    if (player.timers.vajra_shield >= 3.0) {
+      player.timers.vajra_shield = 0;
+      const radius = 135 + player.skills.vajra_shield * 18;
+      for (let e of enemies) {
+        if (Math.hypot(e.x - player.x, e.y - player.y) <= radius) {
+          dealDamage(e, 35 * player.atkMultiplier, false);
+          const dx = e.x - player.x;
+          const dy = e.y - player.y;
+          const d = Math.hypot(dx, dy) || 1;
+          e.x += (dx / d) * 70;
+          e.y += (dy / d) * 70;
+        }
+      }
+      createShockwave(player.x, player.y, radius, '#fbbf24');
+      sound.playPalmBlast();
+    }
+
+    // 천지무적신공 초월: 1.5초마다 주위 번개 연쇄 방출
+    if (player.evolutions.evo_vajra_shield) {
+      player.evoTimer.vajra_shield = (player.evoTimer.vajra_shield || 0) + dt;
+      if (player.evoTimer.vajra_shield >= 1.5) {
+        player.evoTimer.vajra_shield = 0;
+        let hitCount = 0;
+        for (let e of enemies) {
+          if (Math.hypot(e.x - player.x, e.y - player.y) <= 240) {
+            dealDamage(e, 110 * player.atkMultiplier, true);
+            createHitSparks(e.x, e.y, '#facc15');
+            hitCount++;
+            if (hitCount >= 8) break;
+          }
+        }
+        if (hitCount > 0) {
+          createShockwave(player.x, player.y, 160, 'rgba(250, 204, 21, 0.6)');
+        }
+      }
+    }
+  }
+}
+
+function castManGeomGwiJong() {
+  triggerSkillMotion('sword', 0.4);
+  sound.playSwordSlash();
+  createShockwave(player.x, player.y, 80, '#fbbf24');
+  for (let i = 0; i < 12; i++) {
+    const ang = (i / 12) * Math.PI * 2 + state.gameTime * 2;
+    projectiles.push({
+      type: 'golden_sword_ki',
+      x: player.x,
+      y: player.y - 20,
+      vx: Math.cos(ang) * 640,
+      vy: Math.sin(ang) * 640,
+      life: 1.5,
+      damage: 140 * player.atkMultiplier,
+      penetrates: true,
+      hitList: new Set(),
+      color: '#fbbf24'
+    });
+  }
+}
+
+function triggerSkillMotion(poseType, duration = 0.3) {
+  player.isAttacking = true;
+  player.skillPose = poseType;
+  player.attackTimer = duration;
+  player.attackDuration = duration;
+}
+
+function applyPoison(target, duration, dps) {
+  if (!target || target.hp <= 0) return;
+  target.poisonTimer = Math.max(target.poisonTimer || 0, duration);
+  target.poisonDps = Math.max(target.poisonDps || 0, dps);
+  if (!target.poisonTickTimer) target.poisonTickTimer = 0.4;
+}
+
+function createPoisonBubble(x, y) {
+  particles.push({
+    x: x + (Math.random() - 0.5) * 20,
+    y: y + (Math.random() - 0.5) * 20,
+    vx: (Math.random() - 0.5) * 15,
+    vy: -20 - Math.random() * 25,
+    life: 0.5,
+    maxLife: 0.5,
+    color: '#34d399',
+    size: 3 + Math.random() * 3
+  });
+}
+
+function castDaggerRain() {
+  triggerSkillMotion('rain', 0.38);
+
+  const isEvo = !!player.evolutions.evo_dagger_rain;
+  const needleCount = isEvo ? 36 : (14 + player.skills.dagger_rain * 5);
+  const closest = enemies.length > 0 ? findClosestEnemy(player.x, player.y, 450) : null;
+  const targetCenterX = closest ? closest.x : player.x + (player.facing * 110);
+  const targetCenterY = closest ? closest.y : player.y;
+
+  for (let i = 0; i < needleCount; i++) {
+    const spreadR = isEvo ? 140 : (75 + player.skills.dagger_rain * 20);
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * spreadR;
+    const destX = targetCenterX + Math.cos(angle) * dist;
+    const destY = targetCenterY + Math.sin(angle) * dist * 0.7;
+
+    const fallHeight = 440 + Math.random() * 120;
+    const slantX = 65 + Math.random() * 35;
+    const startX = destX - slantX;
+    const startY = destY - fallHeight;
+
+    const delay = i * (isEvo ? 0.018 : 0.032);
+    const fallSpeed = 780 + Math.random() * 120;
+    const totalDist = Math.hypot(destX - startX, destY - startY);
+    const duration = totalDist / fallSpeed;
+
+    fallingNeedles.push({
+      startX: startX,
+      startY: startY,
+      destX: destX,
+      destY: destY,
+      delay: delay,
+      time: 0,
+      duration: duration,
+      damage: ((isEvo ? 55 : 28) + player.skills.dagger_rain * 7) * player.atkMultiplier,
+      splashRadius: (isEvo ? 65 : 38) + player.skills.dagger_rain * 6,
+      color: isEvo ? (Math.random() < 0.5 ? '#c084fc' : '#10b981') : '#10b981',
+      isEvo: isEvo
+    });
+  }
+  sound.playDaggerRain();
+}
+
+function castPalmBlast() {
+  triggerSkillMotion('palm', 0.38);
+
+  const dir = player.facing;
+  const isBuddha = !!player.evolutions.evo_palm_blast;
+  const w = isBuddha ? 220 : (76 + player.skills.palm_blast * 20);
+  const h = isBuddha ? 280 : (100 + player.skills.palm_blast * 20);
+  const dmg = (isBuddha ? 320 : (80 + player.skills.palm_blast * 24)) * player.atkMultiplier;
+
+  projectiles.push({
+    type: 'palm_wave',
+    isBuddhaPalm: isBuddha,
+    x: player.x + dir * 35,
+    y: player.y - 15,
+    vx: dir * (isBuddha ? 520 : 460),
+    vy: 0,
+    width: w,
+    height: h,
+    life: isBuddha ? 1.6 : 1.25,
+    damage: dmg,
+    penetrates: true,
+    hitList: new Set()
+  });
+  sound.playPalmBlast();
+  createShockwave(player.x + dir * 25, player.y - 15, isBuddha ? 70 : 42, isBuddha ? '#fbbf24' : '#38bdf8');
+}
+
+function castThunderBomb() {
+  const bombCount = 1 + Math.floor(player.skills.thunder_bomb / 3);
+  for (let i = 0; i < bombCount; i++) {
+    const target = enemies.length > 0 ? enemies[Math.floor(Math.random() * enemies.length)] : null;
+    const tx = target ? target.x + (Math.random() - 0.5) * 40 : player.x + (Math.random() - 0.5) * 300;
+    const ty = target ? target.y + (Math.random() - 0.5) * 40 : player.y + (Math.random() - 0.5) * 300;
+    groundBombs.push({
+      startX: player.x,
+      startY: player.y - 20,
+      targetX: tx,
+      targetY: ty,
+      progress: 0,
+      duration: 0.65,
+      radius: 100 + player.skills.thunder_bomb * 18,
+      damage: 80 * player.atkMultiplier
+    });
+  }
+}
+
+// Melee Sword Slash Attack (화산 정통 근접 매화검격 & 수동/자동 일섬)
+function triggerMeleeAttack(target) {
+  const targetX = target ? target.x : (player.x + player.facing * 100);
+  const targetY = target ? target.y : player.y;
+
+  player.isAttacking = true;
+  player.attackTimer = player.attackDuration || 0.32;
+  player.attackCooldownTimer = Math.max(0.28, 0.55 - (player.level * 0.01));
+  player.attackCombo = (player.attackCombo + 1) % 4;
+
+  // 타겟 방향으로 즉시 회전
+  if (targetX < player.x) player.facing = -1;
+  else if (targetX > player.x) player.facing = 1;
+
+  sound.playSwordSlash();
+
+  // 시원하고 묵직한 전방 165px 근접 궤적 타격 판정
+  const slashRadius = 165;
+  const forwardDir = player.facing;
+  let hitAny = false;
+
+  for (let e of enemies) {
+    const dx = e.x - player.x;
+    const dy = e.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= slashRadius && (dx * forwardDir > -30)) {
+      hitAny = true;
+      const dmg = (48 + player.level * 6) * player.atkMultiplier;
+      dealDamage(e, dmg, true);
+      createHitSparks(e.x, e.y, '#38bdf8');
+
+      // 근접 타격 시 몬스터 넉백
+      e.x += forwardDir * 20;
+      e.hitCooldown = 0.14;
+    }
+  }
+
+  // 타격 시 역동적인 카메라 흔들림 & 대형 푸른 검기 반월참 이펙트
+  if (hitAny) {
+    state.cameraShake = Math.max(state.cameraShake, 0.22);
+  }
+
+  PixelFX.spawnSwordSlash(player.x + forwardDir * 50, player.y - 25, forwardDir > 0 ? 0 : Math.PI, 88);
+  particles.push({
+    isSlashArc: true,
+    x: player.x + forwardDir * 45,
+    y: player.y - 25,
+    facing: forwardDir,
+    combo: player.attackCombo,
+    life: 0.26,
+    maxLife: 0.26
+  });
+}
+
+function findClosestEnemy(x, y, maxDist = 500) {
+  let closest = null;
+  let minD = maxDist;
+  for (let e of enemies) {
+    const d = Math.hypot(e.x - x, e.y - y);
+    if (d < minD) {
+      minD = d;
+      closest = e;
+    }
+  }
+  return closest;
+}
+
+function dealDamage(target, baseDmg, canCrit = true) {
+  let isCrit = false;
+  let dmg = baseDmg;
+  if (canCrit && Math.random() < player.critRate) {
+    isCrit = true;
+    dmg *= (player.critMultiplier || 1.8);
+  }
+  dmg = Math.round(dmg);
+  target.hp -= dmg;
+  target.hitCooldown = 0.12;
+
+  // pixelfx: 타격 방향 십자 플레어 & 바운스 스파크 폭발 (크리티컬 시 대형 섬광!)
+  const hitAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  PixelFX.spawnHitSpark(target.x, target.y - 12, hitAngle, isCrit);
+
+  damageTexts.push({
+    x: target.x + (Math.random() - 0.5) * 20,
+    y: target.y - 30,
+    text: dmg.toString(),
+    color: isCrit ? '#f59e0b' : '#ffffff',
+    size: isCrit ? 18 : 14,
+    life: 0.65,
+    vy: -40
+  });
+
+  if (target.hp <= 0) {
+    onEnemyKilled(target);
+  }
+}
+
+function onEnemyKilled(target) {
+  state.kills++;
+  document.getElementById('killText').innerText = state.kills;
+
+  // pixelfx: 적 사망 시 픽셀 소멸 파편 & 보스 대폭발 연출!
+  PixelFX.spawnEnemyDeath(target.x, target.y, target.isBoss, target.isMiniBoss);
+
+  // 전장에 일정 시간(7.5초) 유지되는 몬스터 시체/백골 잔해 생성
+  corpses.push({
+    type: target.type || 'assassin',
+    name: target.name || '',
+    x: target.x,
+    y: target.y,
+    facing: target.facing || (Math.random() < 0.5 ? 1 : -1),
+    rot: (Math.random() - 0.5) * 0.35,
+    scale: target.isBoss ? 1.4 : (target.isMiniBoss ? 1.2 : 1.0),
+    life: 7.5,
+    maxLife: 7.5
+  });
+  if (corpses.length > 30) corpses.shift(); // 60프레임 최적화 유지 (최대 30구 잔존)
+
+  expGems.push({
+    x: target.x,
+    y: target.y,
+    val: target.expVal || 2,
+    color: target.isBoss ? '#f59e0b' : '#38bdf8',
+    radius: target.isBoss ? 10 : 6
+  });
+
+  if (Math.random() < 0.06 || target.isBoss) {
+    expGems.push({
+      isHeal: true,
+      x: target.x + 15,
+      y: target.y,
+      val: 40,
+      radius: 8
+    });
+  }
+
+  // 몬스터 처치 시 아이템 드롭 (일반몹: 5% 확률, 중간보스: 영웅 장비 100%, 구역군주: 전설 장비 100%)
+  if (!target.isBoss && !target.isMiniBoss) {
+    if (Math.random() < 0.05) {
+      spawnItemDrop(target.x, target.y);
+    }
+  }
+
+  // Mini-Boss Death: Drops Epic Item & Treasure Chest
+  if (target.isMiniBoss) {
+    chests.push({
+      x: target.x,
+      y: target.y,
+      isBossChest: false
+    });
+    spawnItemDrop(target.x + 25, target.y, 'epic');
+    damageTexts.push({
+      x: target.x,
+      y: target.y - 50,
+      text: '★ 사파 중간보스 격파! 영웅 장비 & 비급함 드롭! ★',
+      color: '#fbbf24',
+      size: 18,
+      life: 2.5,
+      vy: -25
+    });
+    sound.playLevelUp();
+  }
+
+  // Sector Final Boss Death: Spawn Golden Town Portal (디아블로2 승리 포탈!) & 몬스터 리젠 완전 중단
+  if (target.isBoss) {
+    state.boss = null;
+    state.bossDefeated = true;
+    state.spawnEnemies = false; // 보스 토벌 완료 -> 몬스터 추가 리젠 완전 차단!
+
+    // 전장의 남은 일반 잔당들을 승리의 거대 충격파로 일소
+    for (let e of enemies) {
+      PixelFX.spawnEnemyDeath(e.x, e.y, false, false);
+    }
+    enemies.length = 0;
+
+    const bossBar = document.getElementById('bossBarContainer');
+    if (bossBar) bossBar.style.display = 'none';
+    chests.push({
+      x: target.x - 35,
+      y: target.y,
+      isBossChest: true
+    });
+    spawnItemDrop(target.x + 35, target.y, 'legendary');
+    spawnVictoryPortal(target.x, target.y);
+    showPhaseBanner('🏆 구역 군주 토벌 완승! 🏆', '전장의 마기가 정화되었습니다! 전설 장비와 보물상자를 획득하고 관문으로 진격하십시오!', 'stage');
+    sound.playLevelUp();
+  }
+
+  // Evolution: Poison Nova on death if poisoned
+  if (player.evolutions.evo_dagger_rain && target.poisonTimer > 0) {
+    for (let i = 0; i < 8; i++) {
+      const pAng = (i / 8) * Math.PI * 2;
+      projectiles.push({
+        type: 'poison_shard',
+        x: target.x,
+        y: target.y,
+        vx: Math.cos(pAng) * 380,
+        vy: Math.sin(pAng) * 380,
+        life: 0.8,
+        damage: 48 * player.atkMultiplier,
+        color: '#c084fc'
+      });
+    }
+    createShockwave(target.x, target.y, 48, 'rgba(192, 132, 252, 0.6)');
+  }
+
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: target.x,
+      y: target.y,
+      vx: (Math.random() - 0.5) * 160,
+      vy: (Math.random() - 0.5) * 160,
+      life: 0.45,
+      maxLife: 0.45,
+      color: '#94a3b8',
+      size: 3 + Math.random() * 3
+    });
+  }
+}
+
+let pendingLevelUps = 0;
+
+function addExp(amount) {
+  player.exp += amount;
+  sound.playPickup();
+
+  while (player.exp >= player.nextExp) {
+    player.exp -= player.nextExp;
+    player.level++;
+    player.nextExp = Math.round(player.nextExp * 1.35 + 8);
+    pendingLevelUps++;
+  }
+
+  const pct = Math.min(100, (player.exp / player.nextExp) * 100);
+  document.getElementById('expBar').style.width = pct + '%';
+  document.getElementById('expText').innerText = `${player.exp} / ${player.nextExp}`;
+  document.getElementById('tierText').innerText = getTier(player.level);
+
+  if (pendingLevelUps > 0 && !state.isLevelingUp && !state.isGameOver) {
+    showNextLevelUp();
+  }
+}
+
+function onLevelUp() {
+  pendingLevelUps++;
+  if (!state.isLevelingUp && !state.isGameOver) {
+    showNextLevelUp();
+  }
+}
+
+function showNextLevelUp() {
+  if (state.isGameOver) return;
+  sound.playLevelUp();
+  state.isLevelingUp = true;
+  state.isPaused = true;
+
+  const titleEl = document.getElementById('levelUpModalTitle') || document.querySelector('#levelUpModal .modal-title');
+  const subEl = document.getElementById('levelUpModalSubtitle') || document.querySelector('#levelUpModal .modal-subtitle');
+  const cardList = document.getElementById('cardList');
+  const fallbackBtn = document.getElementById('fallbackLevelUpBtn');
+  if (fallbackBtn) fallbackBtn.style.display = 'none';
+
+  cardList.innerHTML = '';
+
+  const available = [];
+  // Standard upgrades
+  for (let key in SKILL_DEFS) {
+    const s = SKILL_DEFS[key];
+    const currentLvl = player.skills[key] || 0;
+    if (currentLvl < s.maxLevel) {
+      available.push({
+        id: key,
+        def: s,
+        nextLvl: currentLvl + 1
+      });
+    }
+  }
+
+  // Evolution options if base skill is maxed
+  for (let key in EVO_SKILL_DEFS) {
+    const evo = EVO_SKILL_DEFS[key];
+    if (player.skills[key] >= 5 && !player.evolutions[evo.id]) {
+      available.push({
+        id: evo.id,
+        isEvo: true,
+        def: {
+          name: `★ [초월 각성] ${evo.name}`,
+          icon: evo.icon,
+          getUpgradeDesc: () => evo.desc
+        },
+        nextLvl: 'MAX 각성'
+      });
+    }
+  }
+
+  let choices = [];
+  if (available.length > 0) {
+    if (titleEl) titleEl.innerText = "경지 돌파 (境界突破)";
+    if (subEl) subEl.innerText = "새로운 무공을 전수받거나 기존 무공을 연마하십시오.";
+    available.sort(() => Math.random() - 0.5);
+    choices = available.slice(0, 3);
+  } else {
+    // 모든 무공 대성(MAX) 달성 시: 게임이 멈추지 않고 계속 즐길 수 있도록 대성 영약 3종 제공!
+    if (titleEl) titleEl.innerHTML = "🏆 경지 대성 (境地大成)";
+    if (subEl) subEl.innerHTML = "모든 무공을 극한으로 연마하였습니다! 영약을 흡수하여 잠재력을 폭발시키십시오.";
+
+    choices = [
+      {
+        id: 'bonus_heal',
+        isBonus: true,
+        def: {
+          name: '💖 천원진기 (天元眞氣)',
+          icon: '💖',
+          getUpgradeDesc: () => '혈기(HP) 80 즉시 회복 및 최대 혈기 +25 영구 증가'
+        },
+        action: () => {
+          player.maxHp += 25;
+          player.hp = Math.min(player.maxHp, player.hp + 80);
+          updateHud();
+          damageTexts.push({
+            x: player.x,
+            y: player.y - 70,
+            text: '💖 혈기 80 회복 & 최대 혈기 +25!',
+            color: '#34d399',
+            size: 19,
+            life: 2.2,
+            vy: -28
+          });
+        }
+      },
+      {
+        id: 'bonus_atk',
+        isBonus: true,
+        def: {
+          name: '⚔️ 파천신공 (破天神功)',
+          icon: '⚔️',
+          getUpgradeDesc: () => '전체 무공 공격력 +8% 영구 증폭'
+        },
+        action: () => {
+          player.atkMultiplier = (player.atkMultiplier || 1) + 0.08;
+          updateHud();
+          damageTexts.push({
+            x: player.x,
+            y: player.y - 70,
+            text: `⚔️ 공격력 +8% 증폭! (현재 ${Math.round(player.atkMultiplier * 100)}%)`,
+            color: '#fbbf24',
+            size: 19,
+            life: 2.2,
+            vy: -28
+          });
+        }
+      },
+      {
+        id: 'bonus_spd',
+        isBonus: true,
+        def: {
+          name: '⚡ 능파미보 (凌波微步)',
+          icon: '⚡',
+          getUpgradeDesc: () => '이동 속도 +10 및 치명타 확률 +3% 영구 증가'
+        },
+        action: () => {
+          player.speed += 10;
+          player.critRate = Math.min(0.75, (player.critRate || 0.1) + 0.03);
+          updateHud();
+          damageTexts.push({
+            x: player.x,
+            y: player.y - 70,
+            text: `⚡ 신속 +10 & 치명타 +3%!`,
+            color: '#38bdf8',
+            size: 19,
+            life: 2.2,
+            vy: -28
+          });
+        }
+      }
+    ];
+  }
+
+  choices.forEach(c => {
+    const card = document.createElement('div');
+    card.className = c.isEvo ? 'skill-card evo-card' : (c.isBonus ? 'skill-card bonus-card' : 'skill-card');
+    card.innerHTML = `
+      <div class="skill-icon">${c.def.icon}</div>
+      <div class="skill-info">
+        <div class="skill-name-row">
+          <span class="skill-name" style="${c.isEvo || c.isBonus ? 'color:#fbbf24;font-weight:800;' : ''}">${c.def.name}</span>
+          <span class="skill-lvl" style="${c.isEvo || c.isBonus ? 'color:#f59e0b;' : ''}">${c.isEvo ? '초월' : (c.isBonus ? '대성' : 'Lv.' + c.nextLvl)}</span>
+        </div>
+        <div class="skill-desc">${c.def.getUpgradeDesc(c.nextLvl)}</div>
+      </div>
+    `;
+    card.onclick = () => {
+      if (c.isBonus) {
+        c.action();
+        sound.playLevelUp();
+      } else if (c.isEvo) {
+        player.evolutions[c.id] = true;
+        sound.playLevelUp();
+        damageTexts.push({
+          x: player.x,
+          y: player.y - 70,
+          text: `★ ${c.def.name} 각성! ★`,
+          color: '#fbbf24',
+          size: 20,
+          life: 2.5,
+          vy: -30
+        });
+      } else {
+        applySkillUpgrade(c.id);
+      }
+
+      pendingLevelUps = Math.max(0, pendingLevelUps - 1);
+      if (pendingLevelUps > 0) {
+        showNextLevelUp();
+      } else {
+        document.getElementById('levelUpModal').style.display = 'none';
+        state.isLevelingUp = false;
+        state.isPaused = false;
+      }
+    };
+    cardList.appendChild(card);
+  });
+
+  // Emergency fallback button
+  if (fallbackBtn) {
+    fallbackBtn.onclick = () => {
+      pendingLevelUps = 0;
+      document.getElementById('levelUpModal').style.display = 'none';
+      state.isLevelingUp = false;
+      state.isPaused = false;
+    };
+  }
+
+  document.getElementById('levelUpModal').style.display = 'flex';
+}
+
+function applySkillUpgrade(skillId) {
+  player.skills[skillId] = (player.skills[skillId] || 0) + 1;
+  const lvl = player.skills[skillId];
+
+  if (skillId === 'qinggong_dash') {
+    player.speed = player.baseSpeed * (1 + lvl * 0.15);
+  } else if (skillId === 'vajra_shield') {
+    player.maxHp = 120 + lvl * 35;
+    player.hp = Math.min(player.maxHp, player.hp + 35);
+  } else if (skillId === 'qi_magnet') {
+    player.magnetRadius = 140 + lvl * 50;
+  }
+  updateHud();
+}
+
+function updateHud() {
+  const hpPct = Math.max(0, (player.hp / player.maxHp) * 100);
+  document.getElementById('hpBar').style.width = hpPct + '%';
+  document.getElementById('hpText').innerText = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+  document.getElementById('tierText').innerText = getTier(player.level);
+}
+
+function openTreasureModal(isBossChest = false) {
+  state.isPaused = true;
+  sound.playLevelUp();
+
+  let candidateEvo = null;
+  for (let baseSkill in EVO_SKILL_DEFS) {
+    const evoDef = EVO_SKILL_DEFS[baseSkill];
+    if (player.skills[baseSkill] >= 5 && !player.evolutions[evoDef.id]) {
+      candidateEvo = evoDef;
+      break;
+    }
+  }
+
+  const content = document.getElementById('treasureContent');
+  const sub = document.getElementById('treasureSubtitle');
+
+  if (candidateEvo) {
+    player.evolutions[candidateEvo.id] = true;
+    sub.innerText = "천하제일 무학의 정점에 도달하여 궁극의 초월 비급을 각성했습니다!";
+    content.innerHTML = `
+      <div class="evo-showcase-card">
+        <div style="font-size: 38px;">${candidateEvo.icon}</div>
+        <div style="flex: 1;">
+          <div class="evo-badge-pill">★ ${candidateEvo.badge} 각성 ★</div>
+          <div style="font-size: 18px; font-weight: 800; color: ${candidateEvo.color}; margin-bottom: 4px;">
+            ${candidateEvo.name}
+          </div>
+          <div style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">
+            ${candidateEvo.desc}
+          </div>
+        </div>
+      </div>
+    `;
+    damageTexts.push({
+      x: player.x,
+      y: player.y - 70,
+      text: `★ [초월 각성] ${candidateEvo.name} ★`,
+      color: candidateEvo.color,
+      size: 20,
+      life: 2.5,
+      vy: -30
+    });
+  } else {
+    let unmaxed = Object.keys(SKILL_DEFS).filter(k => (player.skills[k] || 0) < SKILL_DEFS[k].maxLevel);
+    let upgradedSkillName = "";
+    if (unmaxed.length > 0) {
+      const chosen = unmaxed[Math.floor(Math.random() * unmaxed.length)];
+      applySkillUpgrade(chosen);
+      upgradedSkillName = ` & [${SKILL_DEFS[chosen].name}] 1단계 즉시 연마!`;
+    }
+    player.hp = Math.min(player.maxHp, player.hp + 40);
+    addExp(80);
+    sub.innerText = "상자 안에서 전설의 영석과 비전 비급을 발견했습니다!";
+    content.innerHTML = `
+      <div class="evo-showcase-card" style="border-color: #38bdf8;">
+        <div style="font-size: 38px;">💎</div>
+        <div style="flex: 1;">
+          <div class="evo-badge-pill" style="background: #0284c7; border-color: #7dd3fc;">비급 습득 완료</div>
+          <div style="font-size: 16px; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">
+            대량의 진기 영석 (+80 EXP) & 혈기 40 회복
+          </div>
+          <div style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">
+            ${upgradedSkillName ? upgradedSkillName : '모든 무공이 이미 지고한 경지에 도달하였습니다!'}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById('treasureModal').style.display = 'flex';
+}
+
+function spawnVictoryPortal(x, y) {
+  state.victoryPortal = {
+    x: x,
+    y: y,
+    radius: 55, // 쉽게 탑승할 수 있도록 진입 반경 확대
+    active: true,
+    rot: 0,
+    pulse: 0
+  };
+  createShockwave(x, y, 140, '#fbbf24');
+  createShockwave(x, y, 90, '#38bdf8');
+  PixelFX.spawnHitSparks(x, y, '#fbbf24', 20);
+  state.cameraShake = Math.max(state.cameraShake, 0.45);
+}
+
+function onSectorVictory() {
+  state.isGameOver = true;
+  state.isPaused = true;
+  markCurrentSectorCleared();
+
+  const sector = SECTOR_DEFS[currentSelectedSector - 1] || SECTOR_DEFS[0];
+  document.getElementById('vicSector').innerText = `제${currentSelectedSector}구역: ${sector.name.split(':')[1] || sector.name}`;
+  document.getElementById('vicKills').innerText = `${state.kills}명`;
+  document.getElementById('vicTime').innerText = formatTime(state.gameTime);
+  document.getElementById('vicTier').innerText = getTier(player.level);
+
+  const listEl = document.getElementById('victorySkillList');
+  if (listEl) {
+    listEl.innerHTML = '';
+    for (let k in player.skills) {
+      if (player.skills[k] > 0) {
+        const s = SKILL_DEFS[k];
+        const evo = EVO_SKILL_DEFS[k];
+        const isEvo = evo && player.evolutions[evo.id];
+        const item = document.createElement('div');
+        item.className = 'owned-skill-item';
+        if (isEvo) item.style.borderColor = '#fbbf24';
+        item.innerHTML = `
+          <div class="owned-skill-icon">${isEvo ? evo.icon : s.icon}</div>
+          <div class="owned-skill-info">
+            <div class="owned-skill-name" style="${isEvo ? 'color:#fbbf24;font-weight:800;' : ''}">
+              ${isEvo ? evo.name : s.name}
+            </div>
+            <div class="owned-skill-level">${isEvo ? '★ 초월 각성 ★' : `Lv.${player.skills[k]}`}</div>
+          </div>
+        `;
+        listEl.appendChild(item);
+      }
+    }
+  }
+
+  const nextBtn = document.getElementById('btnVictoryNextSector');
+  if (currentSelectedSector >= 5) {
+    nextBtn.innerText = '🎉 전 구역 완전 제패! (강호 통일) ➔';
+  } else {
+    nextBtn.innerText = `🗺️ 제${currentSelectedSector + 1}구역으로 진격 ➔`;
+  }
+
+  document.getElementById('victoryModal').style.display = 'flex';
+  sound.playLevelUp();
+}
+
+// --- Cheat & Testing Functions ---
+function cheatLevelUp(count = 1) {
+  for (let i = 0; i < count; i++) {
+    player.level++;
+    player.atkMultiplier += 0.15;
+    player.critRate = Math.min(0.6, player.critRate + 0.02);
+    player.speed += 5;
+    player.maxHp += 20;
+    player.hp = player.maxHp;
+  }
+  sound.playLevelUp();
+  updateHud();
+}
+
+function cheatMaxAll() {
+  for (let key in SKILL_DEFS) {
+    player.skills[key] = SKILL_DEFS[key].maxLevel;
+    applySkillUpgrade(key);
+  }
+  player.level = Math.max(player.level, 30);
+  player.atkMultiplier = 3.5;
+  player.critRate = 0.5;
+  player.maxHp = 500;
+  player.hp = 500;
+  sound.playLevelUp();
+  updateHud();
+}
+
+function cheatToggleGod() {
+  state.isGodMode = !state.isGodMode;
+  const badge = document.getElementById('godBadge');
+  badge.style.display = state.isGodMode ? 'inline-block' : 'none';
+  const godBtn = document.getElementById('btnGodMode');
+  if (godBtn) {
+    godBtn.innerText = state.isGodMode ? '🛡️ 무적 모드: ON' : '🛡️ 무적 모드: OFF';
+    godBtn.style.borderColor = state.isGodMode ? '#ef4444' : '#475569';
+  }
+  sound.playPickup();
+}
+
+// Build Skill Cheat List in modal
+function setupCheatModalUI() {
+  const list = document.getElementById('skillCheatList');
+  list.innerHTML = '';
+  for (let key in SKILL_DEFS) {
+    const s = SKILL_DEFS[key];
+    const item = document.createElement('div');
+    item.className = 'skill-cheat-item';
+    item.innerHTML = `<span>${s.icon} ${s.name.split(' ')[1]}</span> <span id="cheatLvl_${key}">Lv.${player.skills[key] || 0}</span>`;
+    item.onclick = () => {
+      if ((player.skills[key] || 0) < s.maxLevel) {
+        applySkillUpgrade(key);
+        document.getElementById(`cheatLvl_${key}`).innerText = `Lv.${player.skills[key]}`;
+        sound.playPickup();
+      }
+    };
+    list.appendChild(item);
+  }
+}
+
+// --- Main Update Loop ---
