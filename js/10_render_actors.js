@@ -148,9 +148,10 @@ function renderPlayer() {
 function drawHeroSword(prog, combo) {
   const handX = 18, handY = -62;            // 오른손 위치 (서진 그림 기준)
   const up = -2.3, down = 0.75;             // 칼 각도 (라디안): 뒤-위 → 앞-아래
-  const reverse = combo % 2 === 1;
-  const from = reverse ? down + 0.3 : up;
-  const to = reverse ? up + 0.6 : down;
+  const reverse = combo === 1;                // 2타: 올려베기
+  const finisher = combo === 2;               // 3타: 크게 한 바퀴 가까이 휘두르는 큰 베기
+  const from = reverse ? down + 0.3 : (finisher ? up - 0.6 : up);
+  const to = reverse ? up + 0.6 : (finisher ? down + 0.7 : down);
   let a, alpha = 1;
   if (prog < 0.25) {
     const k = prog / 0.25;
@@ -163,10 +164,14 @@ function drawHeroSword(prog, combo) {
     a = to;
     alpha = Math.max(0, 1 - (prog - 0.55) / 0.45);
   }
-  const L = 62;
+  const L = finisher ? 70 : 62;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.translate(handX, handY);
+  // 공격 방향이 위/아래쪽이면 휘두르는 판 전체를 그쪽으로 기울임 (앞쪽 기준 각도)
+  const aim = player.attackAim || 0;
+  const localAim = Math.atan2(Math.sin(aim), Math.abs(Math.cos(aim)));
+  ctx.rotate(Math.max(-1.0, Math.min(1.0, localAim)) * 0.7);
 
   // 휘두르는 궤적 (검기)
   if (prog >= 0.25) {
@@ -178,7 +183,7 @@ function drawHeroSword(prog, combo) {
     ctx.globalAlpha = alpha * 0.55;
     const g = ctx.createRadialGradient(0, 0, L * 0.35, 0, 0, L + 10);
     g.addColorStop(0, 'rgba(186, 230, 253, 0)');
-    g.addColorStop(0.75, 'rgba(125, 211, 252, 0.55)');
+    g.addColorStop(0.75, finisher ? 'rgba(253, 224, 71, 0.6)' : 'rgba(125, 211, 252, 0.55)');
     g.addColorStop(1, 'rgba(255, 255, 255, 0.9)');
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -536,6 +541,7 @@ function renderEnemies() {
     if (e.hitCooldown > 0) {
       const flinch = Math.sin(e.hitCooldown * 35) * 4.5;
       ctx.translate(-facing * flinch, 0);
+      if (e.hitCooldown > 0.06) ctx.filter = 'brightness(2.4) saturate(0.3)'; // 맞은 순간 하얗게 번쩍
     }
 
     // 일반 몬스터 공통 걸음 연출 (종류별 성격): 걸음마다 살짝 튀고, 가는 방향으로 숙이고, 좌우로 흔들림

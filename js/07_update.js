@@ -5,7 +5,9 @@ function gameLoop(time) {
   const dt = Math.min(0.1, (time - lastTime) / 1000);
   lastTime = time;
 
-  if (state.isGameStarted && !state.isPaused && !state.isGameOver) {
+  if (state.hitStop > 0) {
+    state.hitStop -= dt; // 타격 멈칫: 화면은 그리되 시간은 잠깐 멈춤
+  } else if (state.isGameStarted && !state.isPaused && !state.isGameOver) {
     updateGame(dt);
   }
 

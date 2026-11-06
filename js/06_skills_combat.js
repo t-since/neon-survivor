@@ -285,57 +285,56 @@ function castThunderBomb() {
 }
 
 // Melee Sword Slash Attack (화산 정통 근접 매화검격 & 수동/자동 일섬)
+// 근거리 베기: 대상 방향 부채꼴(8방향 어디든) + 3단 콤보(내려베기 → 올려베기 → 큰 베기)
 function triggerMeleeAttack(target) {
-  const targetX = target ? target.x : (player.x + player.facing * 100);
-  const targetY = target ? target.y : player.y;
+  const tx = target ? target.x : player.x + player.facing * 100;
+  const ty = target ? target.y : player.y;
+  const aim = Math.atan2(ty - player.y, tx - player.x);
 
+  player.attackCombo = ((player.attackCombo || 0) + 1) % 3;
+  const isFinisher = player.attackCombo === 2;
   player.isAttacking = true;
-  player.attackTimer = player.attackDuration || 0.32;
-  player.attackCooldownTimer = Math.max(0.28, 0.55 - (player.level * 0.01));
-  player.attackCombo = (player.attackCombo + 1) % 4;
+  player.attackDuration = isFinisher ? 0.38 : 0.3;
+  player.attackTimer = player.attackDuration;
+  player.attackCooldownTimer = Math.max(0.28, 0.55 - (player.level * 0.01)) * (isFinisher ? 1.35 : 1);
+  player.attackAim = aim;
 
-  // 타겟 방향으로 즉시 회전
-  if (targetX < player.x) player.facing = -1;
-  else if (targetX > player.x) player.facing = 1;
+  // 대상 쪽으로 몸 돌리기 (거의 위/아래면 그대로)
+  if (Math.cos(aim) < -0.15) player.facing = -1;
+  else if (Math.cos(aim) > 0.15) player.facing = 1;
 
   sound.playSwordSlash();
 
-  // 시원하고 묵직한 전방 165px 근접 궤적 타격 판정
-  const slashRadius = 165;
-  const forwardDir = player.facing;
-  let hitAny = false;
-
-  for (let e of enemies) {
+  const range = isFinisher ? 190 : 160;
+  const halfArc = isFinisher ? Math.PI * 0.75 : Math.PI * 0.39; // 보통 140°, 큰 베기 270°
+  let hits = 0;
+  for (const e of enemies) {
     const dx = e.x - player.x;
     const dy = e.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist <= slashRadius && (dx * forwardDir > -30)) {
-      hitAny = true;
-      const dmg = (48 + player.level * 6) * player.atkMultiplier;
-      dealDamage(e, dmg, true);
-      createHitSparks(e.x, e.y, '#38bdf8');
-
-      // 근접 타격 시 몬스터 넉백
-      e.x += forwardDir * 20;
-      e.hitCooldown = 0.14;
+    const d = Math.hypot(dx, dy);
+    if (d > range + (e.radius || 0)) continue;
+    let da = Math.atan2(dy, dx) - aim;
+    da = Math.atan2(Math.sin(da), Math.cos(da));
+    if (Math.abs(da) > halfArc && d > 45) continue; // 몸에 붙은 적은 방향 상관없이 맞음
+    hits++;
+    const dmg = (48 + player.level * 6) * player.atkMultiplier * (isFinisher ? 1.6 : 1);
+    dealDamage(e, dmg, true);
+    e.hitCooldown = 0.14;
+    // 맞은 방향으로 밀려남 (보스는 밀리지 않음, 중간보스는 큰 베기에만 조금)
+    if (!e.isBoss && !(e.isMiniBoss && !isFinisher)) {
+      const kb = (isFinisher ? 560 : 320) * (e.isMiniBoss ? 0.35 : 1);
+      const nx = dx / (d || 1), ny = dy / (d || 1);
+      e.knockbackVx = nx * kb;
+      e.knockbackVy = ny * kb;
+      e.stunTimer = Math.max(e.stunTimer || 0, isFinisher ? 0.28 : 0.14);
     }
   }
 
-  // 타격 시 역동적인 카메라 흔들림 & 대형 푸른 검기 반월참 이펙트
-  if (hitAny) {
-    state.cameraShake = Math.max(state.cameraShake, 0.22);
+  if (hits > 0) {
+    state.hitStop = isFinisher ? 0.07 : 0.04;          // 맞는 순간 아주 잠깐 멈칫 (손맛)
+    state.screenShake = Math.max(state.screenShake || 0, isFinisher ? 7 : 3);
   }
-
-  PixelFX.spawnSwordSlash(player.x + forwardDir * 50, player.y - 25, forwardDir > 0 ? 0 : Math.PI, 88);
-  particles.push({
-    isSlashArc: true,
-    x: player.x + forwardDir * 45,
-    y: player.y - 25,
-    facing: forwardDir,
-    combo: player.attackCombo,
-    life: 0.26,
-    maxLife: 0.26
-  });
+  PixelFX.spawnSwordSlash(player.x + Math.cos(aim) * 50, player.y - 30 + Math.sin(aim) * 40, aim, isFinisher ? 120 : 88);
 }
 
 function findClosestEnemy(x, y, maxDist = 500) {
