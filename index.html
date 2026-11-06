@@ -5493,11 +5493,15 @@ function spawnVictoryPortal(x, y) {
   state.victoryPortal = {
     x: x,
     y: y,
-    radius: 40,
+    radius: 55, // 쉽게 탑승할 수 있도록 진입 반경 확대
     active: true,
     rot: 0,
     pulse: 0
   };
+  createShockwave(x, y, 140, '#fbbf24');
+  createShockwave(x, y, 90, '#38bdf8');
+  PixelFX.spawnHitSparks(x, y, '#fbbf24', 20);
+  state.cameraShake = Math.max(state.cameraShake, 0.45);
 }
 
 function onSectorVictory() {
@@ -8154,60 +8158,199 @@ function renderBossArenaSeal() {
 function renderVictoryPortal() {
   if (!state.victoryPortal || !state.victoryPortal.active) return;
   const p = state.victoryPortal;
-  const now = state.gameTime * 2.6;
+  const now = state.gameTime * 2.8;
 
   ctx.save();
   ctx.translate(p.x, p.y);
 
-  const pulse = 1 + Math.sin(now * 2) * 0.12;
+  const pulse = 1 + Math.sin(now * 2.2) * 0.08;
 
-  // Outer glow aura
-  const auraGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 70 * pulse);
-  auraGrad.addColorStop(0, 'rgba(251, 191, 36, 0.88)');
-  auraGrad.addColorStop(0.45, 'rgba(56, 189, 248, 0.55)');
-  auraGrad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+  // --- 1. 지면 차원 균열 & 심연 소용돌이 (pixelfx/arcane/portal.js & spawn-portal.js) ---
+  // (1) 외곽 확장형 바닥 방사 진기 파동 (Expanding Ground Ripple Shockwave)
+  const waveCycle = (state.gameTime * 0.6) % 1.0;
+  const waveR = 30 + waveCycle * 80;
+  ctx.strokeStyle = `rgba(251, 191, 36, ${Math.max(0, (1 - waveCycle) * 0.65)})`;
+  ctx.lineWidth = 2.5 * (1 - waveCycle);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, waveR, waveR * 0.52, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // (2) 광대한 바닥 심연 아우라 (Deep Amethyst & Amber Floor Gradient)
+  const auraGrad = ctx.createRadialGradient(0, 0, 15, 0, 0, 105 * pulse);
+  auraGrad.addColorStop(0, 'rgba(251, 191, 36, 0.95)'); // 중심 황금빛
+  auraGrad.addColorStop(0.3, 'rgba(56, 189, 248, 0.7)'); // 에테르 청록빛
+  auraGrad.addColorStop(0.65, 'rgba(147, 51, 234, 0.35)'); // 심연 자색
+  auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = auraGrad;
   ctx.beginPath();
-  ctx.ellipse(0, 0, 70 * pulse, 40 * pulse, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, 105 * pulse, 54 * pulse, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Rotating Celestial Golden Ring
+  // (3) 회전하는 외곽 팔괘/금강 천공 법륜 (Outer Rotating 8-Point Golden Seal)
+  ctx.save();
+  ctx.rotate(now * 0.6);
   ctx.strokeStyle = '#fbbf24';
-  ctx.lineWidth = 3;
   ctx.shadowColor = '#f59e0b';
-  ctx.shadowBlur = 16;
+  ctx.shadowBlur = 18;
+  ctx.lineWidth = 3.2;
   ctx.beginPath();
-  ctx.ellipse(0, 0, 48 * pulse, 26 * pulse, now * 0.8, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, 68 * pulse, 36 * pulse, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Counter-rotating Cyan Ring
+  // 8방향 룬 부적 표식 (8 Celestial Runes)
+  for (let r = 0; r < 8; r++) {
+    const rAng = (r * Math.PI) / 4;
+    const rx = Math.cos(rAng) * (68 * pulse);
+    const ry = Math.sin(rAng) * (36 * pulse);
+    ctx.fillStyle = (r % 2 === 0) ? '#ffffff' : '#fbbf24';
+    ctx.fillRect(rx - 2.5, ry - 2.5, 5, 5);
+  }
+  ctx.restore();
+
+  // (4) 역회전하는 내곽 청록 영기 마법진 (Counter-rotating Inner Cyan Ring)
+  ctx.save();
+  ctx.rotate(-now * 1.3);
   ctx.strokeStyle = '#38bdf8';
-  ctx.lineWidth = 2;
+  ctx.shadowColor = '#0284c7';
+  ctx.shadowBlur = 14;
+  ctx.lineWidth = 2.4;
+  ctx.setLineDash([8, 6]);
   ctx.beginPath();
-  ctx.ellipse(0, 0, 35 * pulse, 19 * pulse, -now * 1.2, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, 48 * pulse, 25 * pulse, 0, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
 
-  // Upward Light Beam / Portal Core
-  const beamGrad = ctx.createLinearGradient(0, 20, 0, -90);
-  beamGrad.addColorStop(0, 'rgba(251, 191, 36, 0.85)');
-  beamGrad.addColorStop(0.65, 'rgba(56, 189, 248, 0.45)');
-  beamGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-  ctx.fillStyle = beamGrad;
+  // (5) 차원 심연 홀 & 4줄기 빨려 들어가는 나선 기류 (Suction Vortex Spiral Arms)
+  ctx.fillStyle = '#090514'; // 암흑 심연
   ctx.beginPath();
-  ctx.moveTo(-20, 0);
-  ctx.lineTo(-9, -90);
-  ctx.lineTo(9, -90);
-  ctx.lineTo(20, 0);
+  ctx.ellipse(0, 0, 28, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.rotate(now * 2.2);
+  ctx.strokeStyle = 'rgba(254, 240, 138, 0.85)';
+  ctx.lineWidth = 2.2;
+  for (let a = 0; a < 4; a++) {
+    const aAng = (a * Math.PI) / 2;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(aAng) * 44, Math.sin(aAng) * 23);
+    ctx.quadraticCurveTo(
+      Math.cos(aAng + 0.5) * 22, Math.sin(aAng + 0.5) * 11,
+      Math.cos(aAng + 1.2) * 6, Math.sin(aAng + 1.2) * 3
+    );
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // --- 2. 260px 높이로 하늘 높이 솟구치는 거대한 천공 빛기둥 (Towering Skyward Light Pillar) ---
+  const beamTop = -250;
+  // (1) 외곽 에테르 광염 원추 (Outer Wide Ethereal Shroud)
+  const beamAura = ctx.createLinearGradient(0, 10, 0, beamTop);
+  beamAura.addColorStop(0, 'rgba(251, 191, 36, 0.7)');
+  beamAura.addColorStop(0.35, 'rgba(56, 189, 248, 0.5)');
+  beamAura.addColorStop(0.75, 'rgba(147, 51, 234, 0.25)');
+  beamAura.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = beamAura;
+  ctx.beginPath();
+  ctx.moveTo(-42 * pulse, 0);
+  ctx.lineTo(-24, beamTop);
+  ctx.lineTo(24, beamTop);
+  ctx.lineTo(42 * pulse, 0);
   ctx.closePath();
   ctx.fill();
 
-  // Floating text banner above portal
-  ctx.font = 'bold 13px system-ui, sans-serif';
+  // (2) 고밀도 에너지 빛기둥 (Inner High-Energy Column)
+  const coreBeam = ctx.createLinearGradient(0, 5, 0, beamTop);
+  coreBeam.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+  coreBeam.addColorStop(0.25, 'rgba(254, 240, 138, 0.85)');
+  coreBeam.addColorStop(0.65, 'rgba(56, 189, 248, 0.6)');
+  coreBeam.addColorStop(1, 'rgba(56, 189, 248, 0)');
+  ctx.fillStyle = coreBeam;
+  ctx.beginPath();
+  ctx.moveTo(-18 * pulse, 0);
+  ctx.lineTo(-10, beamTop);
+  ctx.lineTo(10, beamTop);
+  ctx.lineTo(18 * pulse, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // (3) 중심 백열 레이저 심핵 (White-Hot Laser Center Core)
+  ctx.strokeStyle = '#ffffff';
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 20;
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(0, 2);
+  ctx.lineTo(0, beamTop);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // --- 3. 빛기둥을 타고 하늘로 승천하는 파동 광환들 (Ascending Light Rings - teleporter-pad 기법) ---
+  for (let ring = 0; ring < 3; ring++) {
+    const ringPhase = ((state.gameTime * 0.7 + ring * 0.33) % 1.0);
+    const ringY = -ringPhase * 210;
+    const ringScale = 1.0 - ringPhase * 0.35;
+    const ringAlpha = Math.sin(ringPhase * Math.PI) * 0.85;
+
+    ctx.strokeStyle = `rgba(254, 240, 138, ${ringAlpha})`;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.ellipse(0, ringY, 26 * ringScale, 10 * ringScale, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // --- 4. 나선형으로 부유하는 차원 영기 입자들 (Spiraling Luminous Motes) ---
+  for (let m = 0; m < 14; m++) {
+    const mPhase = (state.gameTime * 0.8 + m * 0.22) % 1.0;
+    const mAngle = m * 1.35 + state.gameTime * 2.5;
+    const mDist = (1 - mPhase * 0.7) * 36;
+    const mx = Math.cos(mAngle) * mDist;
+    const my = -mPhase * 180 + Math.sin(mAngle) * (mDist * 0.45);
+    const mAlpha = Math.sin(mPhase * Math.PI) * 0.9;
+
+    ctx.fillStyle = (m % 2 === 0) ? `rgba(255, 255, 255, ${mAlpha})` : `rgba(251, 191, 36, ${mAlpha})`;
+    ctx.fillRect(mx - 1.5, my - 1.5, 3, 3);
+  }
+
+  // --- 5. 머리 위 대형 랜드마크 배너 & 애니메이션 화살표 (Floating Landmark Badge & Bouncing Arrow) ---
+  const badgeY = -180;
+  const arrowBob = Math.sin(state.gameTime * 6) * 8;
+
+  // 아래를 가리키는 대형 황금 애니메이션 화살표 (Bouncing Pointer Arrow)
+  ctx.fillStyle = '#fbbf24';
+  ctx.shadowColor = '#d97706';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.moveTo(0, badgeY + 34 + arrowBob);
+  ctx.lineTo(-12, badgeY + 16 + arrowBob);
+  ctx.lineTo(12, badgeY + 16 + arrowBob);
+  ctx.closePath();
+  ctx.fill();
+
+  // 대형 황금 칭호 배너 박스
+  const bw = 240;
+  const bh = 34;
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = '#f59e0b';
+  ctx.shadowBlur = 16;
+  ctx.beginPath();
+  ctx.roundRect(-bw / 2, badgeY - bh / 2, bw, bh, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  ctx.font = 'bold 14px sans-serif';
   ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
   ctx.fillStyle = '#fef08a';
-  ctx.shadowColor = '#000';
-  ctx.shadowBlur = 5;
-  ctx.fillText('🌀 다음 스테이지 진격 (포탈 진입)', 0, -100);
+  ctx.fillText('🌀【 다음 스테이지 진격 관문 】', 0, badgeY - 2);
+
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillText('▲ 포탈 중심으로 이동하여 다음 관문 돌파 ▲', 0, badgeY + 28);
 
   ctx.restore();
 }
@@ -10229,7 +10372,7 @@ function renderOffscreenGuides() {
 
   // 2. 포탈, 영약, 비급함, 기연 신단, 드롭 장비
   if (state.victoryPortal && state.victoryPortal.active) {
-    targets.push({ x: state.victoryPortal.x, y: state.victoryPortal.y, tag: '🌀 진격 관문', color: '#f59e0b', isPriority: true });
+    targets.push({ x: state.victoryPortal.x, y: state.victoryPortal.y, tag: '🌀 [다음 관문] 진격 포탈', color: '#fbbf24', isPriority: true, isPortal: true });
   }
   herbs.forEach(h => targets.push({ x: h.x, y: h.y, tag: '🌿 영약', color: '#34d399' }));
   chests.forEach(c => targets.push({ x: c.x, y: c.y, tag: '📦 비급함', color: '#fbbf24' }));
@@ -10253,24 +10396,24 @@ function renderOffscreenGuides() {
       ctx.translate(state.camera.x + edgeX, state.camera.y + edgeY);
 
       if (t.isPriority) {
-        // 보스/중간보스 전용 대형 펄싱 나침반 배너
-        const pulse = 1 + Math.sin(state.gameTime * 7) * 0.08;
+        // 보스/중간보스/포탈 전용 대형 펄싱 나침반 배너
+        const pulse = 1 + Math.sin(state.gameTime * (t.isPortal ? 9 : 7)) * (t.isPortal ? 0.12 : 0.08);
         ctx.scale(pulse, pulse);
 
-        const bw = 150;
-        const bh = 28;
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        const bw = t.isPortal ? 188 : 150;
+        const bh = t.isPortal ? 32 : 28;
+        ctx.fillStyle = t.isPortal ? 'rgba(15, 23, 42, 0.98)' : 'rgba(15, 23, 42, 0.95)';
         ctx.strokeStyle = t.color;
-        ctx.lineWidth = 2.2;
-        ctx.shadowColor = t.color;
-        ctx.shadowBlur = 12;
+        ctx.lineWidth = t.isPortal ? 2.8 : 2.2;
+        ctx.shadowColor = t.isPortal ? '#38bdf8' : t.color;
+        ctx.shadowBlur = t.isPortal ? 18 : 12;
         ctx.beginPath();
         ctx.roundRect(-bw / 2, -bh / 2, bw, bh, 14);
         ctx.fill();
         ctx.stroke();
 
         ctx.shadowBlur = 0;
-        ctx.font = 'bold 11px sans-serif';
+        ctx.font = t.isPortal ? 'bold 12px sans-serif' : 'bold 11px sans-serif';
         ctx.fillStyle = t.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
