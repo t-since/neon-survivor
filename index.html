@@ -2583,8 +2583,8 @@ const SPRITE_URLS = {
   jiangshi_leap_2: 'assets/jiangshi_leap_2.png',
   jiangshi_leap_3: 'assets/jiangshi_leap_3.png',
   ground: 'assets/ground_tile.jpg',
-  ground_bamboo: 'assets/ground_forest_organic.jpg',
-  ground_forest_organic: 'assets/ground_forest_organic.jpg',
+  ground_bamboo: 'assets/ground_stone_iso.jpg',
+  ground_forest_organic: 'assets/ground_stone_iso.jpg',
   ground_stone_iso: 'assets/ground_stone_iso.jpg',
   ground_cavern: 'assets/ground_cavern.jpg',
   ground_sanctum: 'assets/ground_sanctum.jpg',
@@ -7778,11 +7778,8 @@ function renderGround() {
   const zoneIdx = Math.max(0, Math.min(3, (state.currentZone || 1) - 1));
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][zoneIdx]) ? ZONE_CONFIGS[secIdx][zoneIdx] : ZONE_CONFIGS[0][0];
 
-  // 심리스 베이스 타일 선택 (경계선 없는 고품질 타일)
+  // 심리스 베이스 타일 선택 (어색한 배경 사진 타일링을 제거하고 항상 고품질 무협 암석 석판 바닥 유지)
   let groundImg = SPRITES['ground_seamless_stone'] || SPRITES.ground_stone_iso || SPRITES.ground;
-  if (zoneCfg.spriteKey === 'ground_bamboo') groundImg = SPRITES['ground_bamboo'] || groundImg;
-  else if (zoneCfg.spriteKey === 'ground_cavern') groundImg = SPRITES['ground_cavern'] || groundImg;
-  else if (zoneCfg.spriteKey === 'ground_sanctum') groundImg = SPRITES['ground_sanctum_base'] || groundImg;
 
   const tileSize = 512;
   const startX = Math.floor((state.camera.x - gameWidth / 2) / tileSize) * tileSize;
