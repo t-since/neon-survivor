@@ -1039,6 +1039,41 @@
       background: rgba(30, 41, 59, 0.98);
       transform: translateY(-4px) scale(1.02);
     }
+    .hero-card.disabled {
+      cursor: not-allowed !important;
+      filter: grayscale(100%) contrast(75%) brightness(0.6);
+      opacity: 0.55;
+      border-color: #1e293b !important;
+      background: rgba(15, 23, 42, 0.75) !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+    .hero-card.disabled:hover {
+      transform: none !important;
+      border-color: #1e293b !important;
+      box-shadow: none !important;
+      background: rgba(15, 23, 42, 0.75) !important;
+    }
+    .hero-card.disabled .hero-portrait-img {
+      transform: none !important;
+    }
+    .hero-card-lock-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid #475569;
+      border-radius: 6px;
+      padding: 4px 10px;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.85);
+      pointer-events: none;
+      z-index: 5;
+    }
     .hero-portrait-frame {
       width: 76px;
       height: 76px;
@@ -1677,7 +1712,7 @@
     <!-- Top Bar with Back Button -->
     <div class="start-top-bar">
       <button class="nav-back-btn" onclick="navScreen('title')">◀ 메인 대문으로</button>
-      <div class="screen-step-title">✦ STEP 1 : 출전 협객 선택 <span class="step-sub">(단축키: 1, 2, 3)</span></div>
+      <div class="screen-step-title">✦ STEP 1 : 출전 협객 선택 <span class="step-sub">(기본 출전: 서진)</span></div>
       <div class="start-top-actions">
         <button class="start-icon-btn" onclick="toggleCheatModal();">⚡ 치트</button>
       </div>
@@ -1696,24 +1731,26 @@
           <div class="hero-card-spec">검술 & 치명타 특화</div>
         </div>
 
-        <div class="hero-card" id="card_hyunwoon" onclick="selectHero('hyunwoon')">
+        <div class="hero-card disabled" id="card_hyunwoon" title="차후 신규 캐릭터 업데이트 예정 (준비 중)">
           <div class="hero-portrait-frame">
             <img src="assets/portrait_hyunwoon.jpg" class="hero-portrait-img" alt="현운">
             <span class="hero-role-pill role-tank">권사</span>
           </div>
           <div class="hero-card-name">현운 <span class="hanja-name">(玄雲)</span></div>
           <div class="hero-card-sect">무극문 속가제자</div>
-          <div class="hero-card-spec" style="color: #fbbf24; background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.3);">생존 & 풍압 넉백</div>
+          <div class="hero-card-spec" style="color: #94a3b8; background: rgba(51,65,85,0.4); border-color: rgba(71,85,105,0.4);">🔒 준비 중 (추후 공개)</div>
+          <div class="hero-card-lock-badge">🔒 준비 중</div>
         </div>
 
-        <div class="hero-card" id="card_tangsoyeon" onclick="selectHero('tangsoyeon')">
+        <div class="hero-card disabled" id="card_tangsoyeon" title="차후 신규 캐릭터 업데이트 예정 (준비 중)">
           <div class="hero-portrait-frame">
             <img src="assets/portrait_tangsoyeon.jpg" class="hero-portrait-img" alt="당소연">
             <span class="hero-role-pill role-rogue">여협</span>
           </div>
           <div class="hero-card-name">당소연 <span class="hanja-name">(唐昭娟)</span></div>
           <div class="hero-card-sect">서천 당문 소가주</div>
-          <div class="hero-card-spec" style="color: #34d399; background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.3);">원거리 독암기 & 속사</div>
+          <div class="hero-card-spec" style="color: #94a3b8; background: rgba(51,65,85,0.4); border-color: rgba(71,85,105,0.4);">🔒 준비 중 (추후 공개)</div>
+          <div class="hero-card-lock-badge">🔒 준비 중</div>
         </div>
       </div>
 
@@ -3131,13 +3168,17 @@ function navScreen(screenName) {
 }
 
 function selectHero(heroId) {
-  currentSelectedHero = heroId;
-  const def = HERO_DEFS[heroId];
+  if (heroId !== 'seojin') {
+    // 배포판에서는 서진 외 2명 선택 불가 (추후 신규 캐릭터 공개 예정)
+    return;
+  }
+  currentSelectedHero = 'seojin';
+  const def = HERO_DEFS.seojin;
   if (!def) return;
 
   ['seojin', 'hyunwoon', 'tangsoyeon'].forEach(id => {
     const el = document.getElementById(`card_${id}`);
-    if (el) el.classList.toggle('selected', id === heroId);
+    if (el) el.classList.toggle('selected', id === 'seojin');
   });
 
   const nameEl = document.getElementById('heroDetailName');
@@ -3683,8 +3724,10 @@ window.addEventListener('keydown', (e) => {
         return;
       }
       if (e.key === '1') { selectHero('seojin'); return; }
-      if (e.key === '2') { selectHero('hyunwoon'); return; }
-      if (e.key === '3') { selectHero('tangsoyeon'); return; }
+      if (e.key === '2' || e.key === '3') {
+        // 배포판 준비 중 협객
+        return;
+      }
     } else if (currentGatewayScreen === 'stage') {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
