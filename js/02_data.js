@@ -95,6 +95,13 @@ const SPRITE_URLS = {
   ground_new_fortress: 'assets/ground/fortress.jpg',
   ground_new_cavern: 'assets/ground/cavern.jpg'
 };
+// 새 몬스터 그림 (제미나이 2x2 시트에서 자름, assets/mobs). 새로 만든 몬스터는 이 목록에 이름만 추가
+const MOB_ART_NAMES = ['mob_assassin'];
+for (const n of MOB_ART_NAMES) {
+  for (const kind of ['walk', 'attack']) {
+    for (let i = 0; i < 4; i++) SPRITE_URLS[`${n}_${kind}_${i}`] = `assets/mobs/${n}_${kind}_${i}.png`;
+  }
+}
 const SPRITES = {};
 let loadedImagesCount = 0;
 const totalImages = Object.keys(SPRITE_URLS).length;

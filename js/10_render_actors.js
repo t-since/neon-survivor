@@ -131,6 +131,36 @@ function renderPlayer() {
   ctx.restore();
 }
 
+// 몬스터 종류별 새 그림 (key: assets/mobs 이름, h: 게임 속 키(월드 단위), filter: 색 바꾸기)
+const ENEMY_ART = {
+  assassin: { key: 'mob_assassin', h: 140 },
+  poison_assassin: { key: 'mob_assassin', h: 140, filter: 'hue-rotate(110deg) saturate(1.6)' }
+};
+function enemyHasArt(e) {
+  const art = ENEMY_ART[e.type];
+  return !!(art && !e.isBoss && !e.isMiniBoss && SPRITES[art.key + '_walk_0']);
+}
+// 새 그림 몬스터 그리기: 공격 중이면 공격 4장, 걸으면 걷기 4장, 서 있으면 걷기 2번(다리 모음)
+// 프레임 크기 440x340, 발 기준점 (220,320), 인물 키 300px
+function drawEnemyArt(e, art, facing, isMoving, runTimer) {
+  ctx.scale(facing, 1);
+  let key;
+  if (e.animAtk > 0 && SPRITES[art.key + '_attack_0']) {
+    const prog = 1 - e.animAtk / (e.animAtkMax || 0.5);
+    key = art.key + '_attack_' + Math.max(0, Math.min(3, Math.floor(prog * 4)));
+  } else if (isMoving) {
+    key = art.key + '_walk_' + (Math.floor(runTimer * 0.9 + (e.seed || 0)) % 4);
+  } else {
+    key = art.key + '_walk_1';
+  }
+  const img = SPRITES[key] || SPRITES[art.key + '_walk_0'];
+  const k = art.h / 300;
+  const hop = e.type === 'jiangshi' ? -(e.hopHeight || 0) : 0;
+  if (art.filter && !(e.hitCooldown > 0.06)) ctx.filter = art.filter;
+  ctx.drawImage(img, -220 * k, -320 * k + 4 + hop, 440 * k, 340 * k);
+  ctx.filter = 'none';
+}
+
 function renderEnemies() {
   const camX = state.camera.x;
   const camY = state.camera.y;
@@ -448,7 +478,9 @@ function renderEnemies() {
         butcher: [0.04, 0.05, 2], barbarian: [0.06, 0.06, 2.5], necromancer: [0.02, 0.02, 1.5], sorceress: [0.02, 0.02, 1.5]
       };
       const [leanAmt, wobble, hop] = MOTION[e.type] || [0.07, 0.03, 3];
-      if (isMoving) {
+      if (isMoving && enemyHasArt(e)) {
+        ctx.rotate(facing * leanAmt * 0.3);
+      } else if (isMoving) {
         const ph = runTimer * 1.35 + e.seed;
         ctx.translate(0, -Math.abs(Math.sin(ph)) * hop);
         ctx.rotate(facing * leanAmt + Math.sin(ph) * wobble);
@@ -586,6 +618,8 @@ function renderEnemies() {
       ctx.lineWidth = 1.2;
       ctx.strokeRect(-barW / 2, -mh + 8, barW, barH);
 
+    } else if (enemyHasArt(e)) {
+      drawEnemyArt(e, ENEMY_ART[e.type], facing, isMoving, runTimer);
     } else if (e.type === 'jiangshi') {
       ctx.scale(facing, 1);
       // 60FPS Hit Flash: Handled via lightweight GPU blend

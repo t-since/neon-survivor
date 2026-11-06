@@ -871,6 +871,18 @@ function updateGame(dt) {
       playerTakeDamage(e.damage * dt);
     }
 
+    // 공격 동작 신호 (새 몬스터 그림의 공격 4장을 재생하는 시간)
+    if (e.animAtk > 0) e.animAtk -= dt;
+    if (!(e.animAtk > 0)) {
+      if (dist < player.radius + e.radius + 30) { e.animAtk = e.animAtkMax = 0.5; }       // 붙어서 휘두름
+      else if (e.isAttacking) { e.animAtk = e.animAtkMax = 0.5; }
+    }
+    if (e.shootTimer !== undefined) {
+      const prev = (e._prevShoot === undefined) ? 9 : e._prevShoot;
+      if (prev > 0.45 && e.shootTimer <= 0.45 && e.shootTimer > 0) { e.animAtk = e.animAtkMax = 0.6; } // 쏘기 직전부터
+      e._prevShoot = e.shootTimer;
+    }
+
     if (e.hitCooldown > 0) {
       e.hitCooldown -= dt;
     }
