@@ -515,7 +515,7 @@ function addExp(amount) {
   while (player.exp >= player.nextExp) {
     player.exp -= player.nextExp;
     player.level++;
-    player.nextExp = Math.round(player.nextExp * 1.35 + 8);
+    player.nextExp = Math.round(player.nextExp * 1.32 + 20); // 예전: ×1.35 + 8
     pendingLevelUps++;
   }
 
@@ -795,22 +795,11 @@ function openTreasureModal(isBossChest = false) {
       upgradedSkillName = ` & [${SKILL_DEFS[chosen].name}] 1단계 즉시 연마!`;
     }
     player.hp = Math.min(player.maxHp, player.hp + 40);
+    state.isPaused = false; // 일반 상자는 멈추지 않음
+    showMiniToast('📦', '비급함', (upgradedSkillName ? upgradedSkillName.replace(' & ', '').replace(' 1단계 즉시 연마!', ' +1') + ' · ' : '') + '혈기 +40 · 진기 +80', '#fbbf24');
+    updateHud();
     addExp(80);
-    sub.innerText = "상자 안에서 전설의 영석과 비전 비급을 발견했습니다!";
-    content.innerHTML = `
-      <div class="evo-showcase-card" style="border-color: #38bdf8;">
-        <div style="font-size: 38px;">💎</div>
-        <div style="flex: 1;">
-          <div class="evo-badge-pill" style="background: #0284c7; border-color: #7dd3fc;">비급 습득 완료</div>
-          <div style="font-size: 16px; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">
-            대량의 진기 영석 (+80 EXP) & 혈기 40 회복
-          </div>
-          <div style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">
-            ${upgradedSkillName ? upgradedSkillName : '모든 무공이 이미 지고한 경지에 도달하였습니다!'}
-          </div>
-        </div>
-      </div>
-    `;
+    return;
   }
 
   document.getElementById('treasureModal').style.display = 'flex';

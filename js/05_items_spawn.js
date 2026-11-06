@@ -125,27 +125,32 @@ function applyEquipmentStats() {
   updateHud();
 }
 
-function triggerEquipToast(item) {
+// 화면 오른쪽 위 짧은 알림 (게임을 멈추지 않음)
+function showMiniToast(icon, title, desc, color = '#fbbf24') {
   const container = document.getElementById('equipToastContainer');
   if (!container) return;
   const toast = document.createElement('div');
   toast.className = 'equip-toast';
-  toast.style.borderColor = item.color;
+  toast.style.borderColor = color;
   toast.innerHTML = `
-    <div class="toast-icon">${item.icon}</div>
+    <div class="toast-icon">${icon}</div>
     <div class="toast-info">
-      <div class="toast-title" style="color: ${item.color};">✨ [${item.tier.toUpperCase()}] ${item.name} 장착!</div>
-      <div class="toast-desc">${item.desc}</div>
-      <div class="toast-look">🎨 [룩변] ${item.lookDesc}</div>
+      <div class="toast-title" style="color: ${color};">${title}</div>
+      <div class="toast-desc">${desc}</div>
     </div>
   `;
   container.appendChild(toast);
+  while (container.children.length > 3) container.firstChild.remove(); // 알림은 최대 3개
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateX(40px)';
     toast.style.transition = 'all 0.4s ease';
     setTimeout(() => toast.remove(), 400);
-  }, 4500);
+  }, 2600);
+}
+
+function triggerEquipToast(item) {
+  showMiniToast(item.icon, item.name + ' 장착', item.desc, item.color);
 }
 
 function updateHudDebuffs() {

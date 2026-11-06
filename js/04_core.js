@@ -117,7 +117,7 @@ const player = {
   hp: 100,
   level: 1,
   exp: 0,
-  nextExp: 10,
+  nextExp: 50,
   baseSpeed: 195,
   speed: 195,
   speedBuffTimer: 0,
