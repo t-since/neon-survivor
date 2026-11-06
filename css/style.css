@@ -1706,3 +1706,19 @@
     @media (max-width: 900px), (max-height: 520px) {
       .bar-label { white-space: nowrap; width: auto; min-width: 30px; }
     }
+    /* 안내 배너: 작게, 한 줄, 정보창 아래 (화면 가운데를 가리지 않게) */
+    .phase-banner {
+      top: 92px;
+      padding: 6px 40px;
+      max-width: calc(100vw - 32px);
+      white-space: nowrap;
+      backdrop-filter: none;
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.5);
+    }
+    .phase-banner-title { font-size: 17px; letter-spacing: 1px; }
+    .phase-banner-sub { font-size: 12px; margin-top: 2px; }
+    .phase-banner.boss-alert { animation: none; }
+    @media (max-width: 900px), (max-height: 520px) {
+      .phase-banner { top: 70px; padding: 4px 24px; }
+      .phase-banner-title { font-size: 14px; }
+    }

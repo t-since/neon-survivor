@@ -201,14 +201,14 @@ function updateEnemySpawning(dt) {
   // Update HUD sector & zone tag
   const hudSecTag = document.getElementById('hudSectorTag');
   if (hudSecTag) {
-    hudSecTag.innerText = `제${currentSelectedSector}스테이지: [관문 ${curZone}/4] ${zoneCfg.name.split(':')[1] || zoneCfg.name}`;
+    hudSecTag.innerText = `${currentSelectedSector}-${curZone} ${shortPlaceName(zoneCfg.name)}`;
   }
 
   // 2. Intermediate Mini-Boss in each zone (at half zone duration)
   if (curZone <= 3 && state.zoneTime >= (zoneDuration * 0.5) && !state.zoneMiniBossSpawned[curZone - 1]) {
     state.zoneMiniBossSpawned[curZone - 1] = true;
     const mbName = zoneCfg.miniBoss || '사파 중간보스';
-    showPhaseBanner(`⚠️ 【 중간보스 출현: ${mbName} 】 ⚠️`, `경고! 강력한 무공을 지닌 중간보스가 습격해왔습니다! 유도 화살표를 추격하십시오!`, 'boss');
+    showPhaseBanner(`⚠️ 중간보스 · ${mbName}`, '', 'boss');
     spawnMiniBoss(mbName);
     spawnEnemySwarm(14);
   }
@@ -217,7 +217,7 @@ function updateEnemySpawning(dt) {
   if (curZone === 4 && !state.phase4Triggered) {
     state.phase4Triggered = true;
     const bName = zoneCfg.boss || sectorDef.bossName || '혈교 마두';
-    showPhaseBanner(`☠️ 【 구역 군주 강림: ${bName} 】 ☠️`, `천마군림보와 삼천혈해를 부르는 마교 최강의 절대자 강림! 결전 개시!`, 'boss');
+    showPhaseBanner(`☠️ 구역 군주 · ${bName}`, '', 'boss');
     spawnSectorBoss(bName);
     // 게임 분위기를 해치는 선형식 3D 와이어프레임 연출 제거
   }
@@ -259,7 +259,7 @@ function transitionToNextZone() {
   const nextCfg = ZONE_CONFIGS[secIdx][state.currentZone - 1];
 
   // Grand Stage Entry Announcement Banner
-  showPhaseBanner(`[ ${nextCfg.hanjaTitle || nextCfg.name} ]`, `제${state.currentZone}관문 : ${nextCfg.name} 진입 - ${nextCfg.desc}`, 'stage');
+  showPhaseBanner(`제${state.currentZone}관문 · ${shortPlaceName(nextCfg.name)}`, '', 'stage');
   sound.playLevelUp();
 
   for (let i = enemies.length - 1; i >= 0; i--) {

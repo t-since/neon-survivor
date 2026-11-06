@@ -95,8 +95,8 @@ function togglePixelArtMode() {
     btn.style.borderColor = state.isPixelArtMode ? '#0284c7' : '#64748b';
   }
   showPhaseBanner(
-    state.isPixelArtMode ? '👾 레트로 16비트 픽셀 모드 활성화!' : '🖼️ 고화질 HD 모드 전환!',
-    state.isPixelArtMode ? '캐릭터, 몬스터, 배경이 일체감 있는 고전 명작 도트로 렌더링됩니다.' : '고해상도 원본 그래픽으로 렌더링됩니다.'
+    state.isPixelArtMode ? '👾 픽셀 모드' : '🖼️ 고화질 모드',
+    ''
   );
 }
 
@@ -488,6 +488,11 @@ function createInkDashEffect() {
 
 // --- Cinematic Phase, Stage & Boss Banner System ---
 let phaseBannerTimeout = null;
+// 이름에서 '제N구역:' 머리말과 (한자) 꼬리를 떼어 짧게
+function shortPlaceName(name) {
+  return String(name || '').replace(/^제\s*\d+\s*(구역|관문)\s*:\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
+// 안내 배너: 한 줄 짧은 제목 + (있으면) 아주 짧은 부제, 2.4초만 표시
 function showPhaseBanner(title, sub, type = 'normal') {
   const el = document.getElementById('phaseBanner');
   if (!el) return;
@@ -499,12 +504,14 @@ function showPhaseBanner(title, sub, type = 'normal') {
     triggerScreenFlash('rgba(185, 28, 28, 0.22)');
   }
   document.getElementById('phaseBannerTitle').innerText = title;
-  document.getElementById('phaseBannerSub').innerText = sub;
+  const subEl = document.getElementById('phaseBannerSub');
+  subEl.innerText = sub || '';
+  subEl.style.display = sub ? '' : 'none';
   el.classList.add('visible');
   if (phaseBannerTimeout) clearTimeout(phaseBannerTimeout);
   phaseBannerTimeout = setTimeout(() => {
     el.classList.remove('visible', 'stage-entry', 'boss-alert');
-  }, type === 'boss' ? 5200 : 4200);
+  }, type === 'boss' ? 3000 : 2400);
   sound.playLevelUp();
 }
 

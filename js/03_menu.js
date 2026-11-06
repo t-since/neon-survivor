@@ -383,8 +383,8 @@ function confirmStartGame() {
   initShrines();
   initObstacles();
   showPhaseBanner(
-    `【 제 ${currentSelectedSector} 구역: ${SECTOR_DEFS[currentSelectedSector-1]?.name || '혈투의 장'} 】`,
-    '신단에서 기연을 얻고, 무협 장비를 파밍하여 군주를 토벌하십시오!',
+    `제${currentSelectedSector}구역 · ${shortPlaceName(SECTOR_DEFS[currentSelectedSector-1]?.name) || '혈투의 장'}`,
+    '',
     'stage'
   );
 
@@ -463,8 +463,8 @@ function continueToNextSector() {
 
   const sectorInfo = SECTOR_DEFS[currentSelectedSector - 1];
   showPhaseBanner(
-    `【 제 ${currentSelectedSector} 구역: ${sectorInfo ? sectorInfo.name : '신비의 무림 관문'} 】`,
-    '이전 구역의 무공과 장비를 계승하여 새로운 사투에 돌입합니다!',
+    `제${currentSelectedSector}구역 · ${sectorInfo ? shortPlaceName(sectorInfo.name) : '신비의 무림 관문'}`,
+    '무공·장비 계승',
     'stage'
   );
 

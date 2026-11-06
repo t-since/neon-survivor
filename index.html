@@ -58,9 +58,6 @@
         <button class="start-game-btn" id="quickEnterBtn" onclick="sound.init(); quickEnter();">
           <span class="btn-sword-icon">⚔️</span> <span id="quickEnterLabel">강호 입장</span> <span class="btn-kbd-pill kbd-only">ENTER / SPACE</span>
         </button>
-        <div class="start-controls-hint kbd-only">
-          화면을 클릭하거나 <span>[ENTER]</span> / <span>[SPACE]</span> 키를 눌러 강호에 입장하십시오
-        </div>
       </div>
     </div>
   </div>
@@ -306,7 +303,7 @@
   <div class="modal-overlay" id="levelUpModal">
     <div class="modal-box">
       <div class="modal-title" id="levelUpModalTitle">경지 돌파 (境界突破)</div>
-      <div class="modal-subtitle" id="levelUpModalSubtitle">새로운 무공을 전수받거나 기존 무공을 연마하십시오.</div>
+      <div class="modal-subtitle" id="levelUpModalSubtitle" style="display:none"></div>
       <div class="card-list" id="cardList"></div>
       <button class="btn-action" id="fallbackLevelUpBtn" style="display: none; margin-top: 12px;">비무 속개 (재개)</button>
     </div>

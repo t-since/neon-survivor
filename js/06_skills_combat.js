@@ -470,7 +470,7 @@ function onEnemyKilled(target) {
     });
     spawnItemDrop(target.x + 35, target.y, 'legendary');
     spawnVictoryPortal(target.x, target.y);
-    showPhaseBanner('🏆 구역 군주 토벌 완승! 🏆', '전장의 마기가 정화되었습니다! 전설 장비와 보물상자를 획득하고 관문으로 진격하십시오!', 'stage');
+    showPhaseBanner('🏆 군주 토벌!', '포탈로 다음 관문 진격', 'stage');
     sound.playLevelUp();
   }
 

@@ -149,7 +149,7 @@ document.getElementById('btnNextZone').onclick = () => {
 };
 document.getElementById('btnSpawnPortal').onclick = () => {
   spawnVictoryPortal(player.x + 50, player.y);
-  showPhaseBanner('🌀 황금 진격 관문 소환', '포탈에 다가가면 다음 스테이지로 진격합니다!');
+  showPhaseBanner('🌀 포탈 열림', '');
   toggleCheatModal();
 };
 document.getElementById('btnSpawnBoss').onclick = () => {
