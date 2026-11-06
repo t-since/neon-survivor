@@ -1106,6 +1106,22 @@ function renderVictoryPortal() {
   if (!state.victoryPortal || !state.victoryPortal.active) return;
   const p = state.victoryPortal;
   const now = state.gameTime * 2.8;
+  if (SPRITES.fx_portal && SPRITES.fx_portal.width) {
+    const t = state.gameTime;
+    const pulse = 1 + Math.sin(t * 3) * 0.05;
+    // 바닥 빛 (납작하게)
+    drawFxImage('fx_portal', p.x, p.y + 6, 230 * pulse, 0.45, -t * 1.2, 0.35);
+    // 서 있는 소용돌이: 큰 것은 천천히, 안쪽 것은 반대로 빠르게
+    drawFxImage('fx_portal', p.x, p.y - 95, 190 * pulse, 0.8, t * 1.6);
+    drawFxImage('fx_portal', p.x, p.y - 95, 110, 0.3, -t * 2.6);
+    // 주변 빛 입자가 가운데로 빨려 들어감
+    if (Math.random() < 0.5) {
+      const a = Math.random() * Math.PI * 2, r = 120 + Math.random() * 40;
+      particles.push({ x: p.x + Math.cos(a) * r, y: p.y - 95 + Math.sin(a) * r, vx: -Math.cos(a) * r * 1.6, vy: -Math.sin(a) * r * 1.6,
+        color: Math.random() < 0.5 ? '#fde68a' : '#bae6fd', radius: 2 + Math.random() * 2, life: 0.55, maxLife: 0.55 });
+    }
+    return;
+  }
 
   ctx.save();
   ctx.translate(p.x, p.y);
@@ -1385,6 +1401,13 @@ function renderClickMarkers() {
 
 function renderPoisonZones() {
   poisonZones.forEach(pz => {
+    if (SPRITES.fx_poison && SPRITES.fx_poison.width) {
+      const fadeIn = Math.min(1, (pz.maxLife - pz.life) / 0.3);
+      const fadeOut = Math.min(1, pz.life / (pz.maxLife * 0.25));
+      const wob = 1 + Math.sin(state.gameTime * 3 + pz.x) * 0.04;
+      drawFxImage('fx_poison', pz.x, pz.y, pz.radius * 2.5 * wob, 0.85 * Math.min(fadeIn, fadeOut), 0, 0.85);
+      return;
+    }
     ctx.save();
     ctx.translate(pz.x, pz.y);
     const alpha = Math.min(1, pz.life / (pz.maxLife * 0.25)) * 0.78;

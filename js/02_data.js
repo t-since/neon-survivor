@@ -90,6 +90,12 @@ const SPRITE_URLS = {
   seojin_attack_2: 'assets/hero/seojin_attack_2.png',
   seojin_attack_3: 'assets/hero/seojin_attack_3.png',
 
+  // 이펙트 (제미나이, 검은 배경 → 'lighter' 합성으로 빛만 보임)
+  fx_portal: 'assets/fx/fx_portal.jpg',
+  fx_wind: 'assets/fx/fx_wind.jpg',
+  fx_thunder: 'assets/fx/fx_thunder.jpg',
+  fx_poison: 'assets/fx/fx_poison.jpg',
+
   // 관문 테마별 바닥 (이음새 없이 이어지도록 처리됨)
   ground_new_bamboo: 'assets/ground/bamboo.jpg',
   ground_new_fortress: 'assets/ground/fortress.jpg',

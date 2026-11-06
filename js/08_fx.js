@@ -246,7 +246,27 @@ function createShockwave(x, y, radius, color) {
   });
 }
 
+// 검은 배경 빛 이펙트 그림을 더하기 합성으로 그림 (검은색은 안 보이고 빛만 남음)
+// sy: 세로 눌림(바닥에 깔린 느낌), rot: 회전
+function drawFxImage(key, x, y, size, alpha = 1, rot = 0, sy = 1) {
+  const img = SPRITES[key];
+  if (!img || !img.width) return false;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  ctx.translate(x, y);
+  ctx.scale(1, sy);
+  if (rot) ctx.rotate(rot);
+  ctx.drawImage(img, -size / 2, -size / 2, size, size);
+  ctx.restore();
+  return true;
+}
+
 function createExplosion(x, y, radius) {
+  // 벽력탄 번개 폭발 그림 (0.45초 동안 커지며 사라짐)
+  if (SPRITES.fx_thunder && SPRITES.fx_thunder.width) {
+    particles.push({ fxKey: 'fx_thunder', x, y: y - 10, vx: 0, vy: 0, size: radius * 2.6, rot: Math.random() * Math.PI * 2, life: 0.45, maxLife: 0.45 });
+  }
   // pixelfx: 단순 폭죽이 아닌 묵직한 화약 뇌격 폭발 (Heavy Gunpowder Blast)
   PixelFX.spawnThunderBombExplosion(x, y, radius);
 }

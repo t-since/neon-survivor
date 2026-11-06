@@ -1219,6 +1219,14 @@ function renderProjectiles() {
       ctx.lineTo(-6, 3);
       ctx.closePath();
       ctx.fill();
+    } else if (p.type === 'palm_wave' && !p.isBuddhaPalm && SPRITES.fx_wind && SPRITES.fx_wind.width) {
+      // 바람 칼날 그림: 날아가는 방향으로 돌리고, 사라질 때 흐려짐 (예전: 회색 연기 반원)
+      const pAngle = Math.atan2(p.vy, p.vx);
+      const size = Math.max(150, (p.width || 200) * 1.1);
+      const lifeK = p.maxLife ? Math.min(1, p.life / (p.maxLife * 0.3)) : 1;
+      ctx.restore();
+      drawFxImage('fx_wind', p.x, p.y - 20, size, 0.95 * lifeK, pAngle);
+      ctx.save();
     } else if (p.type === 'palm_wave') {
       const pAngle = Math.atan2(p.vy, p.vx);
       ctx.rotate(pAngle);
@@ -1573,6 +1581,11 @@ function renderParticles() {
     // 60FPS Frustum Culling
     if (Math.abs(p.x - camX) > cullW || Math.abs(p.y - camY) > cullH) return;
 
+    if (p.fxKey) {
+      const t = 1 - p.life / p.maxLife;
+      drawFxImage(p.fxKey, p.x, p.y, p.size * (0.75 + t * 0.4), (1 - t) * 1.2, p.rot || 0);
+      return;
+    }
     ctx.save();
     if (p.isPixelCross) {
       // 십자 다이아몬드 코어 플레어 (pixelfx/impacts/hit-spark)
