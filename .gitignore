@@ -1,0 +1,4 @@
+*.zip
+*.ps1
+test_*.js
+assets_data.js
