@@ -398,184 +398,75 @@ function updateCorpses(dt) {
   }
 }
 
+// 적이 쓰러지는 모습: 그 적의 그림이 뒤로 넘어지며 어두워지고, 먹물처럼 흩어져 2초 안에 사라짐
+// (예전: 남색 덩어리·뼈 도형이 7.5초 동안 바닥에 남아 화면이 지저분했음)
+const CORPSE_SPRITE_BY_TYPE = {
+  skeleton: 'skeleton_run_0', archer: 'archer_shoot_0', jiangshi: 'jiangshi',
+  ghoul: 'ghoul_run_0', necromancer: 'necromancer', butcher: 'butcher_run_0',
+  barbarian: 'barbarian_run_0', sorceress: 'sorceress'
+};
+function corpseSpriteFor(c) {
+  if (c.isBoss) return SPRITES.boss_demon;
+  if (c.isMiniBoss) return SPRITES.miniboss_run_0 || SPRITES.assassin;
+  return SPRITES[CORPSE_SPRITE_BY_TYPE[c.type]] || SPRITES.assassin_run_0 || SPRITES.assassin;
+}
+
 function renderCorpses() {
   if (!corpses || corpses.length === 0) return;
   const camX = state.camera.x;
   const camY = state.camera.y;
-  const cullW = gameWidth / 2 + 90;
-  const cullH = gameHeight / 2 + 90;
+  const cullW = gameWidth / 2 + 120;
+  const cullH = gameHeight / 2 + 120;
 
   corpses.forEach(c => {
     if (Math.abs(c.x - camX) > cullW || Math.abs(c.y - camY) > cullH) return;
+    const img = corpseSpriteFor(c);
+    const t = 1 - c.life / c.maxLife;          // 0 → 1
+    const fall = Math.min(1, t / 0.22);         // 처음 0.4초 동안 넘어짐
+    const ease = 1 - Math.pow(1 - fall, 3);
+    const fade = t < 0.45 ? 1 : Math.max(0, 1 - (t - 0.45) / 0.55);
+
     ctx.save();
     ctx.translate(c.x, c.y);
-    ctx.scale(c.facing, 1);
-    ctx.rotate(c.rot);
+    // 바닥 그림자 (점점 옅어짐)
+    ctx.globalAlpha = 0.35 * fade;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 34 * c.scale, 12 * c.scale, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    // 0~5.5초는 선명하게 유지, 마지막 2초간 서서히 페이드아웃
-    const alpha = Math.min(1.0, c.life / 2.0);
-    ctx.globalAlpha = alpha;
-
-    if (c.type === 'skeleton' || c.type === 'archer') {
-      // --- 1. 해골 백골병 & 해골궁수: 무너져 내린 백골 유골 뼈더미 ---
-      ctx.save();
-      // 바닥 그림자
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-      ctx.beginPath();
-      ctx.ellipse(0, 4, 32 * c.scale, 14 * c.scale, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 쓰러진 해골 갈비뼈 (Ribcage)
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 2.2 * c.scale;
-      ctx.beginPath();
-      ctx.arc(-4 * c.scale, 0, 10 * c.scale, 0, Math.PI);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(4 * c.scale, 1 * c.scale, 8 * c.scale, 0, Math.PI);
-      ctx.stroke();
-
-      // 교차된 대퇴골 (Crossed Femur bones)
-      ctx.strokeStyle = '#cbd5e1';
-      ctx.lineWidth = 2.4 * c.scale;
-      ctx.beginPath();
-      ctx.moveTo(-18 * c.scale, 6 * c.scale);
-      ctx.lineTo(16 * c.scale, -4 * c.scale);
-      ctx.moveTo(-14 * c.scale, -5 * c.scale);
-      ctx.lineTo(18 * c.scale, 7 * c.scale);
-      ctx.stroke();
-
-      // 바닥에 뒹구는 백골 두개골 (Cracked Skull)
-      ctx.fillStyle = '#f8fafc';
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 1.2 * c.scale;
-      ctx.beginPath();
-      ctx.arc(14 * c.scale, -2 * c.scale, 7 * c.scale, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // 두개골 안구 구멍
-      ctx.fillStyle = '#1e293b';
-      ctx.beginPath();
-      ctx.arc(12 * c.scale, -3 * c.scale, 1.8 * c.scale, 0, Math.PI * 2);
-      ctx.arc(15 * c.scale, -2.5 * c.scale, 1.8 * c.scale, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 산산조각난 뼈 파편들
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillRect(-22 * c.scale, 2 * c.scale, 4 * c.scale, 2 * c.scale);
-      ctx.fillRect(8 * c.scale, 8 * c.scale, 5 * c.scale, 2 * c.scale);
-      ctx.fillRect(-8 * c.scale, -8 * c.scale, 4 * c.scale, 2 * c.scale);
-      ctx.restore();
-
-    } else if (c.type === 'jiangshi') {
-      // --- 2. 강시: 부적이 붙은 채 쓰러진 청나라 도포 시체 ---
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      ctx.beginPath();
-      ctx.ellipse(0, 4, 36 * c.scale, 14 * c.scale, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 쓰러진 남색/자주색 도포
-      ctx.fillStyle = '#1e1b4b';
-      ctx.beginPath();
-      ctx.ellipse(-4 * c.scale, 0, 26 * c.scale, 10 * c.scale, -0.1, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 소매와 창백한 손
-      ctx.fillStyle = '#312e81';
-      ctx.fillRect(-24 * c.scale, -4 * c.scale, 16 * c.scale, 6 * c.scale);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.fillRect(-28 * c.scale, -4 * c.scale, 6 * c.scale, 5 * c.scale);
-
-      // 모자 및 황색 진압 부적 (Taoist Talisman)
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(16 * c.scale, -6 * c.scale, 12 * c.scale, 10 * c.scale);
-      ctx.fillStyle = '#fbbf24'; // 노란색 영부
-      ctx.fillRect(18 * c.scale, -2 * c.scale, 10 * c.scale, 5 * c.scale);
-      ctx.fillStyle = '#ef4444'; // 주사 붉은 글씨
-      ctx.fillRect(20 * c.scale, -1 * c.scale, 6 * c.scale, 2 * c.scale);
-      ctx.restore();
-
-    } else if (c.type === 'necromancer' || c.type === 'curse_mage') {
-      // --- 3. 사령술사 / 흑마주술사: 무너진 암흑 로브와 부러진 지팡이 ---
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-      ctx.beginPath();
-      ctx.ellipse(0, 4, 38 * c.scale, 15 * c.scale, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 쓰러진 흑마 로브
-      ctx.fillStyle = '#064e3b';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 28 * c.scale, 12 * c.scale, 0.05, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 부러진 영혼 지팡이 잔해
-      ctx.strokeStyle = '#78350f';
-      ctx.lineWidth = 2.2 * c.scale;
-      ctx.beginPath();
-      ctx.moveTo(-24 * c.scale, 8 * c.scale);
-      ctx.lineTo(8 * c.scale, 4 * c.scale);
-      ctx.moveTo(12 * c.scale, 3 * c.scale);
-      ctx.lineTo(26 * c.scale, -2 * c.scale);
-      ctx.stroke();
-
-      // 지팡이 끝의 빛바랜 두개골
-      ctx.fillStyle = '#a7f3d0';
-      ctx.shadowColor = '#10b981';
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      ctx.arc(26 * c.scale, -2 * c.scale, 4.5 * c.scale, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-    } else if (c.type === 'butcher' || c.type === 'barbarian') {
-      // --- 4. 도살마인 / 야만전사: 거구의 쓰러진 시체와 핏자국 ---
-      ctx.save();
-      // 거대한 핏빛 웅덩이
-      ctx.fillStyle = 'rgba(127, 29, 29, 0.65)';
-      ctx.beginPath();
-      ctx.ellipse(0, 4, 46 * c.scale, 20 * c.scale, 0.1, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 쓰러진 거구의 상체
-      ctx.fillStyle = '#451a03';
-      ctx.beginPath();
-      ctx.ellipse(-5 * c.scale, -2 * c.scale, 34 * c.scale, 16 * c.scale, -0.08, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 바닥에 떨어진 거대 도끼/도살도
-      ctx.fillStyle = '#64748b';
-      ctx.fillRect(18 * c.scale, -8 * c.scale, 16 * c.scale, 8 * c.scale);
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillRect(20 * c.scale, -6 * c.scale, 12 * c.scale, 2 * c.scale);
-      ctx.restore();
-
-    } else {
-      // --- 5. 흑풍 살수 & 일반 인간형: 쓰러진 자객 복식과 비도 잔해 ---
-      ctx.save();
-      ctx.fillStyle = 'rgba(153, 27, 27, 0.45)';
-      ctx.beginPath();
-      ctx.ellipse(0, 4, 30 * c.scale, 12 * c.scale, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.ellipse(-2 * c.scale, 0, 22 * c.scale, 8 * c.scale, 0.05, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 바닥에 흩어진 은빛 암기 단도
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(14 * c.scale, -4 * c.scale, 8 * c.scale, 2 * c.scale);
-      ctx.restore();
+    if (img && img.width > 0) {
+      const h = 118 * c.scale * (c.isBoss ? 1.6 : 1);
+      const w = h * img.width / img.height;
+      ctx.globalAlpha = fade;
+      ctx.scale(c.facing, 1);
+      ctx.rotate(-ease * 1.3);                     // 발을 축으로 뒤로 넘어짐
+      ctx.scale(1, 1 - ease * 0.35);               // 위에서 보는 시점이라 눕는 만큼 납작하게
+      ctx.filter = `brightness(${1 - ease * 0.55}) saturate(${1 - ease * 0.5})`;
+      ctx.drawImage(img, -w / 2, -h + 10, w, h);
+      ctx.filter = 'none';
     }
-
     ctx.restore();
+
+    // 사라질 때 먹물 입자가 위로 흩어짐
+    if (t > 0.45 && !c.inked) {
+      c.inked = true;
+      for (let k = 0; k < 7; k++) {
+        particles.push({
+          x: c.x + (Math.random() - 0.5) * 50 * c.scale,
+          y: c.y - Math.random() * 30,
+          vx: (Math.random() - 0.5) * 30,
+          vy: -25 - Math.random() * 35,
+          color: 'rgba(20, 22, 30, 0.8)',
+          radius: 3 + Math.random() * 4,
+          life: 0.7,
+          maxLife: 0.7
+        });
+      }
+    }
   });
 }
 
-// 지면 균열선 지그재그 분기 렌더러 (2.5D Isometric Perspective)
 function drawFissureLines(ctx, radius, seed) {
   const branches = 7;
   for (let b = 0; b < branches; b++) {
@@ -646,10 +537,19 @@ function renderGround() {
   const zoneIdx = Math.max(0, Math.min(3, (state.currentZone || 1) - 1));
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][zoneIdx]) ? ZONE_CONFIGS[secIdx][zoneIdx] : ZONE_CONFIGS[0][0];
 
-  // 심리스 베이스 타일 선택 (어색한 배경 사진 타일링을 제거하고 항상 고품질 무협 암석 석판 바닥 유지)
-  let groundImg = SPRITES['ground_seamless_stone'] || SPRITES.ground_stone_iso || SPRITES.ground;
+  // 관문 테마별 바닥 (제미나이로 만든 이음새 없는 바닥 그림, 2026-11)
+  const GROUND_BY_THEME = {
+    bamboo_grove: 'ground_new_bamboo',
+    stone_fortress: 'ground_new_fortress',
+    blood_cavern: 'ground_new_cavern',
+    demon_sanctum: 'ground_new_fortress'
+  };
+  const newKey = GROUND_BY_THEME[zoneCfg.theme] || 'ground_new_fortress';
+  const newImg = SPRITES[newKey];
+  let groundImg = (newImg && newImg.width > 0) ? newImg : (SPRITES['ground_seamless_stone'] || SPRITES.ground_stone_iso || SPRITES.ground);
 
-  const tileSize = 512;
+  // 새 바닥은 크게 깔아서 반복 무늬가 덜 보이게 함
+  const tileSize = (groundImg === newImg) ? 820 : 512;
   const startX = Math.floor((state.camera.x - gameWidth / 2) / tileSize) * tileSize;
   const endX = Math.ceil((state.camera.x + gameWidth / 2) / tileSize) * tileSize;
   const startY = Math.floor((state.camera.y - gameHeight / 2) / tileSize) * tileSize;
@@ -659,7 +559,8 @@ function renderGround() {
   if (groundImg && ((typeof HTMLCanvasElement !== 'undefined' && groundImg instanceof HTMLCanvasElement) || groundImg.complete || (groundImg.width > 0))) {
     for (let x = startX; x <= endX; x += tileSize) {
       for (let y = startY; y <= endY; y += tileSize) {
-        ctx.drawImage(groundImg, x, y, tileSize, tileSize);
+        // 1px씩 겹쳐 깔아 확대·축소 때 타일 사이 가는 틈(격자선)이 보이지 않게 함
+        ctx.drawImage(groundImg, x - 1, y - 1, tileSize + 2, tileSize + 2);
       }
     }
   } else {

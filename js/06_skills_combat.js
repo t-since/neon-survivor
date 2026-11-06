@@ -388,7 +388,7 @@ function onEnemyKilled(target) {
   // pixelfx: 적 사망 시 픽셀 소멸 파편 & 보스 대폭발 연출!
   PixelFX.spawnEnemyDeath(target.x, target.y, target.isBoss, target.isMiniBoss);
 
-  // 전장에 일정 시간(7.5초) 유지되는 몬스터 시체/백골 잔해 생성
+  // 쓰러지는 연출용 시체 (1.9초 뒤 사라짐)
   corpses.push({
     type: target.type || 'assassin',
     name: target.name || '',
@@ -397,8 +397,10 @@ function onEnemyKilled(target) {
     facing: target.facing || (Math.random() < 0.5 ? 1 : -1),
     rot: (Math.random() - 0.5) * 0.35,
     scale: target.isBoss ? 1.4 : (target.isMiniBoss ? 1.2 : 1.0),
-    life: 7.5,
-    maxLife: 7.5
+    isBoss: !!target.isBoss,
+    isMiniBoss: !!target.isMiniBoss,
+    life: 1.9,
+    maxLife: 1.9
   });
   if (corpses.length > 30) corpses.shift(); // 60프레임 최적화 유지 (최대 30구 잔존)
 

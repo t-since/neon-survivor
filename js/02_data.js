@@ -78,7 +78,12 @@ const SPRITE_URLS = {
   shrine_blood_fury: 'assets/props/shrine_blood_fury.png',
   shrine_wind_god: 'assets/props/shrine_wind_god.png',
   shrine_invincible: 'assets/props/shrine_invincible.png',
-  shrine_infinite_blades: 'assets/props/shrine_infinite_blades.png'
+  shrine_infinite_blades: 'assets/props/shrine_infinite_blades.png',
+
+  // 관문 테마별 바닥 (이음새 없이 이어지도록 처리됨)
+  ground_new_bamboo: 'assets/ground/bamboo.jpg',
+  ground_new_fortress: 'assets/ground/fortress.jpg',
+  ground_new_cavern: 'assets/ground/cavern.jpg'
 };
 const SPRITES = {};
 let loadedImagesCount = 0;
