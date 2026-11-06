@@ -294,9 +294,9 @@ function triggerMeleeAttack(target) {
   player.attackCombo = ((player.attackCombo || 0) + 1) % 3;
   const isFinisher = player.attackCombo === 2;
   player.isAttacking = true;
-  player.attackDuration = isFinisher ? 0.38 : 0.3;
+  player.attackDuration = isFinisher ? 0.5 : 0.4; // 베기 한 번 걸리는 시간 (사용자: 조금 빠름 → 늘림)
   player.attackTimer = player.attackDuration;
-  player.attackCooldownTimer = Math.max(0.28, 0.55 - (player.level * 0.01)) * (isFinisher ? 1.35 : 1);
+  player.attackCooldownTimer = Math.max(0.42, 0.68 - (player.level * 0.01)) * (isFinisher ? 1.3 : 1);
   player.attackAim = aim;
 
   // 대상 쪽으로 몸 돌리기 (거의 위/아래면 그대로)
@@ -331,6 +331,12 @@ function triggerMeleeAttack(target) {
   }
 
   if (hits > 0) {
+    // 검기 흡혈: 근거리로 싸우면 맞는 만큼 조금씩 회복 (근거리가 맞기만 한다는 의견 반영)
+    const heal = Math.min(4, hits) * (isFinisher ? 2 : 1);
+    if (player.hp < player.maxHp) {
+      player.hp = Math.min(player.maxHp, player.hp + heal);
+      updateHud();
+    }
     state.hitStop = isFinisher ? 0.07 : 0.04;          // 맞는 순간 아주 잠깐 멈칫 (손맛)
     state.screenShake = Math.max(state.screenShake || 0, isFinisher ? 7 : 3);
   }
@@ -387,7 +393,7 @@ function onEnemyKilled(target) {
   // pixelfx: 적 사망 시 픽셀 소멸 파편 & 보스 대폭발 연출!
   PixelFX.spawnEnemyDeath(target.x, target.y, target.isBoss, target.isMiniBoss);
 
-  // 쓰러지는 연출용 시체 (1.9초 뒤 사라짐)
+  // 쓰러진 시체 (5초: 쓰러져 누워 있다가 마지막 1.5초 동안 먹물처럼 흩어짐)
   corpses.push({
     type: target.type || 'assassin',
     name: target.name || '',
@@ -398,8 +404,8 @@ function onEnemyKilled(target) {
     scale: target.isBoss ? 1.4 : (target.isMiniBoss ? 1.2 : 1.0),
     isBoss: !!target.isBoss,
     isMiniBoss: !!target.isMiniBoss,
-    life: 1.9,
-    maxLife: 1.9
+    life: 5.0,
+    maxLife: 5.0
   });
   if (corpses.length > 30) corpses.shift(); // 60프레임 최적화 유지 (최대 30구 잔존)
 
@@ -514,7 +520,7 @@ function addExp(amount) {
   while (player.exp >= player.nextExp) {
     player.exp -= player.nextExp;
     player.level++;
-    player.nextExp = Math.round(player.nextExp * 1.32 + 20); // 예전: ×1.35 + 8
+    player.nextExp = Math.round(player.nextExp * 1.3 + 12);
     pendingLevelUps++;
   }
 
@@ -585,7 +591,18 @@ function showNextLevelUp() {
     if (titleEl) titleEl.innerText = "경지 돌파 (境界突破)";
     if (subEl) subEl.innerText = "새로운 무공을 전수받거나 기존 무공을 연마하십시오.";
     available.sort(() => Math.random() - 0.5);
-    choices = available.slice(0, 3);
+    const RANGED = ['flying_swords', 'dagger_rain', 'palm_blast', 'thunder_bomb'];
+    const rangedOwned = RANGED.filter(k => (player.skills[k] || 0) > 0).length;
+    if (rangedOwned < 3) {
+      // 원거리 무공 3개를 갖출 때까지: 카드 2장은 원거리 (아직 없는 무공 먼저)
+      const ranged = available.filter(c => RANGED.includes(c.id))
+        .sort((p, q) => ((player.skills[p.id] || 0) > 0) - ((player.skills[q.id] || 0) > 0));
+      const others = available.filter(c => !RANGED.includes(c.id));
+      choices = ranged.slice(0, 2).concat(others.slice(0, 1));
+      if (choices.length < 3) choices = choices.concat(ranged.slice(2, 2 + 3 - choices.length));
+    } else {
+      choices = available.slice(0, 3);
+    }
   } else {
     // 모든 무공 대성(MAX) 달성 시: 게임이 멈추지 않고 계속 즐길 수 있도록 대성 영약 3종 제공!
     if (titleEl) titleEl.innerHTML = "🏆 경지 대성 (境地大成)";

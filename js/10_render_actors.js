@@ -836,9 +836,8 @@ function renderEnemies() {
           ctx.shadowBlur = 0;
         }
       } else {
-        // 이동/유격 시 4단 백골 진격 달리기
-        const runFrame = isMoving ? (Math.floor(runTimer * 1.35) % 4) : 0;
-        const aImg = SPRITES['skeleton_run_' + runFrame] || SPRITES.skeleton;
+        // 이동 중: 궁수 그림 그대로 (예전엔 해골 병사 달리기 그림을 써서 활 쏠 때와 모습이 바뀌었음)
+        const aImg = SPRITES['archer_shoot_0'] || SPRITES.skeleton;
         const sprintBounce = isMoving ? Math.sin(runTimer * 2.7) * 2.0 : 0;
         ctx.translate(0, sprintBounce);
 

@@ -398,7 +398,7 @@ function updateCorpses(dt) {
   }
 }
 
-// 적이 쓰러지는 모습: 그 적의 그림이 뒤로 넘어지며 어두워지고, 먹물처럼 흩어져 2초 안에 사라짐
+// 적이 쓰러지는 모습: 그 적의 그림이 뒤로 넘어져 어둡게 누워 있다가, 먹물처럼 흩어지며 5초 뒤 사라짐
 // (예전: 남색 덩어리·뼈 도형이 7.5초 동안 바닥에 남아 화면이 지저분했음)
 const CORPSE_SPRITE_BY_TYPE = {
   skeleton: 'skeleton_run_0', archer: 'archer_shoot_0', jiangshi: 'jiangshi',
@@ -422,9 +422,9 @@ function renderCorpses() {
     if (Math.abs(c.x - camX) > cullW || Math.abs(c.y - camY) > cullH) return;
     const img = corpseSpriteFor(c);
     const t = 1 - c.life / c.maxLife;          // 0 → 1
-    const fall = Math.min(1, t / 0.22);         // 처음 0.4초 동안 넘어짐
+    const fall = Math.min(1, t / 0.08);         // 처음 0.4초 동안 넘어짐
     const ease = 1 - Math.pow(1 - fall, 3);
-    const fade = t < 0.45 ? 1 : Math.max(0, 1 - (t - 0.45) / 0.55);
+    const fade = t < 0.7 ? 1 : Math.max(0, 1 - (t - 0.7) / 0.3); // 마지막 30%(1.5초) 동안 흐려짐
 
     ctx.save();
     ctx.translate(c.x, c.y);
@@ -449,7 +449,7 @@ function renderCorpses() {
     ctx.restore();
 
     // 사라질 때 먹물 입자가 위로 흩어짐
-    if (t > 0.45 && !c.inked) {
+    if (t > 0.7 && !c.inked) {
       c.inked = true;
       for (let k = 0; k < 7; k++) {
         particles.push({
