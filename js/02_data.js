@@ -80,6 +80,16 @@ const SPRITE_URLS = {
   shrine_invincible: 'assets/props/shrine_invincible.png',
   shrine_infinite_blades: 'assets/props/shrine_infinite_blades.png',
 
+  // 서진 동작 프레임 (제미나이 2x2 시트에서 자름: 걷기 4장, 공격 4장)
+  seojin_walk_0: 'assets/hero/seojin_walk_0.png',
+  seojin_walk_1: 'assets/hero/seojin_walk_1.png',
+  seojin_walk_2: 'assets/hero/seojin_walk_2.png',
+  seojin_walk_3: 'assets/hero/seojin_walk_3.png',
+  seojin_attack_0: 'assets/hero/seojin_attack_0.png',
+  seojin_attack_1: 'assets/hero/seojin_attack_1.png',
+  seojin_attack_2: 'assets/hero/seojin_attack_2.png',
+  seojin_attack_3: 'assets/hero/seojin_attack_3.png',
+
   // 관문 테마별 바닥 (이음새 없이 이어지도록 처리됨)
   ground_new_bamboo: 'assets/ground/bamboo.jpg',
   ground_new_fortress: 'assets/ground/fortress.jpg',
