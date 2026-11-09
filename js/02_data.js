@@ -585,3 +585,25 @@ const ZONE_CONFIGS = [
   ]
 ];
 
+
+// --- 색 바꾼 그림 캐시 (성능) ---
+// ctx.filter 를 매 장면 쓰면 그래픽 카드를 못 쓰고 아주 느려짐(특히 PC 큰 화면).
+// 같은 그림·같은 색 바꾸기는 처음 한 번만 만들어 두고 계속 꺼내 씀.
+const _tintCache = new Map();
+function tinted(img, filter) {
+  if (!img || !img.width || !filter || filter === 'none') return img;
+  let m = _tintCache.get(img);
+  if (!m) { m = new Map(); _tintCache.set(img, m); }
+  let c = m.get(filter);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d');
+    x.filter = filter;
+    x.drawImage(img, 0, 0);
+    m.set(filter, c);
+    // 그래픽 카드가 바로 쓰는 형태로 바꿔 둠 (캔버스 그대로 쓰면 매번 다시 올려서 느림)
+    if (window.createImageBitmap) createImageBitmap(c).then(b => m.set(filter, b)).catch(() => {});
+  }
+  return c;
+}

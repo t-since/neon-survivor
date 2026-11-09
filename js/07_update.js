@@ -1090,14 +1090,16 @@ function updateGame(dt) {
     }
   }
 
+  if (state.vacuumTimer > 0) state.vacuumTimer -= dt;
   for (let i = expGems.length - 1; i >= 0; i--) {
     const gem = expGems[i];
     const dx = player.x - gem.x;
     const dy = player.y - gem.y;
     const dist = Math.hypot(dx, dy);
 
-    if (dist <= player.magnetRadius) {
-      const spd = 420 + (1 - dist / player.magnetRadius) * 480;
+    const vacuum = state.vacuumTimer > 0; // 최종보스 처치: 맵의 모든 구슬 흡수
+    if (dist <= player.magnetRadius || vacuum) {
+      const spd = vacuum ? Math.max(900, dist * 2.2) : 420 + (1 - dist / player.magnetRadius) * 480;
       gem.x += (dx / dist) * spd * dt;
       gem.y += (dy / dist) * spd * dt;
     }

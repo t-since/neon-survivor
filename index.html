@@ -10,6 +10,7 @@
 <body>
 <div id="game-container">
   <canvas id="gameCanvas"></canvas>
+  <div id="vignette"></div>
   <canvas id="cutsceneCanvas"></canvas>
   <div id="damageOverlay"></div>
 
@@ -29,6 +30,8 @@
        SCREEN 1: 메인 타이틀 시네마틱 대문 (Title Screen)
        ========================================== -->
   <div id="titleScreen" class="gateway-screen">
+    <!-- 처음 한 번 누르면 소리 켜짐(브라우저 규칙) → 타이틀 음악을 들을 수 있게 입장 전에 한 번 받음 -->
+    <div id="tapToStart" onclick="startTitleAudio(event)"><span>화면을 터치하세요</span></div>
     <!-- Live Animated Background Layers with Breathing Motion -->
     <div class="title-bg-art"></div>
     <div class="title-vignette-overlay"></div>

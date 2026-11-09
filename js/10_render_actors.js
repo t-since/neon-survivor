@@ -118,13 +118,14 @@ function renderPlayer() {
   }
 
   // 7. Hit Red/White Flashing Filter on taking damage & Debuff Auras
+  let heroTint = null; // 색 바꾸기 (미리 만든 그림 사용 — 성능)
   if (player.hitFlashTimer > 0) {
-    ctx.filter = 'brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(4)';
+    heroTint = 'brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(4)';
   } else if (player.debuffs && player.debuffs.poison > 0) {
-    ctx.filter = 'sepia(0.6) hue-rotate(65deg) saturate(2.6) drop-shadow(0 0 7px #22c55e)'; // 맹독: 초록
+    heroTint = 'sepia(0.6) hue-rotate(65deg) saturate(2.6)'; // 맹독: 초록
     if (Math.random() < 0.15) particles.push({ x: player.x + (Math.random() - 0.5) * 40, y: player.y - 40 - Math.random() * 70, vx: 0, vy: -40, color: '#4ade80', radius: 3 + Math.random() * 2, life: 0.6, maxLife: 0.6 });
   } else if (player.debuffs && player.debuffs.slow > 0) {
-    ctx.filter = 'grayscale(0.4) sepia(1) hue-rotate(165deg) saturate(2.6) brightness(1.12) drop-shadow(0 0 7px #38bdf8)'; // 둔화: 파랑 (색을 한 번 누른 뒤 파랗게)
+    heroTint = 'grayscale(0.4) sepia(1) hue-rotate(165deg) saturate(2.6) brightness(1.12)'; // 둔화: 파랑
     if (Math.random() < 0.12) particles.push({ x: player.x + (Math.random() - 0.5) * 50, y: player.y - 20 - Math.random() * 100, vx: 0, vy: 25, color: '#e0f2fe', radius: 2 + Math.random() * 2, life: 0.7, maxLife: 0.7 });
   }
 
@@ -132,7 +133,7 @@ function renderPlayer() {
   const isCanvas = (typeof HTMLCanvasElement !== 'undefined' && sprite instanceof HTMLCanvasElement);
   if (sprite && (isCanvas || sprite.complete || (sprite.width > 0))) {
     if (sprite === SPRITES[frameKey]) {
-      ctx.drawImage(sprite, -220 * FRAME_K, -320 * FRAME_K + 4, 440 * FRAME_K, 340 * FRAME_K);
+      ctx.drawImage(tinted(sprite, heroTint), -220 * FRAME_K, -320 * FRAME_K + 4, 440 * FRAME_K, 340 * FRAME_K);
     } else {
       ctx.drawImage(sprite, -44, -130, 88, 144); // 새 프레임을 못 불러왔을 때 예전 그림
     }
@@ -178,12 +179,17 @@ function drawEnemyArt(e, art, facing, isMoving, runTimer) {
   const img = SPRITES[key] || SPRITES[art.key + '_walk_0'];
   const k = art.h / 300;
   const hop = e.type === 'jiangshi' ? -(e.hopHeight || 0) : 0;
-  if (art.filter && !(e.hitCooldown > 0.06)) ctx.filter = art.filter;
-  ctx.drawImage(img, -220 * k, -320 * k + 4 + hop, 440 * k, 340 * k);
-  ctx.filter = 'none';
+  const look = (e.hitCooldown > 0.06) ? 'brightness(2.4) saturate(0.3)' : art.filter; // 맞은 순간 하얗게 / 종류별 색
+  ctx.drawImage(tinted(img, look), -220 * k, -320 * k + 4 + hop, 440 * k, 340 * k);
 }
 
+// 적이 많을 때(25마리 넘게)는 그림자 번짐(shadowBlur)을 끔 — 큰 PC 화면에서 매우 느려서 렉의 원인
 function renderEnemies() {
+  const many = enemies.length > 25;
+  if (many) Object.defineProperty(ctx, 'shadowBlur', { set() {}, get() { return 0; }, configurable: true });
+  try { renderEnemiesInner(); } finally { if (many) delete ctx.shadowBlur; ctx.shadowBlur = 0; }
+}
+function renderEnemiesInner() {
   const camX = state.camera.x;
   const camY = state.camera.y;
   const cullW = gameWidth / 2 + 130;
@@ -286,7 +292,6 @@ function renderEnemies() {
     if (e.hitCooldown > 0) {
       const flinch = Math.sin(e.hitCooldown * 35) * 4.5;
       ctx.translate(-facing * flinch, 0);
-      if (e.hitCooldown > 0.06) ctx.filter = 'brightness(2.4) saturate(0.3)'; // 맞은 순간 하얗게 번쩍
     }
 
     // 일반 몬스터 공통 걸음 연출 (종류별 성격): 걸음마다 살짝 튀고, 가는 방향으로 숙이고, 좌우로 흔들림
@@ -715,9 +720,7 @@ function renderEnemies() {
       ctx.translate(0, sprintBounce);
 
       if (aImg && aImg.complete) {
-        ctx.filter = 'hue-rotate(90deg) saturate(1.4)';
-        ctx.drawImage(aImg, -aw / 2, -ah + 15, aw, ah);
-        ctx.filter = 'none';
+        ctx.drawImage(tinted(aImg, 'hue-rotate(90deg) saturate(1.4)'), -aw / 2, -ah + 15, aw, ah);
       } else {
         ctx.fillStyle = '#065f46';
         ctx.beginPath();
@@ -738,9 +741,7 @@ function renderEnemies() {
       ctx.translate(0, sprintBounce);
 
       if (aImg && aImg.complete) {
-        ctx.filter = 'sepia(0.35) saturate(1.5)';
-        ctx.drawImage(aImg, -aw / 2, -ah + 15, aw, ah);
-        ctx.filter = 'none';
+        ctx.drawImage(tinted(aImg, 'sepia(0.35) saturate(1.5)'), -aw / 2, -ah + 15, aw, ah);
       } else {
         ctx.fillStyle = '#b45309';
         ctx.beginPath();
@@ -780,9 +781,7 @@ function renderEnemies() {
 
       const aImg = SPRITES.necromancer || SPRITES.assassin;
       if (aImg && aImg.complete) {
-        ctx.filter = 'hue-rotate(240deg) saturate(1.8)';
-        ctx.drawImage(aImg, -52, -145, 104, 150);
-        ctx.filter = 'none';
+        ctx.drawImage(tinted(aImg, 'hue-rotate(240deg) saturate(1.8)'), -52, -145, 104, 150);
       } else {
         ctx.fillStyle = '#581c87';
         ctx.beginPath();

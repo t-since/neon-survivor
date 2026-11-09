@@ -15,9 +15,7 @@ function renderWorldContents() {
   renderGroundDecals();
 
   // 1.05 Draw Boss Arena Magic Seal (Zone 4 결전장)
-  if (state.currentZone === 4) {
-    renderBossArenaSeal();
-  }
+  // (결전장 봉인 문양 renderBossArenaSeal: 사용자 요청으로 끔 — 최종보스 나올 때 바닥이 바뀌지 않게)
 
   // 1.06 Draw 2.5D Isometric Obstacles (석등, 이끼 거암, 대나무 군락, 방어 목책)
   renderObstacles('back');
@@ -377,9 +375,8 @@ function renderCorpses() {
       ctx.scale(c.facing, 1);
       ctx.rotate(-ease * 1.3);                     // 발을 축으로 뒤로 넘어짐
       ctx.scale(1, 1 - ease * 0.35);               // 위에서 보는 시점이라 눕는 만큼 납작하게
-      ctx.filter = `brightness(${1 - ease * 0.55}) saturate(${1 - ease * 0.5})`;
-      ctx.drawImage(img, -w / 2, -h + 10, w, h);
-      ctx.filter = 'none';
+      const q = Math.round(ease * 5) / 5; // 0, 0.2 … 1 (6단계만 만들어 둠)
+      ctx.drawImage(tinted(img, `brightness(${(1 - q * 0.55).toFixed(2)}) saturate(${(1 - q * 0.5).toFixed(2)})`), -w / 2, -h + 10, w, h);
     }
     ctx.restore();
 
@@ -531,21 +528,16 @@ function renderGround() {
   }
 
   // 2. 매크로 라이팅 & 대기감 (타일 격자감을 완전히 지우는 자연스러운 조명/그늘 비네트)
-  const macroGrad = ctx.createRadialGradient(state.camera.x, state.camera.y, 80, state.camera.x, state.camera.y, 750);
-  macroGrad.addColorStop(0, 'rgba(255, 255, 255, 0.03)');
-  macroGrad.addColorStop(0.65, 'rgba(0, 0, 0, 0)');
-  macroGrad.addColorStop(1, 'rgba(0, 0, 0, 0.38)');
-  ctx.fillStyle = macroGrad;
-  ctx.fillRect(startX, startY, endX - startX + tileSize, endY - startY + tileSize);
+  // (화면 가장자리 어둡게 하기는 index.html 의 #vignette 고정 층으로 옮김 — 매번 그리면 PC에서 느림)
 
   // 3. 관문별 독자적 색조와 대기감 주입
   if (zoneCfg.ambient) {
     ctx.fillStyle = zoneCfg.ambient;
-    ctx.fillRect(startX, startY, endX - startX + tileSize, endY - startY + tileSize);
+    ctx.fillRect(state.camera.x - gameWidth / 2, state.camera.y - gameHeight / 2, gameWidth, gameHeight); // 보이는 화면만
   }
 
   // 4. 고대 제단 마법진 랜드마크 (각진 직사각형 경계선 없는 원형 융합 랜드마크)
-  if (zoneCfg.spriteKey === 'ground_sanctum' || zoneCfg.theme === 'demon_sanctum') {
+  if (false && (zoneCfg.spriteKey === 'ground_sanctum' || zoneCfg.theme === 'demon_sanctum')) { // 결전장 붉은 제단 바닥: 사용자 요청으로 끔
     const sanctumImg = SPRITES['ground_sanctum_feathered'] || SPRITES.ground_sanctum;
     if (sanctumImg && (sanctumImg.complete || sanctumImg.width > 0)) {
       ctx.save();
@@ -836,7 +828,7 @@ function renderShrines() {
         ctx.stroke();
         ctx.restore();
       } else {
-        ctx.filter = 'grayscale(1) brightness(0.55)'; // 이미 쓴 신단은 빛이 꺼진 돌
+        // 이미 쓴 신단은 빛이 꺼진 돌 (아래 그릴 때 회색 그림 사용)
         if (s.respawn > 0 && Math.hypot(player.x - s.x, player.y - s.y) < 300) {
           ctx.save(); ctx.filter = 'none';
           ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
@@ -846,7 +838,7 @@ function renderShrines() {
           ctx.restore();
         }
       }
-      ctx.drawImage(simg, -w / 2, -h + w * 0.2, w, h);
+      ctx.drawImage(s.active ? simg : tinted(simg, 'grayscale(1) brightness(0.55)'), -w / 2, -h + w * 0.2, w, h);
       ctx.filter = 'none';
       if (s.active) {
         // 구슬이 숨 쉬듯 빛남

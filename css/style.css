@@ -1744,3 +1744,11 @@
       #stageScreen .start-game-btn { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 50; box-shadow: 0 6px 24px rgba(0,0,0,0.8); }
       #stageScreen { padding-bottom: 90px; }
     }
+
+    /* 화면 가장자리 은은하게 어둡게 (예전엔 캔버스에 매번 그려서 PC에서 느렸음) */
+    #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.38) 100%); }
+
+    /* 첫 화면 '화면을 터치하세요' (누르면 타이틀 음악 시작 후 사라짐) */
+    #tapToStart { position: absolute; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12vh; cursor: pointer; background: rgba(0,0,0,0.15); }
+    #tapToStart span { font-size: 18px; font-weight: 800; color: #fde68a; letter-spacing: 3px; text-shadow: 0 0 10px #000, 0 0 18px rgba(251,191,36,0.6); animation: tapBlink 1.4s ease-in-out infinite; }
+    @keyframes tapBlink { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }

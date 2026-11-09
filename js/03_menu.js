@@ -243,7 +243,15 @@ function updateSectorDetails() {
 // 타이틀의 [강호 입장] 버튼: 고를 것이 없으면 바로 게임 시작
 // - 협객 선택 화면은 협객이 2명 이상 풀릴 때까지 건너뜀
 // - 열린 구역이 1개뿐이면 구역 선택도 건너뛰고 바로 출전
+function startTitleAudio(ev) {
+  if (ev) ev.stopPropagation();
+  sound.init();
+  sound.setMusic('title');
+  const t = document.getElementById('tapToStart');
+  if (t) t.remove();
+}
 function quickEnter() {
+  if (document.getElementById('tapToStart')) { startTitleAudio(); return; } // 첫 입력은 소리 켜기
   if (unlockedSectors.length <= 1) {
     selectSector(unlockedSectors[0] || 1);
     launchExpedition();

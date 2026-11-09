@@ -473,6 +473,8 @@ function onEnemyKilled(target) {
   if (target.isBoss) {
     state.boss = null;
     state.bossDefeated = true;
+    state.vacuumTimer = 4; // 남은 경험치 구슬을 한꺼번에 빨아들임
+    damageTexts.push({ x: player.x, y: player.y - 170, text: '흡성 — 모든 진기를 거두다', color: '#7dd3fc', size: 16, life: 2.0, vy: -20 });
     state.spawnEnemies = false; // 보스 토벌 완료 -> 몬스터 추가 리젠 완전 차단!
 
     // 전장의 남은 일반 잔당들을 승리의 거대 충격파로 일소
