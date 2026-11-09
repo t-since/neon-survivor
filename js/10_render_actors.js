@@ -121,9 +121,11 @@ function renderPlayer() {
   if (player.hitFlashTimer > 0) {
     ctx.filter = 'brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(4)';
   } else if (player.debuffs && player.debuffs.poison > 0) {
-    ctx.filter = 'drop-shadow(0 0 8px #10b981) hue-rotate(60deg)';
+    ctx.filter = 'sepia(0.6) hue-rotate(65deg) saturate(2.6) drop-shadow(0 0 7px #22c55e)'; // 맹독: 초록
+    if (Math.random() < 0.15) particles.push({ x: player.x + (Math.random() - 0.5) * 40, y: player.y - 40 - Math.random() * 70, vx: 0, vy: -40, color: '#4ade80', radius: 3 + Math.random() * 2, life: 0.6, maxLife: 0.6 });
   } else if (player.debuffs && player.debuffs.slow > 0) {
-    ctx.filter = 'drop-shadow(0 0 8px #38bdf8) hue-rotate(-30deg)';
+    ctx.filter = 'grayscale(0.4) sepia(1) hue-rotate(165deg) saturate(2.6) brightness(1.12) drop-shadow(0 0 7px #38bdf8)'; // 둔화: 파랑 (색을 한 번 누른 뒤 파랗게)
+    if (Math.random() < 0.12) particles.push({ x: player.x + (Math.random() - 0.5) * 50, y: player.y - 20 - Math.random() * 100, vx: 0, vy: 25, color: '#e0f2fe', radius: 2 + Math.random() * 2, life: 0.7, maxLife: 0.7 });
   }
 
   if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 18; }
@@ -196,276 +198,75 @@ function renderEnemies() {
 
     // 0. Mini-boss Skill Telegraph Indicator (장판 및 돌진 궤적 예고선)
     if (e.telegraph) {
-      ctx.save();
+      // 적 기술 예고 (모두 같은 모양): 바닥에 은은한 색 영역 + 안쪽이 차오름 + 가는 빛 테두리, 점선 없음
       const t = e.telegraph;
       const progress = Math.min(1, Math.max(0, 1 - (t.timer / t.maxTimer)));
+      const COLOR = {
+        dash_slash: [239, 68, 68], needle_burst: [168, 85, 247], blood_quake: [249, 115, 22],
+        necromancer_blast: [52, 211, 153], curse_blast: [192, 132, 252], necromancer_summon: [52, 211, 153]
+      }[t.type] || [239, 68, 68];
+      const NAME = {
+        dash_slash: '흑풍삼단참', needle_burst: '천라지망', blood_quake: '지열혈파',
+        necromancer_blast: '원혼탄', curse_blast: '흑마 주박술', necromancer_summon: '만골 소환술'
+      }[t.type];
+      const rgba = a => `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, ${a})`;
+      const zone = (drawPath) => {
+        ctx.save();
+        drawPath(1);                       // 전체 영역
+        ctx.fillStyle = rgba(0.10 + progress * 0.08);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = rgba(0.55 + progress * 0.35);
+        ctx.shadowColor = rgba(0.9);
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        drawPath(Math.max(0.05, progress)); // 차오르는 안쪽
+        ctx.fillStyle = rgba(0.18 + progress * 0.22);
+        ctx.fill();
+        ctx.restore();
+      };
+      ctx.save();
       if (t.type === 'dash_slash') {
-        const dx = t.targetX - e.x;
-        const dy = t.targetY - e.y;
-        const ang = Math.atan2(dy, dx);
-        const dist = Math.hypot(dx, dy);
-
+        const dx = t.targetX - e.x, dy = t.targetY - e.y;
+        const ang = Math.atan2(dy, dx), dist = Math.hypot(dx, dy);
         ctx.rotate(ang);
-        ctx.fillStyle = `rgba(239, 68, 68, ${0.15 + progress * 0.35})`;
-        ctx.fillRect(0, -26, dist, 52);
-
-        ctx.strokeStyle = '#ef4444';
-        ctx.setLineDash([8, 6]);
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(0, -26, dist, 52);
-
-        // 전방 돌진 기운 화살표 스트림
-        const flowOff = (state.gameTime * 280) % 36;
-        for (let fx = flowOff; fx < dist - 25; fx += 36) {
-          ctx.strokeStyle = `rgba(254, 202, 202, ${0.35 + progress * 0.45})`;
-          ctx.lineWidth = 2.0;
-          ctx.beginPath();
-          ctx.moveTo(fx - 10, -16);
-          ctx.lineTo(fx, 0);
-          ctx.lineTo(fx - 10, 16);
-          ctx.stroke();
-        }
-
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.moveTo(dist, 0);
-        ctx.lineTo(dist - 22, -20);
-        ctx.lineTo(dist - 22, 20);
-        ctx.closePath();
-        ctx.fill();
-
-        // 머리 위 스킬명 예고 배너
-        ctx.save();
-        ctx.rotate(-ang);
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillStyle = '#fca5a5';
-        ctx.shadowColor = '#dc2626';
-        ctx.shadowBlur = 8;
-        ctx.textAlign = 'center';
-        ctx.fillText('⚡【 흑풍삼단참 (黑風三段斬) 】', 0, -e.radius - 36);
-        ctx.restore();
-
-      } else if (t.type === 'needle_burst') {
-        const rad = t.radius || 180;
-        ctx.strokeStyle = `rgba(168, 85, 247, ${0.4 + progress * 0.5})`;
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([6, 6]);
-        ctx.beginPath();
-        ctx.arc(0, 0, rad * progress, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = `rgba(168, 85, 247, 0.12)`;
-        ctx.beginPath();
-        ctx.arc(0, 0, rad, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 12방향 암기 궤적 예고선
-        for (let n = 0; n < 12; n++) {
-          const nAng = (n / 12) * Math.PI * 2;
-          ctx.strokeStyle = `rgba(192, 132, 252, ${0.45 + progress * 0.45})`;
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([]);
-          ctx.beginPath();
-          ctx.moveTo(Math.cos(nAng) * (rad * 0.35), Math.sin(nAng) * (rad * 0.35));
-          ctx.lineTo(Math.cos(nAng) * rad, Math.sin(nAng) * rad);
-          ctx.stroke();
-        }
-
-        // 스킬명 예고 배너
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillStyle = '#d8b4fe';
-        ctx.shadowColor = '#7e22ce';
-        ctx.shadowBlur = 8;
-        ctx.textAlign = 'center';
-        ctx.fillText('🕸️【 천라지망 (天羅地網) 】', 0, -e.radius - 36);
-
+        zone(k => { ctx.beginPath(); ctx.roundRect(0, -24, Math.max(10, dist * k), 48, 24); });
       } else if (t.type === 'blood_quake') {
-        const qx = t.targetX - e.x;
-        const qy = t.targetY - e.y;
-        ctx.save();
-        ctx.translate(qx, qy);
-        const rad = t.radius || 95;
-
-        // 충전되는 붉은 피바닥 영역
-        ctx.fillStyle = `rgba(220, 38, 38, ${0.18 + progress * 0.38})`;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, rad * progress, rad * 0.58 * progress, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 외곽 위험 경계선
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2.4;
-        ctx.setLineDash([8, 6]);
-        ctx.shadowColor = '#dc2626';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, rad, rad * 0.58, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // 폭발 직전 지면 암석이 갈라지며 핏빛 마그마가 새어나오는 사전 균열!
-        if (progress > 0.25) {
-          const crackProg = (progress - 0.25) / 0.75;
-          ctx.strokeStyle = `rgba(254, 202, 202, ${crackProg})`;
-          ctx.lineWidth = 2.0;
-          ctx.shadowBlur = 8;
-          drawFissureLines(ctx, rad * crackProg * 0.88, 42);
-        }
-
-        // 지면 중심 경고 배너
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillStyle = '#fee2e2';
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 10;
-        ctx.textAlign = 'center';
-        ctx.fillText('💥【 지열혈파 (地裂血波) 】', 0, -rad * 0.58 - 14);
-
-        ctx.restore();
+        const r = (t.radius || 95) * 1.25;
+        ctx.translate(t.targetX - e.x, t.targetY - e.y);
+        zone(k => { ctx.beginPath(); ctx.ellipse(0, 0, r * k, r * 0.6 * k, 0, 0, Math.PI * 2); });
       } else if (t.type === 'necromancer_blast' || t.type === 'curse_blast') {
-        // --- 幽冥 怨魂彈 (원혼탄) 시전 예고: 회전하는 구궁팔괘진 + 플레이어 방향 유도 궤적 빔 ---
-        const isCurse = t.type === 'curse_blast';
-        const mainColor = isCurse ? '#c084fc' : '#34d399';
-        const shadowCol = isCurse ? '#9333ea' : '#059669';
-
-        // 1. 술사 발밑의 회전하는 흑마 영혼마법진
-        ctx.save();
-        const sealRot = state.gameTime * 2.5;
-        ctx.strokeStyle = mainColor;
-        ctx.shadowColor = shadowCol;
-        ctx.shadowBlur = 16;
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(0, 0, 42, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.setLineDash([6, 6]);
-        ctx.beginPath();
-        ctx.arc(0, 0, 50, sealRot, sealRot + Math.PI * 2);
-        ctx.stroke();
-
-        // 8방향 룬 부적 마크
-        for (let r = 0; r < 8; r++) {
-          const rAng = sealRot + (r * Math.PI / 4);
-          const rx = Math.cos(rAng) * 46;
-          const ry = Math.sin(rAng) * 46;
-          ctx.fillStyle = mainColor;
-          ctx.fillRect(rx - 2.5, ry - 2.5, 5, 5);
+        if (t.targetX !== undefined) {
+          const dx = t.targetX - e.x, dy = t.targetY - e.y;
+          const ang = Math.atan2(dy, dx), dist = Math.min(520, Math.hypot(dx, dy));
+          ctx.rotate(ang);
+          zone(k => { ctx.beginPath(); ctx.roundRect(0, -16, Math.max(10, dist * k), 32, 16); });
         }
-        ctx.restore();
-
-        // 2. 플레이어 조준 예고 궤적선 (Dashed aim laser beam)
-        const dx = t.targetX - e.x;
-        const dy = t.targetY - e.y;
-        const ang = Math.atan2(dy, dx);
-        const dist = Math.hypot(dx, dy);
-
-        ctx.save();
-        ctx.rotate(ang);
-        // 채워지는 붉은/초록 위험 궤적 빔
-        ctx.fillStyle = isCurse ? `rgba(147, 51, 234, ${0.12 + progress * 0.28})` : `rgba(16, 185, 129, ${0.12 + progress * 0.28})`;
-        ctx.fillRect(0, -16, dist, 32);
-
-        ctx.strokeStyle = mainColor;
-        ctx.lineWidth = 2.2;
-        ctx.setLineDash([12, 6]);
-        ctx.lineDashOffset = -state.gameTime * 40;
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(dist, 0);
-        ctx.stroke();
-
-        // 목표 지점 타겟팅 해골 룬 표식
-        ctx.restore();
-        ctx.save();
-        ctx.translate(dx, dy);
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2.5;
-        ctx.shadowColor = '#dc2626';
-        ctx.shadowBlur = 14;
-        ctx.beginPath();
-        ctx.arc(0, 0, 24 * (1.2 - progress * 0.2), 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = `rgba(239, 68, 68, ${0.2 + progress * 0.35})`;
-        ctx.beginPath();
-        ctx.arc(0, 0, 22, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 중앙 두개골 경고 마크
-        ctx.font = 'bold 16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('💀', 0, 0);
-        ctx.restore();
-
-        // 3. 머리 위 스킬명 칭호
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillStyle = mainColor;
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 8;
-        ctx.textAlign = 'center';
-        ctx.fillText(t.skillName || '幽冥 怨魂彈', 0, -170);
-        ctx.shadowBlur = 0;
-
       } else if (t.type === 'necromancer_summon') {
-        // --- 萬骨 召喚術 (만골 소환술) 의식 예고: 지면 균열 소환진 & 솟구치는 해골 손 ---
-        // 1. 머리 위 스킬 칭호
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillStyle = '#6ee7b7';
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 8;
-        ctx.textAlign = 'center';
-        ctx.fillText('萬骨 召喚術 (만골 소환술)', 0, -170);
-        ctx.shadowBlur = 0;
-
-        // 2. 술사 본체의 영혼 기둥
-        ctx.fillStyle = `rgba(16, 185, 129, ${0.15 + progress * 0.3})`;
-        ctx.fillRect(-20, -160, 40, 160);
-
-        // 3. 소환 거점 2곳의 지면 萬骨陣
-        if (t.summonPoints) {
-          t.summonPoints.forEach((sp, idx) => {
-            const sx = sp.x - e.x;
-            const sy = sp.y - e.y;
-            ctx.save();
-            ctx.translate(sx, sy);
-
-            const sRot = state.gameTime * 3 + idx;
-            ctx.strokeStyle = '#34d399';
-            ctx.shadowColor = '#10b981';
-            ctx.shadowBlur = 16;
-            ctx.lineWidth = 2.4;
-
-            // 소환 마법진 원
-            ctx.beginPath();
-            ctx.arc(0, 0, 32, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // 내부 축소 링
-            ctx.beginPath();
-            ctx.arc(0, 0, 32 * (1 - progress), 0, Math.PI * 2);
-            ctx.stroke();
-
-            ctx.fillStyle = `rgba(5, 150, 105, ${0.18 + progress * 0.35})`;
-            ctx.beginPath();
-            ctx.arc(0, 0, 30, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 지면에서 솟아오르는 백골 기운
-            const reachY = -progress * 26;
-            ctx.fillStyle = '#f8fafc';
-            ctx.fillRect(-4, reachY, 8, 22);
-            ctx.fillRect(-10, reachY + 4, 20, 4);
-
-            ctx.font = 'bold 12px sans-serif';
-            ctx.fillStyle = '#a7f3d0';
-            ctx.textAlign = 'center';
-            ctx.fillText('☠ 백골 소환', 0, -38);
-            ctx.restore();
-          });
-        }
+        (t.summonPoints || []).forEach(sp => {
+          ctx.save();
+          ctx.translate(sp.x - e.x, sp.y - e.y);
+          zone(k => { ctx.beginPath(); ctx.ellipse(0, 0, 70 * k, 42 * k, 0, 0, Math.PI * 2); });
+          ctx.restore();
+        });
+      } else {
+        const r = t.radius || 180;
+        zone(k => { ctx.beginPath(); ctx.ellipse(0, 0, r * k, r * 0.6 * k, 0, 0, Math.PI * 2); });
       }
       ctx.restore();
+      if (NAME) {
+        // 기술 이름: 머리 위 작은 한 줄
+        ctx.save();
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+        ctx.strokeText(NAME, 0, -(e.isMiniBoss ? 200 : 160));
+        ctx.fillStyle = rgba(1);
+        ctx.fillText(NAME, 0, -(e.isMiniBoss ? 200 : 160));
+        ctx.restore();
+      }
     }
 
     // Ground Shadow

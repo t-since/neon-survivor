@@ -2,6 +2,18 @@
 let lastTime = performance.now();
 let contactDmgSum = 0, contactDmgMax = 0; // 몸통 피해 합산용
 
+// 서진에게 디버프 걸기 (poison: 맹독 초당 피해 / slow: 둔화). 이미 걸려 있으면 남은 시간만 늘림
+function applyPlayerDebuff(kind, seconds) {
+  if (state.isGodMode || (player.activeBuffs && player.activeBuffs.invincible > 0)) return;
+  if (!player.debuffs) player.debuffs = { poison: 0, slow: 0 };
+  const was = player.debuffs[kind] > 0;
+  player.debuffs[kind] = Math.max(player.debuffs[kind] || 0, seconds);
+  if (!was) {
+    damageTexts.push({ x: player.x, y: player.y - 150, text: kind === 'poison' ? '☣ 중독' : '❄ 빙결 둔화', color: kind === 'poison' ? '#4ade80' : '#7dd3fc', size: 15, life: 1.0, vy: -30 });
+    updateHudDebuffs();
+  }
+}
+
 function gameLoop(time) {
   const dt = Math.min(0.1, (time - lastTime) / 1000);
   lastTime = time;
@@ -168,6 +180,10 @@ function updateGame(dt) {
         if (!player.isDashing && !state.isGodMode) {
           playerTakeDamage(p.damage);
           createHitSparks(p.x, p.y, p.color);
+          // 독공: 독 표창·원혼탄 → 맹독(초당 피해) / 빙공: 서리 화살, 4구역(북해빙궁) 투사체 → 둔화
+          const POISON_PROJ = { poison_shuriken: 1, curse_orb: 1 };
+          if (POISON_PROJ[p.type]) applyPlayerDebuff('poison', 3.5);
+          else if (p.type === 'enemy_arrow' || currentSelectedSector === 4) applyPlayerDebuff('slow', 2.2);
           if (p.type === 'curse_orb') {
             createShockwave(p.x, p.y, 45, p.color || '#10b981');
             damageTexts.push({
@@ -877,6 +893,8 @@ function updateGame(dt) {
       // 바로 깎지 않고 모아 두었다가 다음 계산 때 한 번에 (아래 '몸통 피해 합산' 참고)
       contactDmgSum += e.damage;
       contactDmgMax = Math.max(contactDmgMax, e.damage);
+      // 독공 몸통 공격: 부패시귀·혈강시·독살수에 닿으면 맹독
+      if (e.type === 'ghoul' || e.type === 'jiangshi' || e.type === 'poison_assassin') applyPlayerDebuff('poison', 3);
     }
 
     // 공격 동작 신호 (새 몬스터 그림의 공격 4장을 재생하는 시간)

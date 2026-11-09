@@ -269,118 +269,53 @@ function renderEnvironmentWeather() {
 
 // 쿼터뷰 입체 환경 오브젝트 (대나무 기둥 군락, 성벽 횃불, 동굴 혈석 등)
 function renderEnvironmentProps() {
+  // 관문 장식 소품 (제미나이 그림, 2026-11-09): 성채 = 쇠 화로, 동굴 = 종유석·빛나는 버섯, 결전장 = 청동 향로, 죽림 = 없음
+  // (예전: 코드로 그린 횃불·뾰족한 보라 수정·룬 표식 → 배경과 어울리지 않아 교체)
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
   const zoneIdx = Math.max(0, Math.min(3, (state.currentZone || 1) - 1));
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][zoneIdx]) ? ZONE_CONFIGS[secIdx][zoneIdx] : ZONE_CONFIGS[0][0];
-  const propType = zoneCfg.propType || 'bamboo';
+  const ART = {
+    torch:   { key: 'prop_brazier',    h: 105, glow: [251, 146, 60] },
+    crystal: { key: 'prop_stalagmite', h: 125, glow: [45, 212, 191] },
+    altar:   { key: 'prop_incense',    h: 95,  glow: null }
+  }[zoneCfg.propType];
+  if (!ART) return;
+  const img = SPRITES[ART.key];
+  if (!img || !img.width) return;
 
-  const gridSize = 280;
-  const minGX = Math.floor((state.camera.x - gameWidth / 2 - 140) / gridSize);
-  const maxGX = Math.ceil((state.camera.x + gameWidth / 2 + 140) / gridSize);
-  const minGY = Math.floor((state.camera.y - gameHeight / 2 - 140) / gridSize);
-  const maxGY = Math.ceil((state.camera.y + gameHeight / 2 + 140) / gridSize);
+  const gridSize = 430;
+  const minGX = Math.floor((state.camera.x - gameWidth / 2 - 160) / gridSize);
+  const maxGX = Math.ceil((state.camera.x + gameWidth / 2 + 160) / gridSize);
+  const minGY = Math.floor((state.camera.y - gameHeight / 2 - 200) / gridSize);
+  const maxGY = Math.ceil((state.camera.y + gameHeight / 2 + 200) / gridSize);
+  const h = ART.h, w = h * img.width / img.height;
 
   for (let gx = minGX; gx <= maxGX; gx++) {
     for (let gy = minGY; gy <= maxGY; gy++) {
-      // Deterministic hash for natural prop placement
       const hash = Math.sin(gx * 374761393 + gy * 668265263) * 10000;
       const rnd = hash - Math.floor(hash);
-
-      // 40% probability of prop in each grid cell
-      if (rnd > 0.42) continue;
-
-      const px = gx * gridSize + (rnd * 160) - 80;
-      const py = gy * gridSize + ((rnd * 7) % 1 * 160) - 80;
+      if (rnd > 0.3) continue; // 칸마다 30% 확률
+      const px = gx * gridSize + (rnd * 260) - 130;
+      const py = gy * gridSize + ((rnd * 7) % 1 * 260) - 130;
+      if (Math.hypot(px, py) < 260) continue; // 시작 지점·결전 제단 가운데는 비움
 
       ctx.save();
       ctx.translate(px, py);
-
-      if (propType === 'bamboo') {
-        // [1관문: 청운림 죽림] 고화질 심리스 숲길 텍스처 자체의 아름다운 흙/돌/이끼 질감이 깨끗하게 드러나도록 인위적 프랍 제외
-      } else if (propType === 'torch') {
-        // [2관문: 흑풍채 성벽] 불타는 성벽 석등 & 횃불 기둥
-        // Ground shadow & fire light glow
-        const glowPulse = 1 + Math.sin(state.gameTime * 8 + px) * 0.12;
-        const fireGrad = ctx.createRadialGradient(0, -10, 5, 0, -10, 52 * glowPulse);
-        fireGrad.addColorStop(0, 'rgba(245, 158, 11, 0.45)');
-        fireGrad.addColorStop(0.6, 'rgba(239, 68, 68, 0.15)');
-        fireGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = fireGrad;
-        ctx.beginPath();
-        ctx.ellipse(0, 4, 52 * glowPulse, 28 * glowPulse, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Stone pillar
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(-6, -34, 12, 34);
-        ctx.fillStyle = '#475569';
-        ctx.fillRect(-9, -40, 18, 6);
-
-        // Dancing flame
-        const flameH = 14 + Math.sin(state.gameTime * 12 + py) * 3;
-        ctx.fillStyle = '#fbbf24';
-        ctx.beginPath();
-        ctx.moveTo(-5, -40);
-        ctx.lineTo(0, -40 - flameH);
-        ctx.lineTo(5, -40);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(0, -40 - flameH * 0.35, 4, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (propType === 'crystal') {
-        // [3관문: 혈풍 동굴] 신비로운 자색/핏빛 수정 혈석 결정
-        const pulse = 1 + Math.sin(state.gameTime * 4 + px) * 0.08;
-        // Crystal Glow
-        ctx.fillStyle = 'rgba(168, 85, 247, 0.22)';
-        ctx.beginPath();
-        ctx.ellipse(0, 4, 32 * pulse, 16 * pulse, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Crystal Spikes
-        ctx.fillStyle = '#a855f7';
-        ctx.beginPath();
-        ctx.moveTo(0, -38 * pulse);
-        ctx.lineTo(10, -4);
-        ctx.lineTo(0, 4);
-        ctx.lineTo(-10, -4);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = '#ec4899';
-        ctx.beginPath();
-        ctx.moveTo(8, -26 * pulse);
-        ctx.lineTo(16, -2);
-        ctx.lineTo(8, 4);
-        ctx.lineTo(2, -2);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        // [4관문: 천마전 대전당] 붉은 결계 마교 룬 표식 & 혈염 화로
-        const runeRot = state.gameTime * 0.6 + px;
-        ctx.save();
-        ctx.rotate(runeRot);
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(0, 0, 22, 0, Math.PI * 2);
-        ctx.stroke();
-        // Inner blood seal square
-        ctx.strokeRect(-12, -12, 24, 24);
-        ctx.restore();
-
-        // Fire Brazier
-        ctx.fillStyle = '#1e1b4b';
-        ctx.beginPath();
-        ctx.arc(0, -8, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(0, -12, 6 + Math.sin(state.gameTime * 10) * 2, 0, Math.PI * 2);
-        ctx.fill();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, 2, w * 0.4, w * 0.15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (ART.glow) {
+        const pulse = 1 + Math.sin(state.gameTime * 6 + px) * 0.1;
+        const gy2 = -h * 0.7;
+        const g = ctx.createRadialGradient(0, gy2, 4, 0, gy2, 80 * pulse);
+        g.addColorStop(0, `rgba(${ART.glow[0]}, ${ART.glow[1]}, ${ART.glow[2]}, 0.32)`);
+        g.addColorStop(1, `rgba(${ART.glow[0]}, ${ART.glow[1]}, ${ART.glow[2]}, 0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(-90, gy2 - 90, 180, 180);
       }
-
+      if (rnd < 0.15) ctx.scale(-1, 1);
+      ctx.drawImage(img, -w / 2, -h + 6, w, h);
       ctx.restore();
     }
   }
@@ -630,7 +565,8 @@ const PROP_SPRITE_DEFS = {
   rock_big:   { key: 'prop_rock_big',   w: 128, foot: 10, shadowW: 0.46 },
   boulder:    { key: 'prop_rock_big',   w: 128, foot: 10, shadowW: 0.46 },
   rock_small: { key: 'prop_rock_small', w: 70,  foot: 6,  shadowW: 0.46 },
-  lantern:    { key: 'prop_lantern',    h: 112, foot: 8,  shadowW: 0.40, glow: true }
+  lantern:    { key: 'prop_lantern',    h: 112, foot: 8,  shadowW: 0.40, glow: true },
+  fence:      { key: 'prop_barricade',  w: 120, foot: 8,  shadowW: 0.42 }
 };
 
 // pass: 'back' = 주인공보다 뒤(위쪽)에 있는 소품, 'front' = 주인공보다 앞(아래쪽)에 있는 소품
