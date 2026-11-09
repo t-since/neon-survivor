@@ -361,7 +361,20 @@ function updateGame(dt) {
   contactDmgMax = 0;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
-    if (!e._diffApplied) { e._diffApplied = true; const k = difficultyCfg().hp; e.hp *= k; e.maxHp = (e.maxHp || e.hp) * k; }
+    if (!e._diffApplied) {
+      e._diffApplied = true;
+      const sc = sectorScale();
+      // 보스·중간보스는 구역 배율을 절반만 (너무 길어지지 않게)
+      const hpK = difficultyCfg().hp * (e.isBoss || e.isMiniBoss ? 1 + (sc.hp - 1) * 0.5 : sc.hp);
+      e.hp *= hpK; e.maxHp = (e.maxHp || e.hp) * hpK;
+      e.damage = (e.damage || 0) * sc.dmg;
+      if (e.speed) e.speed *= sc.spd;
+      e.expVal = Math.round((e.expVal || 2) * sc.exp);
+      // 정예: 크고 붉게, 체력 2.5배·공격력 1.4배·경험치 3배
+      if (!e.isBoss && !e.isMiniBoss && Math.random() < sc.elite) {
+        e.elite = true; e.hp *= 2.5; e.maxHp *= 2.5; e.damage *= 1.4; e.expVal *= 3; e.radius = (e.radius || 18) * 1.2;
+      }
+    }
     if (e.hp <= 0) {
       enemies.splice(i, 1);
       continue;

@@ -179,7 +179,7 @@ function drawEnemyArt(e, art, facing, isMoving, runTimer) {
   const img = SPRITES[key] || SPRITES[art.key + '_walk_0'];
   const k = art.h / 300;
   const hop = e.type === 'jiangshi' ? -(e.hopHeight || 0) : 0;
-  const look = (e.hitCooldown > 0.06) ? 'brightness(2.4) saturate(0.3)' : art.filter; // 맞은 순간 하얗게 / 종류별 색
+  const look = (e.hitCooldown > 0.06) ? 'brightness(2.4) saturate(0.3)' : (e.elite ? ((art.filter ? art.filter + ' ' : '') + 'sepia(0.35) saturate(1.8) hue-rotate(-25deg) brightness(0.95)') : art.filter); // 맞은 순간 하얗게 / 정예 붉게 / 종류별 색
   ctx.drawImage(tinted(img, look), -220 * k, -320 * k + 4 + hop, 440 * k, 340 * k);
 }
 
@@ -294,6 +294,15 @@ function renderEnemiesInner() {
       ctx.translate(-facing * flinch, 0);
     }
 
+    if (e.elite) {
+      // 정예: 발밑 붉은 기운 + 1.2배
+      ctx.save();
+      ctx.globalAlpha = 0.45 + Math.sin(state.gameTime * 5 + (e.seed || 0)) * 0.15;
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath(); ctx.ellipse(0, 4, e.radius * 1.5, e.radius * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      ctx.scale(1.2, 1.2);
+    }
     // 일반 몬스터 공통 걸음 연출 (종류별 성격): 걸음마다 살짝 튀고, 가는 방향으로 숙이고, 좌우로 흔들림
     // (보스·중간보스는 각자 연출, 강시는 콩콩 뛰기가 따로 있음)
     if (!e.isBoss && !e.isMiniBoss && e.type !== 'jiangshi') {

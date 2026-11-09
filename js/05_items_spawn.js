@@ -1,4 +1,18 @@
 // 장비 아이템, 적 등장, 보스
+// --- 적 등급과 구역별 강해짐 (2026-11) ---
+// 등급: 1 약함 ~ 4 강함. 구역·관문이 오를수록 높은 등급이 섞여 나옴
+const ENEMY_TIER = { assassin: 1, archer: 1, spearman: 2, jiangshi: 2, skeleton: 2, ghoul: 2, poison_assassin: 3, barbarian: 3, necromancer: 3, curse_mage: 3, butcher: 4, sorceress: 4 };
+// 구역(1~5)별 배율: 체력·공격력·이동속도·경험치, 정예 확률
+const SECTOR_SCALE = [
+  { hp: 1.0, dmg: 1.0,  spd: 1.0,  exp: 1.0, elite: 0.03 },
+  { hp: 1.6, dmg: 1.25, spd: 1.04, exp: 1.3, elite: 0.06 },
+  { hp: 2.4, dmg: 1.5,  spd: 1.08, exp: 1.6, elite: 0.09 },
+  { hp: 3.4, dmg: 1.8,  spd: 1.12, exp: 2.0, elite: 0.12 },
+  { hp: 4.6, dmg: 2.1,  spd: 1.16, exp: 2.4, elite: 0.15 }
+];
+function sectorScale() { return SECTOR_SCALE[Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1))]; }
+// 지금 나올 수 있는 가장 높은 등급: 1구역 = 1관문 1등급, 2·3관문 2등급, 4관문 3등급 / 구역마다 +1 (최대 4)
+function maxEnemyTier() { return Math.max(1, Math.min(4, (currentSelectedSector || 1) + Math.floor((state.currentZone || 1) / 2))); }
 const ITEM_POOL = [
   // Weapons (비검 룩변 & 특수 옵션)
   {
@@ -280,6 +294,12 @@ function transitionToNextZone() {
 // 9가지 개성 넘치는 적 군단 스폰 (해골병, 부패시귀, 사령술사, 도살마인, 쌍도객, 주술녀, 궁수, 투창병, 강시, 살수)
 // --- Stage-Matched Thematic Enemy Pools (관문 및 스테이지별 테마 몬스터 시스템) ---
 function getStageEnemyDistribution() {
+  const pool = getThemeEnemyPool();
+  const maxT = maxEnemyTier();
+  const ok = pool.filter(p => (ENEMY_TIER[p.type] || 1) <= maxT);
+  return ok.length ? ok : [{ type: 'assassin', name: '흑풍 살수', weight: 60 }, { type: 'archer', name: '흑의 궁수', weight: 40 }];
+}
+function getThemeEnemyPool() {
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
   const curZone = Math.max(0, Math.min(3, (state.currentZone || 1) - 1));
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][curZone]) ? ZONE_CONFIGS[secIdx][curZone] : ZONE_CONFIGS[0][0];
