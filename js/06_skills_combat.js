@@ -342,6 +342,7 @@ function triggerMeleeAttack(target) {
   }
 
   if (hits > 0) {
+    sound.playSample(isFinisher ? 'slice' : 'blade_hit', isFinisher ? 0.6 : 0.35, isFinisher ? 1 : 1.15, 0.08, 0.08);
     // 검기 흡혈: 근거리로 싸우면 맞는 만큼 조금씩 회복 (근거리가 맞기만 한다는 의견 반영)
     const heal = Math.min(4, hits) * (isFinisher ? 2 : 1);
     if (player.hp < player.maxHp) {
