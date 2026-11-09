@@ -67,6 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// 첫 터치/클릭/키 입력 때 소리 켜기 (브라우저는 사용자가 누르기 전엔 소리를 막음)
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, () => sound.init(), { once: false, passive: true }));
+
 // --- Pause & Modals ---
 const pauseBtn = document.getElementById('pauseBtn');
 const pauseModal = document.getElementById('pauseModal');
@@ -86,6 +89,7 @@ closeCheatBtn.onclick = () => toggleCheatModal();
 soundBtn.onclick = () => {
   sound.init();
   sound.enabled = !sound.enabled;
+  sound.applyEnabled();
   soundBtn.innerText = sound.enabled ? '🔊' : '🔇';
 };
 

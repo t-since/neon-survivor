@@ -14,7 +14,16 @@ function applyPlayerDebuff(kind, seconds) {
   }
 }
 
+function pickMusicKey() {
+  if (!state.isGameStarted) return 'title';
+  if (state.boss) return 'boss';
+  const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
+  const z = (ZONE_CONFIGS[secIdx] || ZONE_CONFIGS[0])[Math.max(0, Math.min(3, (state.currentZone || 1) - 1))] || {};
+  return { bamboo_grove: 'bamboo', stone_fortress: 'fortress', blood_cavern: 'cavern', demon_sanctum: 'boss' }[z.theme] || 'bamboo';
+}
+
 function gameLoop(time) {
+  sound.setMusic(pickMusicKey());
   const dt = Math.min(0.1, (time - lastTime) / 1000);
   lastTime = time;
 

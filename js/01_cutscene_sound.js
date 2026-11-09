@@ -280,10 +280,24 @@ const ThreeCutsceneEngine = {
 };
 
 // --- Audio Synthesizer (Web Audio API) ---
+// 배경음악 파일 (제미나이 '음악 만들기'로 생성 → MP3, 약 3분, 끝과 처음이 이어지게 처리)
+const BGM_FILES = {
+  title: 'assets/audio/bgm_title.mp3',
+  bamboo: 'assets/audio/bgm_bamboo.mp3',
+  fortress: 'assets/audio/bgm_fortress.mp3',
+  cavern: 'assets/audio/bgm_cavern.mp3',
+  boss: 'assets/audio/bgm_boss.mp3'
+};
+const BGM_VOLUME = 0.45;
+
 class SoundManager {
   constructor() {
     this.ctx = null;
     this.enabled = true;
+    this.music = null;       // 지금 나오는 곡 (Audio)
+    this.musicKey = null;    // 지금 곡 이름
+    this.wantMusic = null;   // 틀어야 할 곡 (첫 터치 전이면 기다렸다가 재생)
+    this.unlocked = false;   // 브라우저는 사용자가 한 번 누른 뒤에야 소리를 냄
   }
   init() {
     if (!this.ctx) {
@@ -293,7 +307,37 @@ class SoundManager {
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+    if (!this.unlocked) {
+      this.unlocked = true;
+      if (this.wantMusic) { const k = this.wantMusic; this.musicKey = null; this.setMusic(k); }
+    }
   }
+  // 배경음악 바꾸기: 같은 곡이면 그대로, 다른 곡이면 1초 동안 소리를 줄였다 키우며 넘김
+  setMusic(key) {
+    this.wantMusic = key;
+    if (!this.unlocked || this.musicKey === key) return;
+    this.musicKey = key;
+    const old = this.music;
+    if (old) this.fade(old, old.volume, 0, 900, () => { old.pause(); });
+    if (!key || !BGM_FILES[key]) { this.music = null; return; }
+    const a = new Audio(BGM_FILES[key]);
+    a.loop = true;
+    a.volume = 0;
+    a.muted = !this.enabled;
+    a.play().catch(() => {});
+    this.music = a;
+    this.fade(a, 0, BGM_VOLUME, 1200);
+  }
+  fade(a, from, to, ms, done) {
+    const t0 = performance.now();
+    const step = () => {
+      const k = Math.min(1, (performance.now() - t0) / ms);
+      a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+      if (k < 1) requestAnimationFrame(step); else if (done) done();
+    };
+    step();
+  }
+  applyEnabled() { if (this.music) this.music.muted = !this.enabled; }
   playSwordSlash() {
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
