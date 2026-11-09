@@ -456,7 +456,7 @@ class SoundManager {
     src.start(t);
   }
   playHit() {
-    if (this.playSample('wx_hurt', 0.42, 1, 0.08, 0.35)) return;
+    if (this.playSample('wx_hurt', 0.8, 1, 0.08, 0.35)) return;
     if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
