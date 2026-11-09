@@ -381,11 +381,12 @@ function renderEnemiesInner() {
       const shadowK = 1 - lift / 40;
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.beginPath();
-      ctx.ellipse(0, 4, 58 * shadowK, 20 * shadowK, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 4, 80 * shadowK, 26 * shadowK, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = 'rgba(185, 28, 28, 0.22)';
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = bossStyle(e).color;
       ctx.beginPath();
-      ctx.ellipse(0, 4, 74, 30, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 4, 104, 40, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
@@ -394,17 +395,7 @@ function renderEnemiesInner() {
       ctx.scale(facing * (1 + land * 0.04), 1 - land * 0.05 + breathe); // 발 기준으로 눌렸다 펴짐
       // 60FPS Hit Flash: Handled via lightweight GPU blend
 
-      const bossImg = SPRITES.boss_demon;
-      const bw = 180;
-      const bh = 240; // 795x1060 해상도 비율에 맞춘 웅장한 위압감 (3:4 비율)
-      if (bossImg && bossImg.complete) {
-        ctx.drawImage(bossImg, -bw / 2, -bh + 20, bw, bh);
-      } else {
-        ctx.fillStyle = '#991b1b';
-        ctx.beginPath();
-        ctx.arc(0, -65, 58, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      const bh = drawBossBody(e, walking); // 구역마다 다른 보스 그림 (12_bosses.js)
 
       // Overhead Boss Title & HP Bar (Unflip facing for clear text)
       ctx.scale(facing, 1);
@@ -444,11 +435,16 @@ function renderEnemiesInner() {
       // 2. 흑철 참마도장 전용 4단 전진/질주 스프라이트 애니메이션! (1.3배: 192x312 px - 거대한 위압감)
       const mbFrame = isMoving ? (Math.floor(runTimer * 1.25) % 4) : 0;
       const mbImg = SPRITES['miniboss_run_' + mbFrame] || SPRITES.miniboss_run_0 || SPRITES[e.customSprite] || SPRITES.assassin;
+      const look = miniBossLook(e); // 관문마다 다른 모습·구역 색 (12_bosses.js)
       const mw = 192;
-      const mh = 312;
+      const mh = look.art ? look.h : 312;
+      const mbTint = e.hitCooldown > 0.06 ? 'brightness(2.0) saturate(0.4)' : look.filter;
 
-      if (mbImg && mbImg.complete) {
-        ctx.drawImage(mbImg, -mw / 2, -mh + 22, mw, mh);
+      if (look.art && SPRITES[look.art + '_walk_0']) {
+        ctx.scale(facing, 1); // drawEnemyArt 가 다시 뒤집으므로 되돌림
+        drawEnemyArt(e, { key: look.art, h: look.h, filter: mbTint, hop: false }, facing, isMoving, runTimer);
+      } else if (mbImg && mbImg.complete) {
+        ctx.drawImage(tinted(mbImg, mbTint), -mw / 2, -mh + 22, mw, mh);
       } else {
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();

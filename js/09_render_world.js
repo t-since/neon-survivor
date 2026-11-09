@@ -43,6 +43,7 @@ function renderWorldContents() {
 
   // 1.8 Draw Poison Mist Zones (만천화우 독 안개 장판)
   renderPoisonZones();
+  renderBossHazards();
 
   // 2. Draw Exp Gems & Recovery Elixirs
   renderExpGems();
@@ -129,14 +130,17 @@ function updateEnvironmentWeather(dt) {
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
   const zoneIdx = Math.max(0, Math.min(3, (state.currentZone || 1) - 1));
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][zoneIdx]) ? ZONE_CONFIGS[secIdx][zoneIdx] : ZONE_CONFIGS[0][0];
-  const weatherType = zoneCfg.weather || 'leaves';
+  const weatherType = secIdx === 3 ? 'snow' : (zoneCfg.weather || 'leaves'); // 4구역 북해: 눈
 
   // Spawn weather particles to keep screen immersed
   while (envWeatherParticles.length < MAX_ENV_PARTICLES) {
     const pX = state.camera.x + (Math.random() - 0.5) * (gameWidth + 300);
     const pY = state.camera.y + (Math.random() - 0.5) * (gameHeight + 300);
 
-    if (weatherType === 'leaves') {
+    if (weatherType === 'snow') {
+      // 북해 설원·빙궁: 비스듬히 내리는 눈
+      envWeatherParticles.push({ type: 'snow', x: pX, y: pY, vx: -30 - Math.random() * 30, vy: 50 + Math.random() * 50, rot: 0, vRot: 0, size: 1.5 + Math.random() * 2.5, life: 3 + Math.random() * 3, maxLife: 6, color: '#f1f5f9' });
+    } else if (weatherType === 'leaves') {
       // 1관문: 스산한 숲바람에 살랑살랑 흩날리는 은은한 마른 잎사귀 (차분한 디아블로 무협 톤)
       envWeatherParticles.push({
         type: 'leaves',
@@ -230,7 +234,13 @@ function renderEnvironmentWeather() {
     ctx.rotate(p.rot);
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
 
-    if (p.type === 'leaves') {
+    if (p.type === 'snow') {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, Math.min(0.75, alpha * 0.8));
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p.type === 'leaves') {
       // 숲바람 낙엽 (은은하고 자연스러운 22% 투명도)
       ctx.fillStyle = p.color;
       ctx.globalAlpha = Math.max(0, Math.min(0.24, alpha * 0.3));
@@ -503,7 +513,16 @@ function renderGround() {
     blood_cavern: 'ground_new_cavern',
     demon_sanctum: 'ground_new_fortress'
   };
-  const newKey = GROUND_BY_THEME[zoneCfg.theme] || 'ground_new_fortress';
+  // 구역마다 다른 바닥 (2구역 뒷골목, 3구역 밀림·늪, 4구역 설원·빙궁, 5구역 혈마전) — 그림이 없으면 위 기본 바닥
+  const GROUND_BY_SECTOR = [
+    {},
+    { stone_fortress: 'ground_new_alley' },
+    { bamboo_grove: 'ground_new_jungle', stone_fortress: 'ground_new_jungle', blood_cavern: 'ground_new_swamp', demon_sanctum: 'ground_new_swamp' },
+    { stone_fortress: 'ground_new_snow', blood_cavern: 'ground_new_ice', demon_sanctum: 'ground_new_ice' },
+    { stone_fortress: 'ground_new_bloodpalace', demon_sanctum: 'ground_new_bloodpalace' }
+  ];
+  const secKey = (GROUND_BY_SECTOR[secIdx] || {})[zoneCfg.theme];
+  const newKey = (secKey && SPRITES[secKey] && SPRITES[secKey].width > 0) ? secKey : (GROUND_BY_THEME[zoneCfg.theme] || 'ground_new_fortress');
   const newImg = SPRITES[newKey];
   let groundImg = (newImg && newImg.width > 0) ? newImg : (SPRITES['ground_seamless_stone'] || SPRITES.ground_stone_iso || SPRITES.ground);
 

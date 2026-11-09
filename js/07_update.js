@@ -256,6 +256,7 @@ function updateGame(dt) {
     }
   }
 
+  updateBossHazards(dt); // 보스 바닥 예고 원
   // 3.5 Update Falling Needles (만천화우 은침 소나기)
   for (let i = fallingNeedles.length - 1; i >= 0; i--) {
     const fn = fallingNeedles[i];
@@ -735,7 +736,7 @@ function updateGame(dt) {
       e.skillCooldown = (e.skillCooldown || 3.0) - dt;
       if (e.skillCooldown <= 0) {
         e.skillCooldown = 3.8 + Math.random();
-        const randSkill = Math.floor(Math.random() * 3);
+        const randSkill = pickMiniBossSkill(e); // 모습에 맞는 기술
         if (randSkill === 0) {
           // Skill 1: 흑풍삼단참 (돌진 베기)
           e.telegraph = { type: 'dash_slash', timer: 0.6, maxTimer: 0.6, targetX: player.x, targetY: player.y };
@@ -950,8 +951,10 @@ function updateGame(dt) {
 
     // Boss special attack (혈교 8방향 혈기 탄환 방출 & 돌진)
     if (e.isBoss) {
+      updateBossSkills(e, dt); // 구역마다 다른 기술 (12_bosses.js)
       e.attackTimer += dt;
-      if (e.attackTimer >= 3.2) {
+      if (e.attackTimer >= (e.enraged ? 4.2 : 5.5) && !e.dash) {
+        e.bossAtk = e.bossAtkMax = 0.6;
         e.attackTimer = 0;
         sound.playPalmBlast();
         for (let b = 0; b < 8; b++) {
@@ -964,8 +967,8 @@ function updateGame(dt) {
             vx: Math.cos(ang) * 270,
             vy: Math.sin(ang) * 270,
             life: 2.6,
-            damage: 22,
-            color: '#ef4444',
+            damage: bossDmg(20),
+            color: bossStyle(e).color,
             radius: 8
           });
         }
