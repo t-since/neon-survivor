@@ -139,3 +139,37 @@ save('wx_hit_player', impact(0.22, { crackFc: 2600, body0: 230, body1: 80, bodyD
 save('wx_slash_hit', mix(0.5, [swing(0.09, 900, 2400, 1.4), 0.5], [offset(impact(0.16, { crackFc: 3600, crackDec: 0.006, body0: 260, body1: 110, bodyDec: 0.06, grit: 1.8, wet: 0.15, mud: 0.5 }), 0.045), 1]), 0.9);
 // 3타 큰 베기: 크게 휘두른 뒤 '쾅!' + 북 울림 + 긴 잔향
 save('wx_slash_heavy', mix(0.9, [swing(0.24, 380, 1500), 0.7], [offset(impact(0.3, { crackFc: 3000, crackDec: 0.01, body0: 160, body1: 50, bodyDec: 0.16, grit: 2.4, wet: 0.3, mud: 0.9 }), 0.17), 1], [offset(taiko(0.5, 55), 0.17), 0.6]), 0.95);
+
+// ===== 서진 피격 (귀무자풍 '맞는 느낌'): 상대 무기 바람 → 젖은 살 타격 '촥' + 뼈 울림 '뚝' + 저음 '쿵' + 숨 '헉' (목소리 떨림 없는 숨소리) =====
+function breath(sec, f1, f2, f3) {
+  // 성대 떨림 없이 숨만 모음 '어' 입 모양으로 통과 → 사람이 '헉' 하고 숨 뱉는 느낌
+  const n = noise(Math.floor(sec * SR));
+  const v = mix(sec, [svf(n, () => f1, 6, 'bp'), 1], [svf(n, () => f2, 9, 'bp'), 0.7], [svf(n, () => f3, 12, 'bp'), 0.35]);
+  return shape(v, t => Math.min(1, t / 0.01) * Math.exp(-t / (sec * 0.45)));
+}
+function fleshSlap(sec, fc) {
+  // 빠르게 떨리는 젖은 잡음 '촥'
+  const s = svf(noise(Math.floor(sec * SR)), () => fc, 1.3, 'bp');
+  return shape(s, t => Math.exp(-t / 0.035) * (0.6 + 0.4 * Math.sin(2 * Math.PI * 95 * t)));
+}
+function boneClicks(sec, count) {
+  const x = buf(sec);
+  for (let c = 0; c < count; c++) { const st = Math.floor((0.002 + Math.random() * 0.02) * SR); for (let k = 0; k < 90 && st + k < x.length; k++) x[st + k] += rnd() * Math.exp(-k / 14); }
+  return svf(x, () => 2800, 1.0, 'bp');
+}
+function playerHit(v) {
+  const len = 0.32;
+  const pre = swing(0.06, 1200, 2600, 1.4);                         // 상대 무기 바람
+  const hit = mix(len,
+    [fleshSlap(len, v.slap), 1.0],
+    [boneClicks(len, 4), 0.7],
+    [sweepSine(len, v.b0, v.b1, 0.11, 0.002), 1.0],                  // 저음 '쿵'
+    [crack(len, 3000, 0.006), 0.6]);
+  const huff = offset(breath(0.16, v.f1, v.f2, v.f3), 0.035);       // 숨 '헉'
+  let x = mix(len + 0.08, [pre, 0.35], [offset(saturate(hit, 2.3), 0.045), 1], [huff, v.huff]);
+  return reverb(pad(x, 0.25), 0.2);
+}
+[['wx_hurt_1', { slap: 1500, b0: 190, b1: 65, f1: 640, f2: 1100, f3: 2500, huff: 0.55 }],
+ ['wx_hurt_2', { slap: 1250, b0: 170, b1: 58, f1: 560, f2: 980, f3: 2350, huff: 0.6 }],
+ ['wx_hurt_3', { slap: 1750, b0: 210, b1: 72, f1: 700, f2: 1200, f3: 2650, huff: 0.5 }]
+].forEach(([nm, v]) => save(nm, playerHit(v), 0.95));

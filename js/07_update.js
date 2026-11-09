@@ -1294,6 +1294,11 @@ function playerTakeDamage(amount) {
   actualDmg = Math.max(1, actualDmg);
 
   player.hp -= actualDmg;
+  // 맞는 순간 아주 잠깐 멈칫 (0.35초에 한 번까지) — 맞는 느낌
+  if (!player._hurtFxAt || state.gameTime - player._hurtFxAt > 0.35 || player._hurtFxAt > state.gameTime) {
+    player._hurtFxAt = state.gameTime;
+    state.hitStop = Math.max(state.hitStop || 0, 0.05);
+  }
   player.hitFlashTimer = 0.35; // 피격 플래시 & 경직 모션
   state.screenShake = Math.min(16, (state.screenShake || 0) + 7); // 강렬한 화면 피격 진동
 
