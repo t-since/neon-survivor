@@ -1368,7 +1368,7 @@ function renderPoisonZones() {
       const fadeIn = Math.min(1, (pz.maxLife - pz.life) / 0.3);
       const fadeOut = Math.min(1, pz.life / (pz.maxLife * 0.25));
       const wob = 1 + Math.sin(state.gameTime * 3 + pz.x) * 0.04;
-      drawFxImage('fx_poison', pz.x, pz.y, pz.radius * 2.5 * wob, 0.85 * Math.min(fadeIn, fadeOut), 0, 0.85);
+      drawFxImage('fx_poison', pz.x, pz.y, pz.radius * 2.5 * wob, 0.85 * Math.min(fadeIn, fadeOut), 0, 0.85, pz.isEvo ? 'hue-rotate(150deg) saturate(1.4)' : null); // 초월: 보랏빛
       return;
     }
     ctx.save();

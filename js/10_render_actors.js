@@ -66,6 +66,38 @@ function renderPlayer() {
     ctx.fill();
   }
 
+  // 보조 무공 표시
+  // 금강불괴: 발밑 금빛 고리 (레벨이 높을수록 진하게)
+  const vlv = player.skills.vajra_shield || 0;
+  if (vlv > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.12 + vlv * 0.08;
+    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, 4, 40, 15, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.rotate(state.gameTime * 0.8);
+    ctx.globalAlpha = 0.08 + vlv * 0.05; ctx.lineWidth = 1.2;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; ctx.beginPath(); ctx.arc(Math.cos(a) * 30, Math.sin(a) * 11 + 4, 3, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.restore();
+  }
+  // 흡성대법: 구슬 끌어오는 범위 (은은한 원)
+  const mlv = player.skills.qi_magnet || 0;
+  if (mlv > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.06 + mlv * 0.025;
+    ctx.strokeStyle = '#7dd3fc'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, 0, player.magnetRadius, player.magnetRadius * 0.6, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    if (Math.random() < 0.05 * mlv) {
+      const a = Math.random() * Math.PI * 2, r = player.magnetRadius;
+      particles.push({ x: player.x + Math.cos(a) * r, y: player.y + Math.sin(a) * r * 0.6, vx: -Math.cos(a) * r * 1.6, vy: -Math.sin(a) * r * 0.96, color: '#bae6fd', radius: 2, life: 0.6, maxLife: 0.6 });
+    }
+  }
+  // 답설무흔: 걸을 때 발밑 바람 자국
+  const qlv = player.skills.qinggong_dash || 0;
+  if (qlv > 0 && player.isMoving && Math.random() < 0.12 * qlv) {
+    particles.push({ x: player.x + (Math.random() - 0.5) * 30, y: player.y + 2, vx: -player.facing * (40 + Math.random() * 40), vy: -10 - Math.random() * 15, color: 'rgba(226, 232, 240, 0.7)', radius: 3 + Math.random() * 3, life: 0.45, maxLife: 0.45 });
+  }
+
   // 4. Hit Flinch & Knockback Recoil Displacement
   if (player.hitFlashTimer > 0) {
     const recoil = Math.sin(player.hitFlashTimer * 38) * 4.5;
@@ -92,9 +124,18 @@ function renderPlayer() {
     forward = idx === 2 ? 6 : 0;
     if ((player.attackCombo || 0) === 2 && idx >= 1 && idx <= 2) glow = '#fde047'; // 3타 큰 베기는 금빛
   } else if (player.isMoving) {
-    const f = Math.floor(player.walkTimer * 0.55) % 4; // 걸음 박자 (빨리 달리면 빨라짐)
+    const running = player.speed > (player.baseSpeed || 195) * 1.3; // 답설무흔·풍신선풍으로 빨라지면 달리기
+    const f = Math.floor(player.walkTimer * (running ? 0.62 : 0.55)) % 4; // 걸음 박자 (빨리 달리면 빨라짐)
     frameKey = 'seojin_walk_' + f;
-    lean = 0.04;                                       // 가는 방향으로 살짝 숙임
+    lean = running ? 0.14 : 0.04;                      // 달릴 때는 몸을 앞으로 크게 숙임
+    if (running) {
+      forward = 3;
+      sy = 1 - Math.abs(Math.sin(player.walkTimer * 0.62 * Math.PI / 2)) * 0.04; // 뛰는 반동
+      if (f % 2 === 0 && Math.random() < 0.5) {        // 발 디딜 때 흙먼지
+        particles.push({ x: player.x - player.facing * 18, y: player.y + 2, vx: -player.facing * (60 + Math.random() * 50), vy: -20 - Math.random() * 25, color: 'rgba(168, 148, 120, 0.55)', radius: 4 + Math.random() * 4, life: 0.4, maxLife: 0.4 });
+      }
+      player._runGhostT = (player._runGhostT || 0) + 1;
+    }
   } else {
     sy = 1 + Math.sin(t * 2.2) * 0.012;                // 숨쉬기
   }
@@ -1431,7 +1472,20 @@ function renderParticles() {
     }
     if (p.fxKey) {
       const t = 1 - p.life / p.maxLife;
-      drawFxImage(p.fxKey, p.x, p.y, p.size * (0.75 + t * 0.4), (1 - t) * 1.2, p.rot || 0);
+      drawFxImage(p.fxKey, p.x, p.y, p.size * (0.75 + t * 0.4), (1 - t) * 1.2, p.rot || 0, 1, p.tint || null);
+      return;
+    }
+    if (p.bolt || p.arc) {
+      // 번개: 하늘에서 내리꽂는 줄기(bolt) / 적 사이를 튀는 연쇄(arc) — 미리 만든 꺾인 점들을 빛으로 그림
+      const k = p.life / p.maxLife;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineJoin = 'round';
+      [[9, 'rgba(56, 189, 248, ' + (0.35 * k) + ')'], [3.5, 'rgba(224, 242, 254, ' + (0.95 * k) + ')']].forEach(([wd, col]) => {
+        ctx.strokeStyle = col; ctx.lineWidth = wd * (p.bolt ? 1.4 : 1);
+        ctx.beginPath(); p.pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke();
+      });
+      ctx.restore();
       return;
     }
     ctx.save();

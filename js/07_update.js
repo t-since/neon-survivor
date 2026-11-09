@@ -284,6 +284,7 @@ function updateGame(dt) {
         }
         if (!merged && poisonZones.length < 3) {
           poisonZones.push({
+            isEvo: !!(typeof fn !== 'undefined' && fn && fn.isEvo),
             x: fn.destX,
             y: fn.destY,
             radius: fn.splashRadius * 1.35,
@@ -344,11 +345,23 @@ function updateGame(dt) {
     b.progress += dt / b.duration;
     if (b.progress >= 1.0) {
       createExplosion(b.targetX, b.targetY, b.radius);
-      sound.playPalmBlast();
       for (let e of enemies) {
         if (Math.hypot(e.x - b.targetX, e.y - b.targetY) <= b.radius) {
           dealDamage(e, b.damage, true);
         }
+      }
+      if (b.evo) {
+        // 구천뇌정: 하늘에서 번개 + 가까운 적 3명에게 연쇄 번개 (피해 60%)
+        particles.push({ bolt: true, pts: lightningPoints(b.targetX + (Math.random() - 0.5) * 40, b.targetY - 520, b.targetX, b.targetY - 10, 11, 34), x: b.targetX, y: b.targetY, vx: 0, vy: 0, life: 0.3, maxLife: 0.3 });
+        particles.push({ flash: true, x: b.targetX, y: b.targetY - 20, vx: 0, vy: 0, size: b.radius * 2.4, life: 0.2, maxLife: 0.2 });
+        const near = enemies.filter(e => Math.hypot(e.x - b.targetX, e.y - b.targetY) < b.radius + 260)
+          .sort((p, q) => Math.hypot(p.x - b.targetX, p.y - b.targetY) - Math.hypot(q.x - b.targetX, q.y - b.targetY)).slice(0, 3);
+        let fx = b.targetX, fy = b.targetY - 30;
+        near.forEach(e => {
+          particles.push({ arc: true, pts: lightningPoints(fx, fy, e.x, e.y - 40, 7, 18), x: e.x, y: e.y, vx: 0, vy: 0, life: 0.25, maxLife: 0.25 });
+          if (e.hp > 0) dealDamage(e, b.damage * 0.6, true);
+          fx = e.x; fy = e.y - 40;
+        });
       }
       groundBombs.splice(i, 1);
     }

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>무협 서바이벌 3D - 실시간 렌더링 스튜디오 & 에셋 인스펙터</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="assets_data.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0b0f17; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif; color: #f8fafc; }
+    
+    #app { display: flex; width: 100%; height: 100%; }
+
+    /* Left Control Sidebar */
+    #sidebar {
+      width: 360px; min-width: 360px; height: 100%; background: #0f172a;
+      border-right: 1px solid #1e293b; display: flex; flex-direction: column;
+      z-index: 20; box-shadow: 4px 0 25px rgba(0,0,0,0.5);
+    }
+    .sidebar-header {
+      padding: 18px 20px; border-bottom: 1px solid #1e293b;
+      display: flex; flex-direction: column; gap: 4px; background: #131d35;
+    }
+    .studio-title { font-size: 17px; font-weight: 900; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+    .studio-subtitle { font-size: 12px; color: #94a3b8; }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex; flex-wrap: wrap; border-bottom: 1px solid #1e293b; background: #090d16;
+    }
+    .tab-btn {
+      flex: 1 1 50%; padding: 12px 10px; font-size: 13px; font-weight: bold;
+      color: #94a3b8; background: transparent; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      border-bottom: 2px solid transparent; transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #f8fafc; background: rgba(56, 189, 248, 0.05); }
+    .tab-btn.active { color: #38bdf8; border-bottom-color: #38bdf8; background: #0f172a; }
+
+    .tab-content {
+      flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 18px;
+    }
+    .tab-pane { display: none; flex-direction: column; gap: 16px; }
+    .tab-pane.active { display: flex; }
+
+    /* Control Groups */
+    .control-group {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .group-title { font-size: 13px; font-weight: 800; color: #93c5fd; display: flex; justify-content: space-between; align-items: center; }
+    
+    .control-row {
+      display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #cbd5e1;
+    }
+    .control-row label { font-weight: 600; }
+    .control-row span.val { color: #38bdf8; font-weight: bold; min-width: 45px; text-align: right; }
+
+    input[type=range] {
+      width: 140px; accent-color: #38bdf8; cursor: pointer;
+    }
+
+    .btn-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+    }
+    .action-btn {
+      padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold;
+      border: 1px solid #475569; background: #334155; color: #f8fafc;
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .action-btn:hover { background: #475569; border-color: #38bdf8; color: #38bdf8; }
+    .action-btn.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+
+    .btn-apply-game {
+      width: 100%; padding: 14px; border-radius: 8px; font-size: 14px; font-weight: 900;
+      background: linear-gradient(135deg, #0284c7, #10b981); border: none;
+      color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-apply-game:hover { filter: brightness(1.1); }
+
+    /* Main Viewport Area */
+    #viewport-container {
+      flex: 1; height: 100%; position: relative; overflow: hidden; background: #000;
+    }
+    #viewport-canvas { width: 100%; height: 100%; display: block; }
+
+    /* Game Play Frame */
+    #gameFrame {
+      width: 100%; height: 100%; border: none; display: none;
+    }
+
+    /* Floating Viewport Overlays */
+    .viewport-overlay {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+      border: 1px solid #334155; border-radius: 8px; padding: 10px 16px;
+      font-size: 12px; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;
+      pointer-events: none;
+    }
+    .viewport-overlay span { color: #f8fafc; font-weight: bold; }
+
+    /* Asset Gallery Cards */
+    .gallery-grid {
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+    }
+    .asset-card {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .asset-img {
+      width: 100%; height: 160px; object-fit: cover; background: #090d16;
+    }
+    .asset-info { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .asset-name { font-size: 13px; font-weight: bold; color: #f8fafc; }
+    .asset-desc { font-size: 11px; color: #94a3b8; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Left Sidebar -->
+    <div id="sidebar">
+      <div class="sidebar-header">
+        <div class="studio-title">🎨 무협 3D 렌더링 스튜디오</div>
+        <div class="studio-subtitle">실시간 모델 감상, 텍스처 및 조명 세부 튜닝</div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="nav-tabs">
+        <button class="tab-btn" onclick="switchTab('game')">🎮 게임 플레이</button>
+        <button class="tab-btn active" onclick="switchTab('hero')">🧙‍♂️ 영웅 뷰어</button>
+        <button class="tab-btn" onclick="switchTab('monsters')">👹 보스/마물 뷰어</button>
+        <button class="tab-btn" onclick="switchTab('blender')">🏛️ 블렌더 3D 에셋</button>
+        <button class="tab-btn" onclick="switchTab('environment')">🌲 배경 & 조명</button>
+        <button class="tab-btn" style="flex:1 1 100%;" onclick="switchTab('gallery')">🖼️ 제미나이 AI 에셋</button>
+      </div>
+
+      <div class="tab-content">
+        <!-- Tab: Blender 3D Assets -->
+        <div id="tab-blender" class="tab-pane">
+          <div class="control-group">
+            <div class="group-title">🏛️ 블렌더 5.2 연동 3D 에셋</div>
+            <div style="font-size: 11px; color: #10b981; font-weight: bold; background: rgba(16, 185, 129, 0.1); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">
+              ✅ Blender 5.2.1 LTS Headless 연동 완료
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+              AI가 블렌더 파이썬 스크립트를 실행하여 모델링/머티리얼을 생성하고 GLB로 익스포트한 3D 오브젝트입니다.
+            </div>
+            <div class="btn-grid">
+              <button class="action-btn" id="btn-asset-bamboo" onclick="selectBlenderAsset('bamboo')">🎋 취죽 대나무</button>
+              <button class="action-btn active" id="btn-asset-pavilion" onclick="selectBlenderAsset('pavilion')">🏯 취죽정 (정자)</button>
+              <button class="action-btn" id="btn-asset-lantern" onclick="selectBlenderAsset('lantern')">🏮 산길 돌석등</button>
+              <button class="action-btn" id="btn-asset-rock" onclick="selectBlenderAsset('rock')">🪨 이끼 강돌</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="group-title">📐 모델 정보 및 파라미터</div>
+            <div class="control-row"><label>포맷:</label><span class="val">glTF 2.0 Binary (.glb)</span></div>
+            <div class="control-row"><label>익스포트 엔진:</label><span class="val">Blender 5.2 LTS</span></div>
+            <div class="control-row"><label>CORS 상태:</label><span class="val" style="color:#10b981;">100% 오프라인 Base64</span></div>
+            <div class="control-row"><label>와이어프레임:</label>
+              <button class="action-btn" style="padding:4px 10px;" onclick="toggleWireframe()">켜기/끄기</button>
+            </div>
+          </div>
+        </div>
+        <!-- Tab: Game -->
+        <div id="tab-game" class="tab-pane">
+          <div class="control-group">
+            <div class="group-title">🎮 전체 게임 직접 플레이</div>
+            <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">
+              작업된 배경, 캐릭터, 몬스터, 사운드, 3단 콤보 공격을 실제 게임 화면에서 즉시 플레이해 볼 수 있습니다.
+            </div>
+            <button class="action-btn active" style="padding:10px;" onclick="reloadGameFrame()">🔄 게임 새로고침</button>
+            <a href="three_game.html" target="_blank" class="action-btn" style="text-decoration:none; padding:10px;">↗️ 새 창에서 전체화면 실행</a>
+          </div>
+        </div>
+
+        <!-- Tab: Hero Inspector -->
+        <div id="tab-hero" class="tab-pane active">
+          <div class="control-group">
+            <div class="group-title">🏃 애니메이션 모션 제어</div>
+            <div class="btn-grid">
+              <button class="action-btn active" onclick="setHeroAnim('idle')">🧍 대기 (Idle)</button>
+              <button class="action-btn" onclick="setHeroAnim('run')">🏃 질주 (Run)</button>
+              <button class="action-btn" onclick="setHeroAnim('attack1')">⚔️ 1타 사선참</button>
+              <button class="action-btn" onclick="setHeroAnim('attack2')">⚔️ 2타 횡단역검</button>
+              <button class="action-btn" style="grid-column: span 2;" onclick="setHeroAnim('attack3')">💥 3타 벽력붕천 (점프 강타)</button>
+            </div>
+            <div class="control-row" style="margin-top:6px;">
+              <label>모션 재생 속도</label>
+              <input type="range" id="animSpeed" min="0.2" max="2.0" step="0.1" value="1.0" oninput="updateAnimSpeed(this.value)">
+              <span id="animSpeedVal" class="val">1.0x</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="group-title">🗡️ 무기 룩변 (Transmog)</div>
+            <div class="btn-grid">
+              <button class="action-btn active" onclick="setWeaponLook('qingyun')">🗡️ 청운검 (기본)</button>
+              <button class="action-btn" onclick="setWeaponLook('flame')">🔥 열화봉황도</button>
+              <button class="action-btn" style="grid-column: span 2;" onclick="setWeaponLook('ice')">❄️ 빙백신검</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="group-title">👘 파츠 장착 여부</div>
+            <div class="control-row">
+              <label>등 뒤 삿갓 (Bamboo Hat)</label>
+              <input type="checkbox" id="partHat" checked onchange="togglePart('hat', this.checked)">
+            </div>
+            <div class="control-row">
+              <label>휘날리는 청색 망토 (Cape)</label>
+              <input type="checkbox" id="partCape" checked onchange="togglePart('cape', this.checked)">
+            </div>
+            <div class="control-row">
+              <label>상투 붉은 리본 (Ribbon)</label>
+              <input type="checkbox" id="partRibbon" checked onchange="togglePart('ribbon', this.checked)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Monsters & Boss -->
+        <div id="tab-monsters" class="tab-pane">
+          <div class="control-group">
+            <div class="group-title">👹 모델 선택</div>
+            <div class="btn-grid">
+              <button class="action-btn active" onclick="selectMonsterModel('boss')">👹 흑철 집행관 (보스)</button>
+              <button class="action-btn" onclick="selectMonsterModel('assassin')">🥷 비도 자객</button>
+              <button class="action-btn" onclick="selectMonsterModel('jiangshi')">🧟 강시 (부적 탱커)</button>
+              <button class="action-btn" onclick="selectMonsterModel('archer')">🏹 맹독 사수 (삿갓)</button>
+            </div>
+          </div>
+
+          <div class="control-group" id="bossSkillsGroup">
+            <div class="group-title">💥 보스 스킬 모션 테스트</div>
+            <div class="btn-grid">
+              <button class="action-btn active" onclick="triggerBossMotion('idle')">🧍 기본 대기</button>
+              <button class="action-btn" onclick="triggerBossMotion('walk')">👣 쿵쿵 전진</button>
+              <button class="action-btn" style="grid-column: span 2;" onclick="triggerBossMotion('spin')">🌪️ 360도 회풍광풍참 (Whirlwind)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Environment & Lighting -->
+        <div id="tab-environment" class="tab-pane">
+          <div class="control-group">
+            <div class="group-title">🍃 바닥 구역 프리셋</div>
+            <div class="btn-grid">
+              <button class="action-btn active" onclick="setGroundPreset('bamboo_arena')">🌟 방법 A: 취죽림 쿼터뷰 전장 맵</button>
+              <button class="action-btn" onclick="setGroundPreset('bamboo_wuxia')">🎋 정통 취죽림 (흙길/이끼/시냇물)</button>
+              <button class="action-btn" onclick="setGroundPreset('volcano')">🌋 적벽 혈암곡 (화산암)</button>
+              <button class="action-btn" onclick="setGroundPreset('ice')">❄️ 천산 빙설봉 (빙판)</button>
+            </div>
+            <div class="control-row" style="margin-top:6px;">
+              <label>타일링 반복 (Repeat)</label>
+              <input type="range" id="groundRepeat" min="1" max="12" step="1" value="5" oninput="updateGroundRepeat(this.value)">
+              <span id="groundRepeatVal" class="val">5x5</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="group-title">☀️ 조명 및 광원 세부 조절</div>
+            <div class="control-row">
+              <label>태양광 밝기 (Sunlight)</label>
+              <input type="range" id="sunIntensity" min="0.2" max="2.5" step="0.05" value="1.2" oninput="updateLight('sun', this.value)">
+              <span id="sunVal" class="val">1.2</span>
+            </div>
+            <div class="control-row">
+              <label>환경광 밝기 (Ambient)</label>
+              <input type="range" id="ambientIntensity" min="0.1" max="1.5" step="0.05" value="0.6" oninput="updateLight('ambient', this.value)">
+              <span id="ambientVal" class="val">0.6</span>
+            </div>
+            <div class="control-row">
+              <label>안개 농도 (Fog Density)</label>
+              <input type="range" id="fogDensity" min="0.001" max="0.03" step="0.001" value="0.01" oninput="updateFog(this.value)">
+              <span id="fogVal" class="val">0.010</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: AI Generated Assets Gallery -->
+        <div id="tab-gallery" class="tab-pane">
+          <div class="control-group">
+            <div class="group-title">🤖 제미나이 AI 에셋 라이브러리</div>
+            <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">
+              유튜브 "백년의 밤" 제작 방식과 동일하게 제미나이 Imagen AI로 생성한 고해상도 게임 텍스처 에셋들입니다.
+            </div>
+          </div>
+
+          <div class="gallery-grid" id="galleryContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right 3D Viewport Area -->
+    <div id="viewport-container">
+      <canvas id="viewport-canvas"></canvas>
+      <iframe id="gameFrame" src="three_game.html"></iframe>
+
+      <div class="viewport-overlay" id="orbitOverlay">
+        <div>🖱️ <span>[마우스 좌클릭 드래그]</span> 360° 자유 회전</div>
+        <div>🔍 <span>[마우스 휠 스크롤]</span> 줌 인 / 줌 아웃</div>
+        <div>🖐️ <span>[마우스 우클릭 드래그]</span> 카메라 패닝 이동</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. THREE.JS STUDIO RENDERER SETUP ---
+    const canvas = document.getElementById('viewport-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0b1d15');
+    scene.fog = new THREE.FogExp2('#0b1d15', 0.01);
+
+    const camera = new THREE.PerspectiveCamera(40, canvas.clientWidth / canvas.clientHeight, 0.1, 200);
+    camera.position.set(0, 3.2, 7.5);
+    camera.lookAt(0, 1.2, 0);
+
+    // Orbit Camera Controls
+    let isMouseDown = false, isRightDown = false;
+    let prevMouseX = 0, prevMouseY = 0;
+    let spherical = { radius: 7.5, theta: 0, phi: Math.PI * 0.38 };
+    let cameraTarget = new THREE.Vector3(0, 1.2, 0);
+
+    canvas.addEventListener('mousedown', e => {
+      if (e.button === 0) isMouseDown = true;
+      if (e.button === 2) isRightDown = true;
+      prevMouseX = e.clientX; prevMouseY = e.clientY;
+    });
+    window.addEventListener('mouseup', () => { isMouseDown = false; isRightDown = false; });
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    canvas.addEventListener('mousemove', e => {
+      const dx = e.clientX - prevMouseX;
+      const dy = e.clientY - prevMouseY;
+      prevMouseX = e.clientX; prevMouseY = e.clientY;
+
+      if (isMouseDown) {
+        spherical.theta -= dx * 0.008;
+        spherical.phi = Math.max(0.1, Math.min(Math.PI * 0.48, spherical.phi - dy * 0.008));
+        updateCameraPosition();
+      } else if (isRightDown) {
+        cameraTarget.y += dy * 0.01;
+        updateCameraPosition();
+      }
+    });
+
+    canvas.addEventListener('wheel', e => {
+      spherical.radius = Math.max(2.5, Math.min(22, spherical.radius + e.deltaY * 0.006));
+      updateCameraPosition();
+    });
+
+    function updateCameraPosition() {
+      camera.position.x = cameraTarget.x + spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+      camera.position.y = cameraTarget.y + spherical.radius * Math.cos(spherical.phi);
+      camera.position.z = cameraTarget.z + spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+      camera.lookAt(cameraTarget);
+    }
+    updateCameraPosition();
+
+    window.addEventListener('resize', () => {
+      const w = document.getElementById('viewport-container').clientWidth;
+      const h = document.getElementById('viewport-container').clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+
+    // Studio Lighting
+    const ambientLight = new THREE.AmbientLight('#1a382b', 0.6);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight('#2d5e41', '#0b1d14', 0.65);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight('#fff1d6', 1.2);
+    dirLight.position.set(12, 18, 10);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    scene.add(dirLight);
+
+    const pointLight = new THREE.PointLight('#38bdf8', 1.2, 14);
+    pointLight.position.set(0, 3, 2);
+    scene.add(pointLight);
+
+    // --- 2. GROUND STUDIO PLANE ---
+    function createGroundCanvas() {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 1024;
+      const ctx = c.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 1024, 1024);
+      grad.addColorStop(0, '#0f2417'); grad.addColorStop(0.5, '#163321'); grad.addColorStop(1, '#11291b');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, 1024, 1024);
+
+      for (let s = 0; s < 18; s++) {
+        const sx = (s % 5) * 210 + 90, sy = Math.floor(s / 5) * 240 + 110;
+        ctx.fillStyle = '#1e2937';
+        ctx.beginPath(); ctx.ellipse(sx, sy, 55, 40, 0.2, 0, Math.PI * 2); ctx.fill();
+      }
+      return c;
+    }
+
+    const groundTex = new THREE.CanvasTexture(createGroundCanvas());
+    groundTex.wrapS = THREE.RepeatWrapping; groundTex.wrapT = THREE.RepeatWrapping;
+    groundTex.repeat.set(5, 5);
+
+    const groundMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(60, 60),
+      new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.92, metalness: 0.02 })
+    );
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.receiveShadow = true;
+    scene.add(groundMesh);
+
+    // --- 3. 3D HERO MODEL RIG & ANIMATION RIG ---
+    const heroGroup = new THREE.Group();
+    scene.add(heroGroup);
+
+    const skinMat = new THREE.MeshStandardMaterial({ color: '#fed7aa', roughness: 0.6 });
+    const silkWhiteMat = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.5 });
+    const silkCyanMat = new THREE.MeshStandardMaterial({ color: '#0284c7', roughness: 0.45 });
+    const darkClothMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.8 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', metalness: 0.85, roughness: 0.25 });
+    const bladeGlowMat = new THREE.MeshStandardMaterial({ color: '#e0f2fe', emissive: '#38bdf8', emissiveIntensity: 1.4, metalness: 0.95 });
+
+    // Pelvis & Lower Robe
+    const pelvis = new THREE.Group(); pelvis.position.y = 1.35; heroGroup.add(pelvis);
+    const robeSkirt = new THREE.Mesh(new THREE.ConeGeometry(0.72, 0.85, 8, 1, true), silkCyanMat);
+    robeSkirt.position.y = -0.18; robeSkirt.rotation.y = Math.PI / 4; robeSkirt.castShadow = true; pelvis.add(robeSkirt);
+
+    // Spine
+    const spine = new THREE.Group(); spine.position.y = 0.25; pelvis.add(spine);
+    const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.48), silkWhiteMat);
+    chestMesh.position.y = 0.4; chestMesh.castShadow = true; spine.add(chestMesh);
+
+    // Belt
+    const sash = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.2, 0.5), goldMat);
+    sash.position.y = 0.05; spine.add(sash);
+    const hangingRibbon = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.75, 0.04), new THREE.MeshBasicMaterial({ color: '#ef4444' }));
+    hangingRibbon.position.set(0, -0.3, 0.26); spine.add(hangingRibbon);
+
+    // Neck & Head
+    const neck = new THREE.Group(); neck.position.y = 0.85; spine.add(neck);
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 12), skinMat);
+    headMesh.position.y = 0.26; headMesh.castShadow = true; neck.add(headMesh);
+
+    const headband = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.08, 12), new THREE.MeshBasicMaterial({ color: '#0284c7' }));
+    headband.position.y = 0.33; neck.add(headband);
+
+    const knot = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 0.24, 8), darkClothMat);
+    knot.position.set(0, 0.56, -0.08); neck.add(knot);
+
+    // Hat
+    const hat = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.24, 16), new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.9 }));
+    hat.rotation.x = -Math.PI * 0.48; hat.position.set(0, 0.4, -0.34); hat.castShadow = true; spine.add(hat);
+
+    // Cape
+    const cape = new THREE.Group(); cape.position.set(0, 0.72, -0.26); spine.add(cape);
+    const capeMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 1.4), new THREE.MeshStandardMaterial({ color: '#0369a1', roughness: 0.5, side: THREE.DoubleSide }));
+    capeMesh.position.y = -0.7; capeMesh.castShadow = true; cape.add(capeMesh);
+
+    // Arms
+    const leftShoulder = new THREE.Group(); leftShoulder.position.set(-0.52, 0.68, 0); spine.add(leftShoulder);
+    const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.75, 8), silkCyanMat); leftArm.position.y = -0.38; leftShoulder.add(leftArm);
+
+    const rightShoulder = new THREE.Group(); rightShoulder.position.set(0.52, 0.68, 0); spine.add(rightShoulder);
+    const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.75, 8), silkCyanMat); rightArm.position.y = -0.38; rightShoulder.add(rightArm);
+
+    // Sword
+    const swordRoot = new THREE.Group(); swordRoot.position.set(0, -0.75, 0.1); swordRoot.rotation.x = Math.PI * 0.35; rightShoulder.add(swordRoot);
+    const bladeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.95, 0.24), bladeGlowMat); bladeMesh.position.y = 1.0; swordRoot.add(bladeMesh);
+    const guardMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.36), goldMat); swordRoot.add(guardMesh);
+
+    // Legs
+    const leftHip = new THREE.Group(); leftHip.position.set(-0.24, -0.12, 0); pelvis.add(leftHip);
+    const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 1.1, 8), darkClothMat); leftLeg.position.y = -0.55; leftHip.add(leftLeg);
+
+    const rightHip = new THREE.Group(); rightHip.position.set(0.24, -0.12, 0); pelvis.add(rightHip);
+    const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 1.1, 8), darkClothMat); rightLeg.position.y = -0.55; rightHip.add(rightLeg);
+
+    // --- 4. 3D MONSTERS & BOSS RIG ---
+    const monsterGroup = new THREE.Group();
+    monsterGroup.visible = false;
+    scene.add(monsterGroup);
+
+    // --- 4.5. BLENDER 3D ASSETS VIEWER ---
+    const blenderGroup = new THREE.Group();
+    blenderGroup.visible = false;
+    scene.add(blenderGroup);
+
+    let currentBlenderAsset = 'pavilion';
+    let isWireframe = false;
+
+    function toggleWireframe() {
+      isWireframe = !isWireframe;
+      blenderGroup.traverse(c => {
+        if (c.isMesh && c.material) {
+          c.material.wireframe = isWireframe;
+        }
+      });
+    }
+
+    function selectBlenderAsset(key) {
+      currentBlenderAsset = key;
+      ['bamboo', 'pavilion', 'lantern', 'rock'].forEach(k => {
+        const btn = document.getElementById('btn-asset-' + k);
+        if (btn) btn.classList.toggle('active', k === key);
+      });
+
+      while (blenderGroup.children.length > 0) {
+        blenderGroup.remove(blenderGroup.children[0]);
+      }
+
+      const b64 = window.GAME_ASSETS ? window.GAME_ASSETS[key + '_glb_b64'] : null;
+      if (!b64 || !THREE.GLTFLoader) return;
+
+      try {
+        const binStr = atob(b64);
+        const len = binStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = binStr.charCodeAt(i);
+
+        new THREE.GLTFLoader().parse(bytes.buffer, '', (gltf) => {
+          const model = gltf.scene;
+          model.traverse(c => {
+            if (c.isMesh) {
+              c.castShadow = true;
+              c.receiveShadow = true;
+              if (isWireframe && c.material) c.material.wireframe = true;
+            }
+          });
+
+          blenderGroup.add(model);
+
+          if (key === 'bamboo') {
+            cameraTarget.set(0, 5.0, 0);
+            spherical.radius = 16.0;
+          } else if (key === 'pavilion') {
+            cameraTarget.set(0, 3.5, 0);
+            spherical.radius = 14.0;
+          } else if (key === 'lantern') {
+            cameraTarget.set(0, 1.2, 0);
+            spherical.radius = 4.5;
+          } else if (key === 'rock') {
+            cameraTarget.set(0, 0.6, 0);
+            spherical.radius = 4.0;
+          }
+          updateCameraPosition();
+        });
+      } catch (e) {
+        console.error('Failed to load Blender asset:', e);
+      }
+    }
+
+    // Boss Rig
+    const bossRig = new THREE.Group();
+    const bossScale = 2.6;
+    const ironMat = new THREE.MeshStandardMaterial({ color: '#1e293b', metalness: 0.9, roughness: 0.25 });
+    const coreMat = new THREE.MeshStandardMaterial({ color: '#f87171', emissive: '#ef4444', emissiveIntensity: 1.8 });
+
+    const bPelvis = new THREE.Group(); bPelvis.position.y = 1.6 * bossScale; bossRig.add(bPelvis);
+    const bChest = new THREE.Mesh(new THREE.BoxGeometry(1.1 * bossScale, 1.2 * bossScale, 0.8 * bossScale), ironMat); bChest.position.y = 0.7 * bossScale; bPelvis.add(bChest);
+    const bCore = new THREE.Mesh(new THREE.SphereGeometry(0.24 * bossScale, 12, 12), coreMat); bCore.position.set(0, 0.7 * bossScale, 0.42 * bossScale); bPelvis.add(bCore);
+
+    // Spiked Pauldrons
+    const pGeo = new THREE.ConeGeometry(0.45 * bossScale, 1.1 * bossScale, 5);
+    const pL = new THREE.Mesh(pGeo, ironMat); pL.position.set(-0.85 * bossScale, 1.3 * bossScale, 0); pL.rotation.z = 0.7; bPelvis.add(pL);
+    const pR = new THREE.Mesh(pGeo, ironMat); pR.position.set(0.85 * bossScale, 1.3 * bossScale, 0); pR.rotation.z = -0.7; bPelvis.add(pR);
+
+    // Helm & Horns
+    const bHelm = new THREE.Mesh(new THREE.BoxGeometry(0.6 * bossScale, 0.65 * bossScale, 0.6 * bossScale), ironMat); bHelm.position.y = 1.7 * bossScale; bPelvis.add(bHelm);
+    const bVisor = new THREE.Mesh(new THREE.BoxGeometry(0.45 * bossScale, 0.08 * bossScale, 0.08 * bossScale), coreMat); bVisor.position.set(0, 1.7 * bossScale, 0.31 * bossScale); bPelvis.add(bVisor);
+
+    const hGeo = new THREE.ConeGeometry(0.18 * bossScale, 1.2 * bossScale, 6);
+    const hL = new THREE.Mesh(hGeo, new THREE.MeshStandardMaterial({ color: '#78350f', metalness: 0.6 })); hL.position.set(-0.35 * bossScale, 2.2 * bossScale, 0); hL.rotation.z = -0.55; bPelvis.add(hL);
+    const hR = new THREE.Mesh(hGeo, new THREE.MeshStandardMaterial({ color: '#78350f', metalness: 0.6 })); hR.position.set(0.35 * bossScale, 2.2 * bossScale, 0); hR.rotation.z = 0.55; bPelvis.add(hR);
+
+    // 4.2m Cleaver
+    const bCleaver = new THREE.Group(); bCleaver.position.set(1.4 * bossScale, 1.0 * bossScale, 0.5 * bossScale); bPelvis.add(bCleaver);
+    const bBlade = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.4, 1.3), new THREE.MeshStandardMaterial({ color: '#090d16', metalness: 0.95 })); bBlade.position.y = 2.0; bCleaver.add(bBlade);
+    const bEdge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 4.0, 0.15), coreMat); bEdge.position.set(0, 2.0, 0.65); bCleaver.add(bEdge);
+
+    monsterGroup.add(bossRig);
+
+    // --- 5. UI CONTROLS & INTERACTION ---
+    let currentAnim = 'idle';
+    let animSpeed = 1.0;
+    let animClock = 0;
+    let bossSpinTimer = 0;
+
+    function setHeroAnim(name) {
+      currentAnim = name;
+      document.querySelectorAll('#tab-hero .btn-grid button').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function updateAnimSpeed(val) {
+      animSpeed = parseFloat(val);
+      document.getElementById('animSpeedVal').innerText = animSpeed.toFixed(1) + 'x';
+    }
+
+    function setWeaponLook(type) {
+      document.querySelectorAll('#tab-hero .btn-grid button').forEach(b => {
+        if (b.innerText.includes('검') || b.innerText.includes('도')) b.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      if (type === 'flame') {
+        bladeGlowMat.color.set('#fca5a5'); bladeGlowMat.emissive.set('#ef4444');
+      } else if (type === 'ice') {
+        bladeGlowMat.color.set('#bae6fd'); bladeGlowMat.emissive.set('#06b6d4');
+      } else {
+        bladeGlowMat.color.set('#e0f2fe'); bladeGlowMat.emissive.set('#38bdf8');
+      }
+    }
+
+    function togglePart(part, show) {
+      if (part === 'hat') hat.visible = show;
+      if (part === 'cape') cape.visible = show;
+      if (part === 'ribbon') hangingRibbon.visible = show;
+    }
+
+    function selectMonsterModel(type) {
+      document.querySelectorAll('#tab-monsters .btn-grid button').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      heroGroup.visible = false;
+      monsterGroup.visible = true;
+      cameraTarget.set(0, 2.5, 0);
+      updateCameraPosition();
+    }
+
+    function triggerBossMotion(motion) {
+      if (motion === 'spin') bossSpinTimer = 3.0;
+    }
+
+    function setGroundPreset(preset) {
+      document.querySelectorAll('#tab-environment .btn-grid button').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (preset === 'bamboo_arena' && window.GAME_ASSETS && window.GAME_ASSETS.bamboo_battle_arena_map) {
+        groundMesh.material.map = new THREE.TextureLoader().load(window.GAME_ASSETS.bamboo_battle_arena_map);
+        groundMesh.material.map.wrapS = THREE.ClampToEdgeWrapping; groundMesh.material.map.wrapT = THREE.ClampToEdgeWrapping;
+        groundMesh.material.map.repeat.set(1, 1);
+        groundMesh.material.needsUpdate = true;
+      } else if (preset === 'bamboo_wuxia' && window.GAME_ASSETS && window.GAME_ASSETS.bamboo_path_wuxia) {
+        groundMesh.material.map = new THREE.TextureLoader().load(window.GAME_ASSETS.bamboo_path_wuxia);
+        groundMesh.material.map.wrapS = THREE.RepeatWrapping; groundMesh.material.map.wrapT = THREE.RepeatWrapping;
+        groundMesh.material.needsUpdate = true;
+      } else if (preset === 'bamboo_hd' && window.GAME_ASSETS && window.GAME_ASSETS.bamboo_ground_hd) {
+        groundMesh.material.map = new THREE.TextureLoader().load(window.GAME_ASSETS.bamboo_ground_hd);
+        groundMesh.material.map.wrapS = THREE.RepeatWrapping; groundMesh.material.map.wrapT = THREE.RepeatWrapping;
+        groundMesh.material.needsUpdate = true;
+      } else if (preset === 'volcano' && window.GAME_ASSETS && window.GAME_ASSETS.volcanic_ground_hd) {
+        groundMesh.material.map = new THREE.TextureLoader().load(window.GAME_ASSETS.volcanic_ground_hd);
+        groundMesh.material.map.wrapS = THREE.RepeatWrapping; groundMesh.material.map.wrapT = THREE.RepeatWrapping;
+        groundMesh.material.needsUpdate = true;
+      } else {
+        groundMesh.material.map = groundTex;
+        groundMesh.material.needsUpdate = true;
+      }
+    }
+
+    function updateGroundRepeat(val) {
+      const r = parseInt(val);
+      document.getElementById('groundRepeatVal').innerText = r + 'x' + r;
+      if (groundMesh.material.map) {
+        groundMesh.material.map.repeat.set(r, r);
+        groundMesh.material.map.needsUpdate = true;
+      }
+    }
+
+    function updateLight(type, val) {
+      const v = parseFloat(val);
+      if (type === 'sun') {
+        dirLight.intensity = v;
+        document.getElementById('sunVal').innerText = v.toFixed(2);
+      } else {
+        ambientLight.intensity = v;
+        document.getElementById('ambientVal').innerText = v.toFixed(2);
+      }
+    }
+
+    function updateFog(val) {
+      const f = parseFloat(val);
+      scene.fog.density = f;
+      document.getElementById('fogVal').innerText = f.toFixed(3);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+
+      const isGame = (tabId === 'game');
+      document.getElementById('gameFrame').style.display = isGame ? 'block' : 'none';
+      document.getElementById('viewport-canvas').style.display = isGame ? 'none' : 'block';
+      document.getElementById('orbitOverlay').style.display = isGame ? 'none' : 'flex';
+
+      if (!isGame) {
+        if (tabId === 'hero') {
+          heroGroup.visible = true; monsterGroup.visible = false; blenderGroup.visible = false;
+          cameraTarget.set(0, 1.2, 0);
+          spherical.radius = 7.5;
+        } else if (tabId === 'monsters') {
+          heroGroup.visible = false; monsterGroup.visible = true; blenderGroup.visible = false;
+          cameraTarget.set(0, 2.5, 0);
+          spherical.radius = 9.0;
+        } else if (tabId === 'blender') {
+          heroGroup.visible = false; monsterGroup.visible = false; blenderGroup.visible = true;
+          selectBlenderAsset(currentBlenderAsset || 'pavilion');
+        } else {
+          heroGroup.visible = true; monsterGroup.visible = false; blenderGroup.visible = false;
+        }
+        updateCameraPosition();
+      }
+    }
+
+    function reloadGameFrame() {
+      const frame = document.getElementById('gameFrame');
+      frame.src = frame.src;
+    }
+
+    // Populate AI Asset Gallery
+    const galleryContainer = document.getElementById('galleryContainer');
+    const galleryItems = [
+      {
+        title: '🌟 [방법 A] 서북 취죽림 45도 쿼터뷰 마스터 전장 맵 (Unified Map)',
+        desc: '타일 복붙 없는 단일 대형 16:9 전장 맵. 정자, 시냇물, 대나무 회랑, 수국 꽃덤불이 한 장의 예술적 원화로 완성된 디아블로식 프리렌더링 맵',
+        key: 'bamboo_battle_arena_map',
+        preset: 'bamboo_arena'
+      },
+      {
+        title: '🎋 [유저 실사풍 레퍼런스] 정통 취죽림 숲길 (Seamless)',
+        desc: '흙길 오솔길과 짙은 이끼, 흩날려 쌓인 금갈색 대나무 낙엽, 맑은 시냇물이 흐르는 고요한 무협 풍경',
+        key: 'bamboo_path_wuxia',
+        preset: 'bamboo_wuxia'
+      },
+      {
+        title: '🌿 제 1 구역: 서북 취죽림 바닥 (Dark Fantasy)',
+        desc: '깊은 숲의 차분한 이끼와 금빛 낙엽, 고대 석판 디딤돌이 어우러진 텍스처',
+        key: 'bamboo_ground_hd',
+        preset: 'bamboo_hd'
+      },
+      {
+        title: '🌋 제 2 구역: 적벽 혈암곡 바닥 (Seamless)',
+        desc: '흑요석 균열 사이로 붉은 마그마 열기가 은은하게 흐르는 화산 동굴 바닥',
+        key: 'volcanic_ground_hd',
+        preset: 'volcano'
+      },
+      {
+        title: '👹 중간보스 : 흑철 집행관 (컨셉 아트)',
+        desc: '황소 뿔 흑철 투구와 가슴의 용암 핵, 4.2m 파천도를 든 거대 악마형 보스 원화',
+        key: 'boss_concept_hd',
+        preset: null
+      }
+    ];
+
+    galleryItems.forEach(item => {
+      if (window.GAME_ASSETS && window.GAME_ASSETS[item.key]) {
+        const card = document.createElement('div');
+        card.className = 'asset-card';
+        card.innerHTML = `
+          <img class="asset-img" src="${window.GAME_ASSETS[item.key]}">
+          <div class="asset-info">
+            <div class="asset-name">${item.title}</div>
+            <div class="asset-desc">${item.desc}</div>
+            ${item.preset ? `<button class="action-btn" style="margin-top:6px;" onclick="setGroundPreset('${item.preset}')">🌿 이 텍스처 스튜디오에 입히기</button>` : ''}
+          </div>
+        `;
+        galleryContainer.appendChild(card);
+      }
+    });
+
+    // --- 6. ANIMATION LOOP ---
+    let lastTime = performance.now();
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+      animClock += dt * animSpeed;
+
+      // Hero Animation Rigging
+      if (currentAnim === 'run') {
+        const swing = Math.sin(animClock * 9) * 0.7;
+        leftHip.rotation.x = swing; rightHip.rotation.x = -swing;
+        leftShoulder.rotation.x = -swing * 0.6; rightShoulder.rotation.x = swing * 0.4;
+        spine.rotation.x = 0.18;
+        cape.rotation.x = -0.55 + Math.sin(animClock * 9) * 0.15;
+      } else if (currentAnim === 'attack1') {
+        const progress = (animClock * 3.5) % 1.0;
+        rightShoulder.rotation.x = -Math.sin(progress * Math.PI) * 1.6;
+        rightShoulder.rotation.y = -Math.sin(progress * Math.PI) * 0.8;
+      } else if (currentAnim === 'attack2') {
+        const progress = (animClock * 3.5) % 1.0;
+        spine.rotation.y = Math.sin(progress * Math.PI * 2) * 1.5;
+        rightShoulder.rotation.x = -0.5;
+      } else if (currentAnim === 'attack3') {
+        const progress = (animClock * 2.0) % 1.0;
+        heroGroup.position.y = Math.sin(progress * Math.PI) * 1.2;
+        rightShoulder.rotation.x = -Math.sin(progress * Math.PI) * 2.4;
+      } else {
+        // Idle
+        heroGroup.position.y = 0;
+        leftHip.rotation.x = 0; rightHip.rotation.x = 0;
+        spine.rotation.x = 0; spine.rotation.y = 0;
+        rightShoulder.rotation.x = Math.sin(animClock * 2) * 0.08;
+        rightShoulder.rotation.y = 0;
+        cape.rotation.x = -0.15 + Math.sin(animClock * 2) * 0.05;
+      }
+
+      // Boss Animation Rigging
+      if (bossSpinTimer > 0) {
+        bossSpinTimer -= dt;
+        bossRig.rotation.y += dt * 16;
+        bCleaver.rotation.y += dt * 16;
+      } else {
+        bCleaver.rotation.y = 0;
+      }
+
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

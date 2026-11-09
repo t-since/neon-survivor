@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>무협 생존자 - 3D 게임 에셋 뷰어 (Asset Showcase)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090d16;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 30px 20px;
+      line-height: 1.6;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header h1 {
+      font-size: 32px;
+      color: #38bdf8;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      margin-bottom: 8px;
+    }
+    .header p { color: #94a3b8; font-size: 15px; }
+
+    .section {
+      max-width: 1200px;
+      margin: 0 auto 50px auto;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .section-title {
+      font-size: 20px;
+      color: #f59e0b;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #374151;
+      padding-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #38bdf8;
+    }
+    .card-img-wrap {
+      width: 100%;
+      height: 260px;
+      background: #0f172a repeating-conic-gradient(#1e293b 0% 25%, #0f172a 0% 50%) 50% / 20px 20px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .card img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #f8fafc;
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .anim-box {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .anim-canvas {
+      width: 180px;
+      height: 260px;
+      background: #1e293b repeating-conic-gradient(#334155 0% 25%, #1e293b 0% 50%) 50% / 16px 16px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+    .btn-play {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-play:hover { background: #0369a1; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>⚔️ 3D 무협 생존자 - 에셋 갤러리 뷰어</h1>
+    <p>게임 내 사용되는 고해상도 3D 컨셉 에셋과 투명화 스프라이트 및 모션 프리뷰를 확인하실 수 있습니다.</p>
+  </div>
+
+  <!-- SECTION 1: 주인공 협객 (Hero) -->
+  <div class="section">
+    <div class="section-title">🗡️ 1. 주인공 협객 (3D Hero Character)</div>
+    <div class="grid">
+      <div class="card">
+        <div class="card-img-wrap">
+          <img src="assets/hero_3d.jpg" alt="Hero 3D Concept">
+        </div>
+        <div class="card-title">주인공 3D 원본 컨셉</div>
+        <div class="card-desc">청백색 도포 & 장검 3D 렌더링 원본 (896x1200)</div>
+      </div>
+      <div class="card">
+        <div class="card-img-wrap">
+          <img src="assets/hero_3d_clean.png" alt="Clean Transparent Hero">
+        </div>
+        <div class="card-title">투명화 클린 캐릭터</div>
+        <div class="card-desc">배경 제거 및 스마트 페더링 처리된 PNG 원본</div>
+      </div>
+      <div class="card">
+        <div class="card-img-wrap">
+          <img src="assets/portrait_seojin.jpg" alt="Hero Portrait">
+        </div>
+        <div class="card-title">선택창 & HUD 초상화</div>
+        <div class="card-desc">인게임 캐릭터 선택 화면 및 체력바 초상화</div>
+      </div>
+    </div>
+
+    <!-- 실시간 애니메이션 프리뷰 -->
+    <div class="anim-box">
+      <h3 style="color: #38bdf8; margin-bottom: 10px;">🏃 실시간 인게임 모션 프리뷰</h3>
+      <div style="display: flex; gap: 40px; flex-wrap: wrap; justify-content: center;">
+        <div style="text-align: center;">
+          <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 6px;">[보행 달리기 모션]</div>
+          <img id="walkPreviewImg" style="width: 140px; height: 210px; object-fit: contain; background: #1e293b; border-radius: 8px; padding: 10px;" src="assets/hero_walk_0.png">
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 6px;">[연속 참격 베기 모션]</div>
+          <img id="atkPreviewImg" style="width: 140px; height: 210px; object-fit: contain; background: #1e293b; border-radius: 8px; padding: 10px;" src="assets/hero_attack_0.png">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: 유기적 배경 지형 (Terrain) -->
+  <div class="section">
+    <div class="section-title">🌿 2. 눈이 편안한 유기적 3D 지형 배경 (Organic Terrain)</div>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="width: 100%; height: 380px; overflow: hidden; border-radius: 10px; border: 1px solid #334155; position: relative;">
+        <img src="assets/ground_forest_organic.jpg" style="width: 100%; height: 100%; object-fit: cover;" alt="Organic Forest Terrain">
+        <div style="position: absolute; bottom: 12px; left: 16px; background: rgba(15, 23, 42, 0.85); padding: 8px 16px; border-radius: 6px; font-size: 13px; border: 1px solid #475569;">
+          ✨ <strong>1구역 유기적 숲길 대지 (1024x1024)</strong>: 반복 격자선/타일 이음매가 전혀 없는 자연 흙/돌길
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: 몬스터 & 중간보스 라인업 -->
+  <div class="section">
+    <div class="section-title">👹 3. 신규 몬스터 & 중간보스 라인업 (Enemies & Mini-Boss)</div>
+    <div style="width: 100%; height: 420px; overflow: hidden; border-radius: 10px; border: 1px solid #334155; position: relative;">
+      <img src="assets/enemies_3d_showcase.jpg" style="width: 100%; height: 100%; object-fit: contain; background: #0f172a;" alt="Enemies Lineup">
+      <div style="position: absolute; bottom: 12px; left: 16px; background: rgba(15, 23, 42, 0.85); padding: 8px 16px; border-radius: 6px; font-size: 13px; border: 1px solid #475569;">
+        ⚔️ <strong>좌측부터</strong>: 마교 쾌검 살수 · <strong>중앙 거대 흑철 집행관 (중간보스)</strong> · 뼈활 원거리 해골 궁수
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Live frame animation player
+    const walkFrames = [
+      'assets/hero_walk_0.png',
+      'assets/hero_walk_1.png',
+      'assets/hero_walk_2.png',
+      'assets/hero_walk_3.png'
+    ];
+    let wIdx = 0;
+    setInterval(() => {
+      wIdx = (wIdx + 1) % walkFrames.length;
+      document.getElementById('walkPreviewImg').src = walkFrames[wIdx];
+    }, 160);
+
+    const atkFrames = [
+      'assets/hero_attack_0.png',
+      'assets/hero_attack_1.png',
+      'assets/hero_attack_2.png',
+      'assets/hero_attack_3.png'
+    ];
+    let aIdx = 0;
+    setInterval(() => {
+      aIdx = (aIdx + 1) % atkFrames.length;
+      document.getElementById('atkPreviewImg').src = atkFrames[aIdx];
+    }, 180);
+  </script>
+</body>
+</html>

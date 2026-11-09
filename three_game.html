@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>무협 서바이벌 3D - 디아블로풍 쿼터뷰 3D 액션 RPG</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="assets_data.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    #webglCanvas { width: 100%; height: 100%; display: block; }
+    
+    /* Screen Damage Flash Vignette */
+    #damageVignette {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; box-shadow: inset 0 0 90px rgba(239, 68, 68, 0.9);
+      opacity: 0; transition: opacity 0.1s ease-out; z-index: 50;
+    }
+
+    #poisonVignette {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; box-shadow: inset 0 0 75px rgba(34, 197, 94, 0.75);
+      opacity: 0; transition: opacity 0.15s ease-out; z-index: 49;
+    }
+
+    /* Wuxia 3D HUD Overlay */
+    #hud {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; display: flex; flex-direction: column;
+      justify-content: space-between; padding: 20px; z-index: 60;
+    }
+    .hud-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+
+    .hero-card {
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid #38bdf8;
+      border-radius: 14px;
+      padding: 12px 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 25px rgba(56, 189, 248, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .hero-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 2px solid #38bdf8;
+      background: #0284c7;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+    }
+    .hero-info { display: flex; flex-direction: column; gap: 4px; }
+    .hero-name { font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px; }
+    .hp-bar-bg { width: 200px; height: 12px; background: #334155; border-radius: 6px; overflow: hidden; border: 1px solid #475569; }
+    .hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ef4444, #f87171); transition: width 0.15s; }
+
+    .weapon-badge {
+      font-size: 12px; padding: 3px 10px; border-radius: 6px;
+      background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8;
+      color: #38bdf8; font-weight: bold; width: fit-content;
+    }
+
+    /* Wave Progress Center Box */
+    .wave-progress-box {
+      background: rgba(15, 23, 42, 0.94);
+      border: 2px solid #10b981;
+      border-radius: 12px;
+      padding: 12px 28px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 25px rgba(16, 185, 129, 0.35);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .stage-title { font-size: 17px; font-weight: 900; color: #34d399; letter-spacing: 1px; }
+    .progress-bar-bg { width: 240px; height: 10px; background: #334155; border-radius: 5px; overflow: hidden; border: 1px solid #475569; }
+    .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); transition: width 0.2s; }
+    .wave-text { font-size: 12px; color: #cbd5e1; font-weight: 500; }
+
+    /* Boss Global HP Bar */
+    #bossHpBar {
+      position: absolute; top: 105px; left: 50%; transform: translateX(-50%);
+      width: 540px; background: rgba(15, 23, 42, 0.95); border: 2px solid #ef4444;
+      border-radius: 12px; padding: 12px 20px; box-shadow: 0 0 35px rgba(239, 68, 68, 0.6);
+      display: none; flex-direction: column; gap: 6px; backdrop-filter: blur(10px);
+    }
+    .boss-hp-header { display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; color: #fca5a5; }
+    .boss-hp-bg { width: 100%; height: 16px; background: #334155; border-radius: 8px; overflow: hidden; border: 1px solid #7f1d1d; }
+    .boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #b91c1c, #ef4444); transition: width 0.1s; }
+
+    /* Active Buff Indicators */
+    #buffContainer {
+      position: absolute; top: 105px; left: 20px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .buff-pill {
+      background: rgba(15, 23, 42, 0.92); border-radius: 8px; padding: 6px 14px;
+      font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px;
+      backdrop-filter: blur(6px); box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .buff-invincible { border: 1px solid #fbbf24; color: #fbbf24; }
+    .buff-wind { border: 1px solid #38bdf8; color: #38bdf8; }
+    .buff-vitality { border: 1px solid #f43f5e; color: #f43f5e; }
+
+    /* Notification Announcements */
+    .screen-alert {
+      position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      pointer-events: none; opacity: 0; transition: opacity 0.3s, transform 0.3s;
+      z-index: 70;
+    }
+    .screen-alert.show { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+    .alert-main {
+      font-size: 32px; font-weight: 900; color: #ef4444;
+      text-shadow: 0 0 25px rgba(239, 68, 68, 0.9), 0 4px 10px #000;
+      letter-spacing: 2px;
+    }
+    .alert-sub {
+      font-size: 16px; color: #fecaca; font-weight: bold;
+      background: rgba(0,0,0,0.7); padding: 6px 20px; border-radius: 20px;
+    }
+
+    /* Bottom HUD */
+    .hud-bottom {
+      display: flex; justify-content: space-between; align-items: flex-end;
+    }
+    .controls-card {
+      background: rgba(15, 23, 42, 0.9); border: 1px solid #334155;
+      border-radius: 10px; padding: 12px 16px; font-size: 12px; color: #94a3b8;
+      display: flex; flex-direction: column; gap: 4px; backdrop-filter: blur(8px);
+    }
+    .controls-card span { color: #f8fafc; font-weight: bold; }
+
+    .skills-bar {
+      display: flex; gap: 12px;
+    }
+    .skill-slot {
+      width: 58px; height: 58px; background: rgba(15, 23, 42, 0.9);
+      border: 2px solid #38bdf8; border-radius: 12px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; font-size: 20px; position: relative;
+      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.25);
+    }
+    .skill-key {
+      position: absolute; bottom: 2px; right: 4px; font-size: 10px;
+      color: #94a3b8; font-weight: bold;
+    }
+
+    /* Combo Badge */
+    #comboBadge {
+      position: absolute; bottom: 95px; left: 20px;
+      background: rgba(15, 23, 42, 0.95); border: 2px solid #38bdf8;
+      border-radius: 8px; padding: 6px 16px; color: #38bdf8;
+      font-size: 13px; font-weight: 900; letter-spacing: 0.5px;
+    }
+
+    /* Interactive Chest / Portal Prompt */
+    #interactPrompt {
+      position: absolute; top: 62%; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.96); border: 2px solid #fbbf24;
+      border-radius: 12px; padding: 12px 28px; color: #fbbf24; font-size: 16px;
+      font-weight: 900; display: none; align-items: center; gap: 10px;
+      box-shadow: 0 0 30px rgba(251, 191, 36, 0.6); z-index: 65;
+    }
+
+    /* Floating Damage Numbers */
+    .damage-pop {
+      position: absolute; pointer-events: none; font-weight: 900;
+      font-size: 22px; text-shadow: 0 2px 8px #000; animation: floatUp 0.75s ease-out forwards;
+      z-index: 80;
+    }
+    .damage-normal { color: #f59e0b; }
+    .damage-crit { color: #ef4444; font-size: 28px; }
+    .damage-poison { color: #22c55e; }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      50% { transform: translateY(-28px) scale(1.25); }
+      100% { opacity: 0; transform: translateY(-55px) scale(0.9); }
+    }
+
+    /* Mouse Crosshair */
+    #crosshair {
+      position: absolute; width: 28px; height: 28px; border: 2px solid #38bdf8;
+      border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
+      box-shadow: 0 0 12px #38bdf8; z-index: 100;
+    }
+    #crosshair::after {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+      background: #38bdf8; border-radius: 50%; transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body>
+  <div id="damageVignette"></div>
+  <div id="poisonVignette"></div>
+  <div id="crosshair"></div>
+  <div id="damageContainer"></div>
+
+  <!-- Screen Alerts -->
+  <div id="bossAlert" class="screen-alert">
+    <div class="alert-main">⚠️ [ 중간보스 출현: 흑철 집행관 ] ⚠️</div>
+    <div class="alert-sub">거대한 흑철 파천도를 휘두르는 거한이 강림했습니다!</div>
+  </div>
+
+  <div id="stageAlert" class="screen-alert">
+    <div id="stageAlertTitle" class="alert-main">⚔️ 제 2 구역: 적벽 혈암곡 진입 ⚔️</div>
+    <div class="alert-sub">새로운 영역에 도달했습니다! 마물을 소탕하십시오!</div>
+  </div>
+
+  <div id="interactPrompt">
+    <span>✨ [E] 키를 눌러 상호작용 하십시오</span>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="hero-card">
+        <div class="hero-avatar">🗡️</div>
+        <div class="hero-info">
+          <div class="hero-name">청운검객 서진 (3D 化境)</div>
+          <div class="hp-bar-bg"><div id="hpFill" class="hp-bar-fill"></div></div>
+          <div id="weaponBadge" class="weapon-badge">🗡️ 청운검 (기본)</div>
+        </div>
+      </div>
+
+      <div class="wave-progress-box">
+        <div id="stageTitle" class="stage-title">【 제 1 구역: 서북 취죽림 (翠竹林) 】</div>
+        <div class="progress-bar-bg"><div id="waveFill" class="progress-bar-fill"></div></div>
+        <div id="waveText" class="wave-text">⚔️ 마물 토벌 진행도: 0 / 25 (달성 시 중간보스 출현)</div>
+      </div>
+
+      <div class="hero-card" style="padding: 10px 16px;">
+        <span style="color:#94a3b8; font-size:13px; font-weight:bold;">⚔️ 총 처치: <span id="totalKillsText" style="color:#f8fafc; font-size:16px;">0</span></span>
+      </div>
+    </div>
+
+    <!-- Boss HP Bar -->
+    <div id="bossHpBar">
+      <div class="boss-hp-header">
+        <span>👹 중간보스 : 흑철 집행관 (黑鐵執行官)</span>
+        <span id="bossHpText">750 / 750</span>
+      </div>
+      <div class="boss-hp-bg"><div id="bossHpFill" class="boss-hp-fill"></div></div>
+    </div>
+
+    <!-- Active Buffs -->
+    <div id="buffContainer">
+      <div id="buffInvincible" class="buff-pill buff-invincible" style="display:none;">🛡️ 금강불괴 (무적 지속 중)</div>
+      <div id="buffWind" class="buff-pill buff-wind" style="display:none;">⚡ 풍신선풍 (이속 + 공속 극대화)</div>
+      <div id="buffVitality" class="buff-pill buff-vitality" style="display:none;">🩸 태을혈기 (생명력 급속 회복)</div>
+    </div>
+
+    <div id="comboBadge">⚔️ 쾌검 1타: 청풍사선참</div>
+
+    <div class="hud-bottom">
+      <div class="controls-card">
+        <div>🎮 <span>[W, A, S, D]</span> 8방향 질주 | 💨 <span>[Space]</span> 축지 대시 | 🖱️ <span>[좌클릭]</span> 수동 쾌검</div>
+        <div>⚡ <span>[자동 평타]</span> 몬스터 근접 시 3단 콤보 자동 시전 | 🏛️ <span>[신단]</span> 접근 시 버프 획득</div>
+        <div>🎁 <span>[E]</span> 보스 상자 열기 (무기 룩변) | 🌀 <span>[포탈]</span> 다음 구역 이동</div>
+      </div>
+
+      <div class="skills-bar">
+        <div class="skill-slot">🗡️<span class="skill-key">L-CLK</span></div>
+        <div class="skill-slot">🌀<span class="skill-key">Q</span></div>
+        <div class="skill-slot">💨<span class="skill-key">SPC</span></div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="webglCanvas"></canvas>
+
+  <script>
+    // --- 0. AUDIO SYNTHESIZER ---
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function playSound(type) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const t = audioCtx.currentTime;
+        if (type === 'hit') {
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(140, t);
+          osc.frequency.exponentialRampToValueAtTime(35, t + 0.12);
+          gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+          osc.start(t); osc.stop(t + 0.12);
+        } else if (type === 'whoosh') {
+          osc.type = 'sine'; osc.frequency.setValueAtTime(380, t);
+          osc.frequency.exponentialRampToValueAtTime(120, t + 0.14);
+          gain.gain.setValueAtTime(0.2, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.14);
+          osc.start(t); osc.stop(t + 0.14);
+        } else if (type === 'heavy') {
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(90, t);
+          osc.frequency.exponentialRampToValueAtTime(25, t + 0.28);
+          gain.gain.setValueAtTime(0.45, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.28);
+          osc.start(t); osc.stop(t + 0.28);
+        } else if (type === 'shrine') {
+          osc.type = 'sine'; osc.frequency.setValueAtTime(440, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.35);
+          gain.gain.setValueAtTime(0.25, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+          osc.start(t); osc.stop(t + 0.35);
+        } else if (type === 'loot') {
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(523, t);
+          osc.frequency.setValueAtTime(659, t + 0.1);
+          osc.frequency.setValueAtTime(784, t + 0.2);
+          gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.45);
+          osc.start(t); osc.stop(t + 0.45);
+        } else if (type === 'portal') {
+          osc.type = 'sine'; osc.frequency.setValueAtTime(220, t);
+          osc.frequency.exponentialRampToValueAtTime(660, t + 0.6);
+          gain.gain.setValueAtTime(0.35, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+          osc.start(t); osc.stop(t + 0.6);
+        } else if (type === 'hurt') {
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, t);
+          osc.frequency.exponentialRampToValueAtTime(60, t + 0.15);
+          gain.gain.setValueAtTime(0.25, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+          osc.start(t); osc.stop(t + 0.15);
+        }
+      } catch(e) {}
+    }
+
+    // --- 1. PROCEDURAL ULTRA-LUSH BAMBOO FOREST TEXTURE (Soft, Natural, Eyesore-Free) ---
+    function createBambooGroundCanvas() {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 1024;
+      const ctx = c.getContext('2d');
+
+      // Base: Deep dark mossy forest floor
+      const grad = ctx.createLinearGradient(0, 0, 1024, 1024);
+      grad.addColorStop(0, '#0f2417');
+      grad.addColorStop(0.5, '#163321');
+      grad.addColorStop(1, '#11291b');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      // Organic soil / humus mottling (subtle, dark, natural)
+      for (let i = 0; i < 350; i++) {
+        const x = Math.random() * 1024;
+        const y = Math.random() * 1024;
+        const r = 30 + Math.random() * 70;
+        ctx.fillStyle = (Math.random() > 0.5) ? 'rgba(20, 50, 30, 0.25)' : 'rgba(10, 20, 14, 0.35)';
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Natural Weathered Slate Pathway Stones (Dark, muted, soft)
+      ctx.save();
+      for (let s = 0; s < 18; s++) {
+        const sx = (s % 5) * 210 + 90 + (Math.random() - 0.5) * 50;
+        const sy = Math.floor(s / 5) * 240 + 110 + (Math.random() - 0.5) * 50;
+        const sw = 100 + Math.random() * 50;
+        const sh = 75 + Math.random() * 40;
+
+        // Dark soft shadow
+        ctx.fillStyle = 'rgba(5, 12, 8, 0.5)';
+        ctx.beginPath();
+        ctx.ellipse(sx + 4, sy + 5, sw * 0.52, sh * 0.52, Math.random() * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dark slate surface (no bright highlights)
+        const stoneGrad = ctx.createRadialGradient(sx - 10, sy - 10, 5, sx, sy, sw * 0.52);
+        stoneGrad.addColorStop(0, '#2d3748');
+        stoneGrad.addColorStop(0.7, '#1f2937');
+        stoneGrad.addColorStop(1, '#111827');
+        ctx.fillStyle = stoneGrad;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, sw * 0.48, sh * 0.48, Math.random() * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Subtle dark moss rim
+        ctx.strokeStyle = 'rgba(22, 60, 35, 0.4)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Soft Natural Grass Tufts (Calm forest green, NO NEON)
+      for (let g = 0; g < 1800; g++) {
+        const gx = Math.random() * 1024;
+        const gy = Math.random() * 1024;
+        const len = 7 + Math.random() * 12;
+        const bladeAng = -Math.PI / 2 + (Math.random() - 0.5) * 0.7;
+        ctx.strokeStyle = ['#1e4620', '#27522a', '#173b1a', '#224a26', '#1c3f1e'][Math.floor(Math.random() * 5)];
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(gx, gy);
+        ctx.lineTo(gx + Math.cos(bladeAng) * len, gy + Math.sin(bladeAng) * len);
+        ctx.stroke();
+      }
+
+      // Weathered Fallen Bamboo Leaves (Muted earth-brown / gold, calm & natural)
+      for (let b = 0; b < 280; b++) {
+        const bx = Math.random() * 1024;
+        const by = Math.random() * 1024;
+        const bLen = 18 + Math.random() * 16;
+        const bAng = Math.random() * Math.PI * 2;
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(bAng);
+        ctx.fillStyle = ['#5c451f', '#4d3b1b', '#6b5124', '#3d4420', '#4a401c'][Math.floor(Math.random() * 5)];
+        ctx.beginPath();
+        ctx.moveTo(-bLen / 2, 0);
+        ctx.quadraticCurveTo(0, -3.5, bLen / 2, 0);
+        ctx.quadraticCurveTo(0, 3.5, -bLen / 2, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      return c;
+    }
+
+    function createVolcanicGroundCanvas() {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 1024;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#1c1917'; ctx.fillRect(0, 0, 1024, 1024);
+      for (let i = 0; i < 30; i++) {
+        const x1 = Math.random() * 1024, y1 = Math.random() * 1024;
+        const x2 = x1 + (Math.random() - 0.5) * 300, y2 = y1 + (Math.random() - 0.5) * 300;
+        ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 6 + Math.random() * 6;
+        ctx.shadowColor = '#f97316'; ctx.shadowBlur = 15;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      }
+      return c;
+    }
+
+    function createIceGroundCanvas() {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 1024;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 1024, 1024);
+      for (let i = 0; i < 40; i++) {
+        const x1 = Math.random() * 1024, y1 = Math.random() * 1024;
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 4;
+        ctx.shadowColor = '#bae6fd'; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 + (Math.random()-0.5)*200, y1 + (Math.random()-0.5)*200); ctx.stroke();
+      }
+      return c;
+    }
+
+    // --- 2. THREE.JS SCENE, CALM ATMOSPHERIC BAMBOO FOREST (Natural & Eyesore-Free) ---
+    const canvas = document.getElementById('webglCanvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Filmic Tone Mapping to prevent any harsh specular blown-out white spots
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+
+    const scene = new THREE.Scene();
+    // Misty Karst Mountain Atmosphere (장가계풍 옥색 산안개 원경)
+    scene.background = new THREE.Color('#8ea699');
+    scene.fog = new THREE.FogExp2('#8ea699', 0.0075);
+
+    const aspect = window.innerWidth / window.innerHeight;
+    const camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 350);
+    const cameraOffset = new THREE.Vector3(14, 18, 14);
+    camera.position.copy(cameraOffset);
+    camera.lookAt(0, 1.2, 0);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Balanced Natural Morning Sunlight
+    const ambientLight = new THREE.AmbientLight('#2a4537', 0.7);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight('#b8d5c4', '#1f3829', 0.8);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight('#fff5dd', 1.25);
+    dirLight.position.set(28, 48, 20);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 10;
+    dirLight.shadow.camera.far = 130;
+    const d = 38;
+    dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
+    dirLight.shadow.bias = -0.0004;
+    scene.add(dirLight);
+
+    const heroPointLight = new THREE.PointLight('#38bdf8', 1.5, 22);
+    heroPointLight.position.set(0, 3.5, 0);
+    scene.add(heroPointLight);
+
+    // --- 3. PURE GROUND TERRAIN (순수 지형 바닥: 흙 + 이끼 + 자갈 + 잔디 - 건물/지붕 절대 없음!) ---
+    let arenaMapTex;
+    if (window.GAME_ASSETS && window.GAME_ASSETS.bamboo_ground_hd) {
+      arenaMapTex = new THREE.TextureLoader().load(window.GAME_ASSETS.bamboo_ground_hd);
+    } else if (window.GAME_ASSETS && window.GAME_ASSETS.bamboo_path_wuxia) {
+      arenaMapTex = new THREE.TextureLoader().load(window.GAME_ASSETS.bamboo_path_wuxia);
+    } else {
+      arenaMapTex = new THREE.CanvasTexture(createBambooGroundCanvas());
+    }
+    arenaMapTex.wrapS = THREE.RepeatWrapping;
+    arenaMapTex.wrapT = THREE.RepeatWrapping;
+    arenaMapTex.repeat.set(8, 8);
+
+    const groundGeo = new THREE.PlaneGeometry(160, 160);
+    const groundMat = new THREE.MeshStandardMaterial({
+      map: arenaMapTex,
+      roughness: 0.92,
+      metalness: 0.02
+    });
+    const groundMesh = new THREE.Mesh(groundGeo, groundMat);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.receiveShadow = true;
+    scene.add(groundMesh);
+
+    // Floating Bamboo Firefly Particles (살아있는 숲의 반딧불이 & 기운 입자)
+    const fireflyGeo = new THREE.BufferGeometry();
+    const fireflyPos = [];
+    for (let i = 0; i < 90; i++) {
+      fireflyPos.push(
+        (Math.random() - 0.5) * 140,
+        Math.random() * 5 + 0.5,
+        (Math.random() - 0.5) * 80
+      );
+    }
+    fireflyGeo.setAttribute('position', new THREE.Float32BufferAttribute(fireflyPos, 3));
+    const fireflyMat = new THREE.PointsMaterial({ color: '#fef08a', size: 0.35, transparent: true, opacity: 0.85 });
+    const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
+    scene.add(fireflies);
+
+    // --- 3.5. BLENDER 5.2 PROCEDURAL 3D ASSETS LOADER (취죽림 대나무 숲 + 취죽정 + 석등 + 바위) ---
+    function loadGLBFromBase64(b64, callback) {
+      if (!b64) return;
+      try {
+        if (typeof THREE.GLTFLoader === 'undefined') {
+          console.warn('GLTFLoader not yet loaded, retrying in 200ms...');
+          setTimeout(() => loadGLBFromBase64(b64, callback), 200);
+          return;
+        }
+        const binStr = atob(b64);
+        const len = binStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binStr.charCodeAt(i);
+        }
+        const loader = new THREE.GLTFLoader();
+        loader.parse(bytes.buffer, '', function(gltf) {
+          callback(gltf.scene);
+        }, function(err) {
+          console.error('Error parsing GLB:', err);
+        });
+      } catch (e) {
+        console.error('GLB parse exception:', e);
+      }
+    }
+
+    // A. 3D Bamboo Forest (자연스러운 외곽 대나무 군락 및 협곡 형성)
+    if (window.GAME_ASSETS && window.GAME_ASSETS.bamboo_glb_b64) {
+      loadGLBFromBase64(window.GAME_ASSETS.bamboo_glb_b64, (bambooModel) => {
+        bambooModel.traverse(c => {
+          if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }
+        });
+
+        const bambooPositions = [
+          // Left bamboo ridge
+          [-32, -30], [-30, -22], [-28, -14], [-32, -6], [-30, 2], [-28, 12], [-32, 20], [-29, 28],
+          [-24, -32], [-22, -20], [-25, -8], [-22, 6], [-25, 18], [-23, 26],
+          [-35, -15], [-34, 5], [-36, 18], [-33, -2],
+          // Right bamboo ridge
+          [32, -30], [30, -22], [28, -14], [32, -6], [30, 2], [28, 12], [32, 20], [29, 28],
+          [24, -32], [22, -20], [25, -8], [22, 6], [25, 18], [23, 26],
+          [35, -15], [34, 5], [36, 18], [33, -2],
+          // Back ridge
+          [-16, -34], [-8, -35], [0, -34], [8, -35], [16, -34],
+          // Front decorative clumps
+          [-20, 24], [-18, 28], [18, 25], [22, 28]
+        ];
+
+        bambooPositions.forEach(([bx, bz], idx) => {
+          const clone = bambooModel.clone();
+          const s = 0.85 + (Math.sin(idx * 7) * 0.25);
+          clone.scale.set(s, s * (0.9 + Math.cos(idx * 3) * 0.2), s);
+          clone.position.set(bx + (Math.sin(idx * 5) * 1.5), 0, bz + (Math.cos(idx * 4) * 1.5));
+          clone.rotation.y = idx * 1.3;
+          clone.rotation.z = Math.sin(idx * 2) * 0.08;
+          clone.rotation.x = Math.cos(idx * 3) * 0.08;
+          scene.add(clone);
+        });
+      });
+    }
+
+    // B. 3D Wuxia Pavilion (전통 팔각 정자 '취죽정')
+    if (window.GAME_ASSETS && window.GAME_ASSETS.pavilion_glb_b64) {
+      loadGLBFromBase64(window.GAME_ASSETS.pavilion_glb_b64, (pavModel) => {
+        pavModel.traverse(c => {
+          if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }
+        });
+        pavModel.scale.set(1.15, 1.15, 1.15);
+        pavModel.position.set(-20, 0, 10);
+        pavModel.rotation.y = Math.PI / 6;
+        scene.add(pavModel);
+
+        const pavLight = new THREE.PointLight('#f59e0b', 2.2, 18);
+        pavLight.position.set(-20, 3.2, 10);
+        scene.add(pavLight);
+      });
+    }
+
+    // C. 3D Stone Lanterns (산길 따라 불 밝히는 돌석등)
+    if (window.GAME_ASSETS && window.GAME_ASSETS.lantern_glb_b64) {
+      loadGLBFromBase64(window.GAME_ASSETS.lantern_glb_b64, (lanternModel) => {
+        lanternModel.traverse(c => {
+          if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }
+        });
+        const lanternCoords = [
+          [-9, -15], [9, -12], [-10, 0], [10, 4], [-8, 16], [9, 18], [-17, 7]
+        ];
+        lanternCoords.forEach(([lx, lz], i) => {
+          const lInst = lanternModel.clone();
+          lInst.position.set(lx, 0, lz);
+          lInst.rotation.y = i * 1.1;
+          lInst.scale.set(0.9, 0.9, 0.9);
+          scene.add(lInst);
+
+          const lLight = new THREE.PointLight('#f59e0b', 1.0, 10);
+          lLight.position.set(lx, 1.6, lz);
+          scene.add(lLight);
+        });
+      });
+    }
+
+    // D. 3D Mossy River Rocks (자연스러운 이끼 낀 강돌 및 암석)
+    if (window.GAME_ASSETS && window.GAME_ASSETS.rock_glb_b64) {
+      loadGLBFromBase64(window.GAME_ASSETS.rock_glb_b64, (rockModel) => {
+        rockModel.traverse(c => {
+          if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }
+        });
+        const rockCoords = [
+          [-14, -18], [-6, -24], [7, -20], [14, -16],
+          [-15, 2], [14, 8], [-13, 20], [12, 22],
+          [-22, 6], [-18, 14], [20, -6]
+        ];
+        rockCoords.forEach(([rx, rz], i) => {
+          const rInst = rockModel.clone();
+          const rs = 0.7 + (Math.sin(i * 4) * 0.4);
+          rInst.position.set(rx, 0, rz);
+          rInst.scale.set(rs * 1.3, rs * 0.9, rs);
+          rInst.rotation.set(0, i * 2.1, 0);
+          scene.add(rInst);
+        });
+      });
+    }
+
+    // --- 4. DIABLO 3D SHRINES (전장 명소에 배치된 3종 신단) ---
+    const shrines = [];
+    const shrineData = [
+      { type: 'invincible', name: '금강 신단 (무적)', color: '#fbbf24', pos: new THREE.Vector3(-14, 0, -8) },
+      { type: 'windGod', name: '풍신 신단 (신속)', color: '#38bdf8', pos: new THREE.Vector3(16, 0, 8) },
+      { type: 'vitality', name: '태을 신단 (회복)', color: '#f43f5e', pos: new THREE.Vector3(-12, 0, 14) }
+    ];
+
+    shrineData.forEach(sd => {
+      const g = new THREE.Group();
+      g.position.copy(sd.pos);
+
+      // Stone Pagoda Base
+      const stoneMat = new THREE.MeshStandardMaterial({ color: '#475569', roughness: 0.8 });
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.4, 0.6, 8), stoneMat);
+      base.position.y = 0.3; base.castShadow = true; g.add(base);
+
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 1.8, 8), stoneMat);
+      pillar.position.y = 1.4; pillar.castShadow = true; g.add(pillar);
+
+      // Floating Elemental Orb
+      const orbMat = new THREE.MeshStandardMaterial({
+        color: sd.color, emissive: sd.color, emissiveIntensity: 1.2, metalness: 0.8, roughness: 0.1
+      });
+      const orb = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55), orbMat);
+      orb.position.y = 2.9; g.add(orb);
+
+      // Light & Aura Ring
+      const sl = new THREE.PointLight(sd.color, 1.6, 14);
+      sl.position.y = 3.0; g.add(sl);
+
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(1.8, 2.3, 32),
+        new THREE.MeshBasicMaterial({ color: sd.color, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+      );
+      ring.rotation.x = Math.PI / 2; ring.position.y = 0.04; g.add(ring);
+
+      scene.add(g);
+      shrines.push({ type: sd.type, name: sd.name, color: sd.color, pos: sd.pos, group: g, orb, ring, active: true, cooldown: 0 });
+    });
+
+    const activeBuffs = { invincible: 0, windGod: 0, vitality: 0 };
+
+    // --- 5. HIGH-FIDELITY 3D WUXIA HERO RIG (청운검객 서진) ---
+    const heroRoot = new THREE.Group();
+    scene.add(heroRoot);
+
+    // Hero Materials
+    const skinMat = new THREE.MeshStandardMaterial({ color: '#fed7aa', roughness: 0.6 });
+    const silkWhiteMat = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.5 });
+    const silkCyanMat = new THREE.MeshStandardMaterial({ color: '#0284c7', roughness: 0.45 });
+    const darkClothMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.8 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', metalness: 0.85, roughness: 0.25 });
+    const bladeGlowMat = new THREE.MeshStandardMaterial({
+      color: '#e0f2fe', emissive: '#38bdf8', emissiveIntensity: 1.4, metalness: 0.95, roughness: 0.1
+    });
+
+    // Drop Shadow
+    const shadowGeo = new THREE.PlaneGeometry(1.8, 1.0);
+    const shadowMat = new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.55 });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.03;
+    heroRoot.add(shadowMesh);
+
+    // Hero Halo Aura
+    const heroAuraRing = new THREE.Mesh(
+      new THREE.RingGeometry(1.3, 1.6, 32),
+      new THREE.MeshBasicMaterial({ color: '#38bdf8', side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+    );
+    heroAuraRing.rotation.x = Math.PI / 2;
+    heroAuraRing.position.y = 0.04;
+    heroRoot.add(heroAuraRing);
+
+    // Pelvis & Lower Robe
+    const pelvis = new THREE.Group();
+    pelvis.position.y = 1.35;
+    heroRoot.add(pelvis);
+
+    const robeSkirt = new THREE.Mesh(new THREE.ConeGeometry(0.72, 0.85, 8, 1, true), silkCyanMat);
+    robeSkirt.position.y = -0.18;
+    robeSkirt.rotation.y = Math.PI / 4;
+    robeSkirt.castShadow = true;
+    pelvis.add(robeSkirt);
+
+    // Spine & Torso
+    const spine = new THREE.Group();
+    spine.position.y = 0.25;
+    pelvis.add(spine);
+
+    const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.48), silkWhiteMat);
+    chestMesh.position.y = 0.4;
+    chestMesh.castShadow = true;
+    spine.add(chestMesh);
+
+    // Crossed Lapels (교차 비단 깃)
+    const collarL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.06), silkCyanMat);
+    collarL.position.set(-0.18, 0.44, 0.25);
+    collarL.rotation.z = -0.3;
+    spine.add(collarL);
+
+    const collarR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.06), silkCyanMat);
+    collarR.position.set(0.18, 0.44, 0.25);
+    collarR.rotation.z = 0.3;
+    spine.add(collarR);
+
+    // Broad Martial Belt (요대) with Golden Clasp & Hanging Ribbon
+    const sash = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.2, 0.5), goldMat);
+    sash.position.y = 0.05;
+    spine.add(sash);
+
+    const hangingRibbon = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.75, 0.04), new THREE.MeshBasicMaterial({ color: '#ef4444' }));
+    hangingRibbon.position.set(0, -0.3, 0.26);
+    spine.add(hangingRibbon);
+
+    // Neck & Head
+    const neck = new THREE.Group();
+    neck.position.y = 0.85;
+    spine.add(neck);
+
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 12), skinMat);
+    headMesh.position.y = 0.26;
+    headMesh.castShadow = true;
+    neck.add(headMesh);
+
+    // Headband with Trailing Fabric Ribbons
+    const headband = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.08, 12), new THREE.MeshBasicMaterial({ color: '#0284c7' }));
+    headband.position.y = 0.33;
+    neck.add(headband);
+
+    const ribbonL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.02), new THREE.MeshBasicMaterial({ color: '#0284c7' }));
+    ribbonL.position.set(-0.1, 0.1, -0.3);
+    ribbonL.rotation.x = 0.4;
+    neck.add(ribbonL);
+    const ribbonR = ribbonL.clone();
+    ribbonR.position.x = 0.1;
+    neck.add(ribbonR);
+
+    // Topknot (상투) & Hair
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.29, 8, 8), darkClothMat);
+    hair.position.set(0, 0.32, -0.06);
+    neck.add(hair);
+
+    const knot = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 0.24, 8), darkClothMat);
+    knot.position.set(0, 0.56, -0.08);
+    neck.add(knot);
+
+    // Bamboo Conical Hat (삿갓) on Back
+    const hat = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.24, 16), new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.9 }));
+    hat.rotation.x = -Math.PI * 0.48;
+    hat.position.set(0, 0.4, -0.34);
+    hat.castShadow = true;
+    spine.add(hat);
+
+    // Dynamic Flowing Cloak (Cape)
+    const cape = new THREE.Group();
+    cape.position.set(0, 0.72, -0.26);
+    spine.add(cape);
+
+    const capeMat = new THREE.MeshStandardMaterial({ color: '#0369a1', roughness: 0.5, side: THREE.DoubleSide });
+    const capeMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 1.4), capeMat);
+    capeMesh.position.y = -0.7;
+    capeMesh.castShadow = true;
+    cape.add(capeMesh);
+
+    // Left Arm (Dynamic balance)
+    const leftShoulder = new THREE.Group();
+    leftShoulder.position.set(-0.52, 0.68, 0);
+    spine.add(leftShoulder);
+    const leftPauldron = new THREE.Mesh(new THREE.SphereGeometry(0.19, 8, 8), goldMat);
+    leftShoulder.add(leftPauldron);
+    const leftUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.4, 8), silkWhiteMat);
+    leftUpperArm.position.y = -0.2; leftUpperArm.castShadow = true; leftShoulder.add(leftUpperArm);
+    const leftForearm = new THREE.Group(); leftForearm.position.y = -0.4; leftShoulder.add(leftForearm);
+    const leftForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.38, 8), silkCyanMat);
+    leftForearmMesh.position.y = -0.19; leftForearmMesh.castShadow = true; leftForearm.add(leftForearmMesh);
+
+    // Right Arm with Shoulder Armor Pad
+    const rightShoulder = new THREE.Group();
+    rightShoulder.position.set(0.52, 0.68, 0);
+    spine.add(rightShoulder);
+    const rightPauldron = new THREE.Mesh(new THREE.SphereGeometry(0.19, 8, 8), goldMat);
+    rightShoulder.add(rightPauldron);
+    const rightUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.4, 8), silkWhiteMat);
+    rightUpperArm.position.y = -0.2; rightUpperArm.castShadow = true; rightShoulder.add(rightUpperArm);
+    const rightForearm = new THREE.Group(); rightForearm.position.y = -0.4; rightShoulder.add(rightForearm);
+    const rightForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.38, 8), silkCyanMat);
+    rightForearmMesh.position.y = -0.19; rightForearmMesh.castShadow = true; rightForearm.add(rightForearmMesh);
+
+    // 3D Ancient Glowing Sword in Hand (청풍명월검)
+    const swordRoot = new THREE.Group();
+    rightForearm.add(swordRoot);
+    swordRoot.position.set(0, -0.38, 0.05);
+    swordRoot.rotation.x = Math.PI * 0.35;
+
+    const bladeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.95, 0.24), bladeGlowMat);
+    bladeMesh.position.y = 1.0; bladeMesh.castShadow = true; swordRoot.add(bladeMesh);
+    const guardMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.36), goldMat);
+    swordRoot.add(guardMesh);
+    const hiltMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.44, 8), darkClothMat);
+    hiltMesh.position.y = -0.24; swordRoot.add(hiltMesh);
+
+    // Legs with Knees & Boots
+    const leftHip = new THREE.Group(); leftHip.position.set(-0.24, -0.12, 0); pelvis.add(leftHip);
+    const leftThigh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.14, 0.6, 8), darkClothMat);
+    leftThigh.position.y = -0.3; leftThigh.castShadow = true; leftHip.add(leftThigh);
+    const leftKnee = new THREE.Group(); leftKnee.position.y = -0.6; leftHip.add(leftKnee);
+    const leftCalf = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.6, 8), darkClothMat);
+    leftCalf.position.y = -0.3; leftCalf.castShadow = true; leftKnee.add(leftCalf);
+    const leftFoot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.32), goldMat);
+    leftFoot.position.set(0, -0.62, 0.09); leftKnee.add(leftFoot);
+
+    const rightHip = new THREE.Group(); rightHip.position.set(0.24, -0.12, 0); pelvis.add(rightHip);
+    const rightThigh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.14, 0.6, 8), darkClothMat);
+    rightThigh.position.y = -0.3; rightThigh.castShadow = true; rightHip.add(rightThigh);
+    const rightKnee = new THREE.Group(); rightKnee.position.y = -0.6; rightHip.add(rightKnee);
+    const rightCalf = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.6, 8), darkClothMat);
+    rightCalf.position.y = -0.3; rightCalf.castShadow = true; rightKnee.add(rightCalf);
+    const rightFoot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.32), goldMat);
+    rightFoot.position.set(0, -0.62, 0.09); rightKnee.add(rightFoot);
+
+    // Golden Barrier Mesh
+    const goldenBarrier = new THREE.Mesh(
+      new THREE.SphereGeometry(1.6, 16, 16),
+      new THREE.MeshStandardMaterial({ color: '#fbbf24', emissive: '#f59e0b', emissiveIntensity: 0.6, transparent: true, opacity: 0, wireframe: true })
+    );
+    goldenBarrier.position.y = 1.0; heroRoot.add(goldenBarrier);
+
+    // Orbiting 3D Flying Swords
+    const flyingSwords = [];
+    for (let s = 0; s < 3; s++) {
+      const sw = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.35, 0.14), bladeGlowMat);
+      sw.castShadow = true; scene.add(sw); flyingSwords.push(sw);
+    }
+
+    let currentWeapon = 'qingyun';
+    function applyWeaponTransmog(type) {
+      currentWeapon = type;
+      const badge = document.getElementById('weaponBadge');
+      if (type === 'flame') {
+        bladeGlowMat.color.set('#fca5a5'); bladeGlowMat.emissive.set('#ef4444');
+        heroPointLight.color.set('#ef4444'); heroAuraRing.material.color.set('#ef4444');
+        badge.innerText = '🔥 열화봉황도 [화염 룩변 +공격력 65]';
+        badge.style.color = '#ef4444'; badge.style.borderColor = '#ef4444'; badge.style.background = 'rgba(239, 68, 68, 0.2)';
+      } else if (type === 'ice') {
+        bladeGlowMat.color.set('#bae6fd'); bladeGlowMat.emissive.set('#06b6d4');
+        heroPointLight.color.set('#06b6d4'); heroAuraRing.material.color.set('#06b6d4');
+        badge.innerText = '❄️ 빙백신검 [빙결 룩변 +둔화+치명 25%]';
+        badge.style.color = '#06b6d4'; badge.style.borderColor = '#06b6d4'; badge.style.background = 'rgba(6, 182, 212, 0.2)';
+      }
+    }
+
+    // --- 6. INPUT HANDLING ---
+    const keys = {};
+    window.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key.toLowerCase() === 'e') handleInteraction();
+    });
+    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+    let mouseWorldPos = new THREE.Vector3();
+    const raycaster = new THREE.Raycaster();
+    const mousePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const mouse = new THREE.Vector2();
+
+    const crosshairEl = document.getElementById('crosshair');
+    window.addEventListener('mousemove', e => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      crosshairEl.style.left = e.clientX + 'px';
+      crosshairEl.style.top = e.clientY + 'px';
+      raycaster.setFromCamera(mouse, camera);
+      raycaster.ray.intersectPlane(mousePlane, mouseWorldPos);
+    });
+
+    let playerPos = new THREE.Vector3(0, 0, 0);
+    let playerHp = 100, maxHp = 100;
+    let poisonTimer = 0;
+    let walkTimer = 0;
+    let killCount = 0;
+    let stageKills = 0;
+    const KILLS_FOR_BOSS = 25;
+    let dashTimer = 0;
+    let currentStage = 1;
+    let spawningEnabled = true;
+
+    // --- 7. AUTO MELEE ATTACK & 3-HIT COMBO ---
+    let comboStep = 0;
+    let isAttacking = false;
+    let attackTimer = 0;
+    let attackDuration = 0.28;
+    let autoMeleeCooldown = 0;
+    const MELEE_RANGE = 4.8;
+
+    const comboNames = [
+      '⚔️ 쾌검 1타: 청풍사선참',
+      '⚔️ 쾌검 2타: 횡단역검',
+      '💥 쾌검 3타: 벽력붕천'
+    ];
+
+    window.addEventListener('mousedown', e => {
+      if (e.button === 0 && !isAttacking) {
+        initAudio();
+        triggerMeleeAttack(true);
+      }
+    });
+
+    function triggerMeleeAttack(isManual) {
+      if (isAttacking) return;
+      isAttacking = true;
+      const speedBuff = activeBuffs.windGod > 0 ? 0.6 : 1.0;
+      attackDuration = ((comboStep === 2) ? 0.38 : 0.25) * speedBuff;
+      attackTimer = attackDuration;
+
+      const badge = document.getElementById('comboBadge');
+      badge.innerText = comboNames[comboStep];
+      badge.style.borderColor = (comboStep === 2) ? '#f97316' : '#38bdf8';
+      badge.style.color = (comboStep === 2) ? '#f97316' : '#38bdf8';
+
+      if (comboStep === 2) playSound('heavy');
+      else playSound('whoosh');
+
+      create3DSwordArc(heroRoot.position, heroRoot.rotation.y, comboStep);
+
+      const hitRadius = (comboStep === 2) ? 5.4 : 4.4;
+      let baseDmg = (comboStep === 2) ? 95 : 52;
+      if (currentWeapon === 'flame') baseDmg += 35;
+      if (currentWeapon === 'ice') baseDmg += 20;
+
+      const isHeavy = (comboStep === 2);
+      let hitAny = false;
+
+      enemies.forEach(en => {
+        const d = en.mesh.position.distanceTo(heroRoot.position);
+        if (d < hitRadius) {
+          hitAny = true;
+          en.hp -= baseDmg;
+          en.hitFlash = 0.15;
+          const kbDir = en.mesh.position.clone().sub(heroRoot.position).normalize();
+          en.mesh.position.addScaledVector(kbDir, isHeavy ? 2.5 : 1.0);
+          createHitSpark(en.mesh.position, isHeavy);
+          spawnDamagePop(en.mesh.position, baseDmg, isHeavy ? 'crit' : 'normal');
+        }
+      });
+
+      if (activeBoss) {
+        const d = activeBoss.mesh.position.distanceTo(heroRoot.position);
+        if (d < hitRadius + 1.8) {
+          hitAny = true;
+          activeBoss.hp -= baseDmg;
+          activeBoss.hitFlash = 0.15;
+          createHitSpark(activeBoss.mesh.position, true);
+          spawnDamagePop(activeBoss.mesh.position, baseDmg, isHeavy ? 'crit' : 'normal');
+          updateBossHpUI();
+        }
+      }
+
+      if (hitAny) playSound('hit');
+      comboStep = (comboStep + 1) % 3;
+    }
+
+    // 3D Curved Crescent Slash Arc FX Mesh
+    function create3DSwordArc(pos, rotY, step) {
+      const arcMat = new THREE.MeshBasicMaterial({
+        color: (currentWeapon === 'flame' || step === 2) ? '#f97316' : (currentWeapon === 'ice' ? '#38bdf8' : '#38bdf8'),
+        side: THREE.DoubleSide, transparent: true, opacity: 0.85
+      });
+      const arcMesh = new THREE.Mesh(
+        new THREE.RingGeometry(2.2, 4.4, 24, 1, 0, Math.PI * 0.75),
+        arcMat
+      );
+      arcMesh.rotation.x = Math.PI / 2;
+      arcMesh.rotation.z = -rotY - Math.PI * 0.35;
+      arcMesh.position.copy(pos);
+      arcMesh.position.y = 1.2;
+      scene.add(arcMesh);
+
+      let life = 0.16;
+      const interval = setInterval(() => {
+        life -= 0.03;
+        arcMesh.scale.multiplyScalar(1.08);
+        arcMat.opacity = life / 0.16 * 0.85;
+        if (life <= 0) {
+          clearInterval(interval);
+          scene.remove(arcMesh);
+        }
+      }, 30);
+    }
+
+    // --- 8. PROJECTILES & PARTICLES ---
+    const enemyProjectiles = [];
+    function shootEnemyProjectile(pos, dir, type) {
+      if (!type) type = 'shuriken';
+      const isPoison = (type === 'poison');
+      const geo = isPoison ? new THREE.SphereGeometry(0.3, 8, 8) : new THREE.CylinderGeometry(0.35, 0.35, 0.06, 6);
+      const mat = new THREE.MeshBasicMaterial({ color: isPoison ? '#22c55e' : '#ef4444' });
+      const m = new THREE.Mesh(geo, mat);
+      m.position.copy(pos);
+      m.position.y = 1.2;
+      scene.add(m);
+
+      enemyProjectiles.push({
+        mesh: m, dir: dir.normalize(), speed: isPoison ? 9.5 : 13.0, type: type, life: 2.5
+      });
+    }
+
+    function playerTakeDamage(dmg, isPoison) {
+      if (activeBuffs.invincible > 0) return;
+
+      playerHp = Math.max(0, playerHp - dmg);
+      document.getElementById('hpFill').style.width = (playerHp / maxHp * 100) + '%';
+      playSound('hurt');
+
+      const vig = document.getElementById('damageVignette');
+      vig.style.opacity = '1';
+      setTimeout(() => vig.style.opacity = '0', 160);
+
+      if (isPoison) {
+        poisonTimer = 3.5;
+        const pv = document.getElementById('poisonVignette');
+        pv.style.opacity = '1';
+      }
+    }
+
+    function createHitSpark(pos, isHeavy) {
+      const sparkGroup = new THREE.Group();
+      sparkGroup.position.copy(pos);
+      scene.add(sparkGroup);
+
+      const count = isHeavy ? 16 : 8;
+      const sparks = [];
+      for (let i = 0; i < count; i++) {
+        const sm = new THREE.Mesh(
+          new THREE.BoxGeometry(0.14, 0.14, 0.14),
+          new THREE.MeshBasicMaterial({ color: isHeavy ? '#f97316' : '#38bdf8' })
+        );
+        const vel = new THREE.Vector3((Math.random() - 0.5) * 9, Math.random() * 7 + 2, (Math.random() - 0.5) * 9);
+        sparkGroup.add(sm);
+        sparks.push({ mesh: sm, vel: vel });
+      }
+
+      let life = 0.25;
+      const interval = setInterval(() => {
+        life -= 0.04;
+        sparks.forEach(s => {
+          s.mesh.position.addScaledVector(s.vel, 0.04);
+          s.vel.y -= 0.4;
+          s.mesh.scale.multiplyScalar(0.92);
+        });
+        if (life <= 0) {
+          clearInterval(interval);
+          scene.remove(sparkGroup);
+        }
+      }, 40);
+    }
+
+    const damageContainer = document.getElementById('damageContainer');
+    function spawnDamagePop(worldPos, damage, type) {
+      if (!type) type = 'normal';
+      const screenPos = worldPos.clone().add(new THREE.Vector3(0, 2.2, 0));
+      screenPos.project(camera);
+
+      const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-(screenPos.y * 0.5) + 0.5) * window.innerHeight;
+
+      const el = document.createElement('div');
+      el.className = 'damage-pop damage-' + type;
+      el.innerText = (type === 'crit' ? '💥 ' : '') + Math.round(damage);
+      el.style.left = (x + (Math.random() - 0.5) * 40) + 'px';
+      el.style.top = (y + (Math.random() - 0.5) * 30) + 'px';
+      damageContainer.appendChild(el);
+      setTimeout(() => el.remove(), 750);
+    }
+
+    // --- 9. REAL 3D MONSTERS RIG (자객, 강시, 궁수) ---
+    const enemies = [];
+    let activeBoss = null;
+
+    function spawn3DEnemy(type) {
+      if (!type) type = 'melee';
+      if (!spawningEnabled) return;
+
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 14 + Math.random() * 16;
+      const ex = Math.max(-70, Math.min(70, playerPos.x + Math.cos(ang) * dist));
+      const ez = Math.max(-36, Math.min(36, playerPos.z + Math.sin(ang) * dist));
+
+      const group = new THREE.Group();
+      group.position.set(ex, 0, ez);
+
+      let speed = 4.8, hp = 60;
+      let bodyCol = '#1e293b';
+
+      if (type === 'shuriken') { speed = 4.3; hp = 55; bodyCol = '#0f172a'; }
+      else if (type === 'poison') { speed = 3.9; hp = 48; bodyCol = '#14532d'; }
+      else if (type === 'brute') { speed = 2.9; hp = 150; bodyCol = '#7f1d1d'; }
+
+      const scale = (type === 'brute') ? 1.35 : 1.0;
+
+      // 3D Drop Shadow
+      const shadow = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.4 * scale, 0.8 * scale),
+        new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.55 })
+      );
+      shadow.rotation.x = -Math.PI / 2;
+      shadow.position.y = 0.03;
+      group.add(shadow);
+
+      // Model by Type:
+      let eTorso, eTorsoMat, eLegL, eLegR;
+
+      if (type === 'brute') {
+        // JIANGSHI / UNDEAD TANKER RIG (강시 3D)
+        eTorsoMat = new THREE.MeshStandardMaterial({ color: '#312e81', roughness: 0.7 });
+        eTorso = new THREE.Mesh(new THREE.CylinderGeometry(0.42 * scale, 0.45 * scale, 1.2 * scale, 8), eTorsoMat);
+        eTorso.position.y = 1.0 * scale; eTorso.castShadow = true; group.add(eTorso);
+
+        // Qing Dynasty Official Hat
+        const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.25, 8), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+        hat.position.y = 1.95 * scale; group.add(hat);
+
+        // Yellow Talisman Paper (황색 부적)
+        const talisman = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.45), new THREE.MeshBasicMaterial({ color: '#facc15', side: THREE.DoubleSide }));
+        talisman.position.set(0, 1.7 * scale, 0.28 * scale); group.add(talisman);
+
+        // Stiff Outstretched Arms (강시 고유의 앞으로 뻗은 양팔)
+        const armL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.7 * scale), eTorsoMat);
+        armL.position.set(-0.35 * scale, 1.35 * scale, 0.35 * scale); group.add(armL);
+        const armR = armL.clone(); armR.position.x = 0.35 * scale; group.add(armR);
+
+        // Legs
+        eLegL = new THREE.Mesh(new THREE.BoxGeometry(0.18 * scale, 0.6 * scale, 0.18 * scale), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+        eLegL.position.set(-0.2 * scale, 0.3 * scale, 0); group.add(eLegL);
+        eLegR = eLegL.clone(); eLegR.position.x = 0.2 * scale; group.add(eLegR);
+
+      } else if (type === 'poison') {
+        // POISON ARCHER RIG (맹독 사수 3D)
+        eTorsoMat = new THREE.MeshStandardMaterial({ color: '#166534', roughness: 0.8 });
+        eTorso = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.26, 1.0, 8), eTorsoMat);
+        eTorso.position.y = 0.95; eTorso.castShadow = true; group.add(eTorso);
+
+        // Straw Hat (삿갓)
+        const strawHat = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.22, 12), new THREE.MeshStandardMaterial({ color: '#a16207' }));
+        strawHat.position.y = 1.75; group.add(strawHat);
+
+        // Recurve Bow in Hand
+        const bow = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.05, 6, 12, Math.PI), new THREE.MeshStandardMaterial({ color: '#78350f' }));
+        bow.position.set(-0.4, 1.1, 0.2); bow.rotation.y = Math.PI / 2; group.add(bow);
+
+        // Legs
+        eLegL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.55, 0.14), new THREE.MeshStandardMaterial({ color: '#14532d' }));
+        eLegL.position.set(-0.16, 0.28, 0); group.add(eLegL);
+        eLegR = eLegL.clone(); eLegR.position.x = 0.16; group.add(eLegR);
+
+      } else {
+        // ASSASSIN RIG (비도 자객 3D - 후드 + 쌍단도)
+        eTorsoMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.7 });
+        eTorso = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.26, 1.05, 8), eTorsoMat);
+        eTorso.position.y = 0.98; eTorso.castShadow = true; group.add(eTorso);
+
+        // Hooded Cowl with Glowing Crimson Eyes
+        const hood = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 8), new THREE.MeshStandardMaterial({ color: '#020617' }));
+        hood.position.y = 1.75; group.add(hood);
+
+        const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.03, 0.04), new THREE.MeshBasicMaterial({ color: '#ef4444' }));
+        eyeL.position.set(-0.08, 1.76, 0.22); group.add(eyeL);
+        const eyeR = eyeL.clone(); eyeR.position.x = 0.08; group.add(eyeR);
+
+        // Dual Curved Daggers (쌍단도)
+        const daggerMat = new THREE.MeshStandardMaterial({ color: '#cbd5e1', metalness: 0.9, roughness: 0.2 });
+        const daggerL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.12), daggerMat);
+        daggerL.position.set(-0.4, 0.9, 0.25); daggerL.rotation.x = Math.PI * 0.45; group.add(daggerL);
+        const daggerR = daggerL.clone(); daggerR.position.x = 0.4; group.add(daggerR);
+
+        // Legs
+        eLegL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.58, 0.14), new THREE.MeshStandardMaterial({ color: '#020617' }));
+        eLegL.position.set(-0.16, 0.29, 0); group.add(eLegL);
+        eLegR = eLegL.clone(); eLegR.position.x = 0.16; group.add(eLegR);
+      }
+
+      scene.add(group);
+      enemies.push({
+        mesh: group, eTorso: eTorso, eTorsoMat: eTorsoMat, eLegL: eLegL, eLegR: eLegR, type: type, hp: hp, maxHp: hp, speed: speed,
+        shootCooldown: Math.random() * 2, walkCycle: Math.random() * 10,
+        hitFlash: 0
+      });
+    }
+
+    // --- 10. REAL 3D ARMORED DEMONIC BOSS (흑철 집행관 - 빨간 소화기 절대 아님!) ---
+    function spawnBoss() {
+      if (activeBoss) return;
+
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 22;
+      const bx = Math.max(-65, Math.min(65, playerPos.x + Math.cos(ang) * dist));
+      const bz = Math.max(-35, Math.min(35, playerPos.z + Math.sin(ang) * dist));
+
+      const group = new THREE.Group();
+      group.position.set(bx, 0, bz);
+
+      const scale = 2.8;
+
+      // Drop Shadow
+      const shadow = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.6, 2.2),
+        new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.7 })
+      );
+      shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.03; group.add(shadow);
+
+      // Crimson Rage Ground Aura
+      const aura = new THREE.Mesh(
+        new THREE.RingGeometry(2.8, 4.0, 32),
+        new THREE.MeshBasicMaterial({ color: '#ef4444', side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+      );
+      aura.rotation.x = Math.PI / 2; aura.position.y = 0.04; group.add(aura);
+
+      // Materials for Boss
+      const ironArmorMat = new THREE.MeshStandardMaterial({ color: '#1e293b', metalness: 0.85, roughness: 0.3 });
+      const darkPlateMat = new THREE.MeshStandardMaterial({ color: '#0f172a', metalness: 0.9, roughness: 0.2 });
+      const moltenCoreMat = new THREE.MeshStandardMaterial({
+        color: '#f87171', emissive: '#ef4444', emissiveIntensity: 1.8, roughness: 0.1
+      });
+
+      // 1. Pelvis & Spiked Armored Tassets (대퇴갑)
+      const bPelvis = new THREE.Group();
+      bPelvis.position.y = 1.6 * scale;
+      group.add(bPelvis);
+
+      const tasset = new THREE.Mesh(new THREE.ConeGeometry(0.7 * scale, 0.9 * scale, 8, 1, true), darkPlateMat);
+      tasset.position.y = -0.3 * scale; tasset.castShadow = true; bPelvis.add(tasset);
+
+      // 2. Sculpted Armored Cuirass (중장갑 흉갑)
+      const bChest = new THREE.Mesh(new THREE.BoxGeometry(1.1 * scale, 1.2 * scale, 0.8 * scale), ironArmorMat);
+      bChest.position.y = 0.7 * scale; bChest.castShadow = true; bPelvis.add(bChest);
+
+      // Molten Glowing Demon Core (가슴 중앙에서 맥동하는 마계의 핵)
+      const core = new THREE.Mesh(new THREE.SphereGeometry(0.24 * scale, 12, 12), moltenCoreMat);
+      core.position.set(0, 0.7 * scale, 0.42 * scale); bPelvis.add(core);
+
+      // 3. Spiked Demon Pauldrons (양 어깨의 거대한 2단 가시 견갑)
+      const pauldronGeo = new THREE.ConeGeometry(0.45 * scale, 1.1 * scale, 5);
+      const spikL = new THREE.Mesh(pauldronGeo, darkPlateMat);
+      spikL.position.set(-0.85 * scale, 1.3 * scale, 0); spikL.rotation.z = 0.7; spikL.castShadow = true; bPelvis.add(spikL);
+      const spikR = new THREE.Mesh(pauldronGeo, darkPlateMat);
+      spikR.position.set(0.85 * scale, 1.3 * scale, 0); spikR.rotation.z = -0.7; spikR.castShadow = true; bPelvis.add(spikR);
+
+      // 4. Horned Greathelm Head (투구 + 2개의 거대한 마계 황소 뿔)
+      const bNeck = new THREE.Group();
+      bNeck.position.y = 1.45 * scale;
+      bPelvis.add(bNeck);
+
+      const helm = new THREE.Mesh(new THREE.BoxGeometry(0.6 * scale, 0.65 * scale, 0.6 * scale), darkPlateMat);
+      helm.position.y = 0.25 * scale; helm.castShadow = true; bNeck.add(helm);
+
+      // Visor slit with Glowing Demon Eyes
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.45 * scale, 0.08 * scale, 0.08 * scale), moltenCoreMat);
+      visor.position.set(0, 0.26 * scale, 0.31 * scale); bNeck.add(visor);
+
+      // Two Giant Curved Horns (두 개의 거대한 악마 뿔)
+      const hornGeo = new THREE.ConeGeometry(0.18 * scale, 1.2 * scale, 6);
+      const hornMat = new THREE.MeshStandardMaterial({ color: '#78350f', metalness: 0.6, roughness: 0.4 });
+      const hornL = new THREE.Mesh(hornGeo, hornMat);
+      hornL.position.set(-0.35 * scale, 0.75 * scale, 0.1 * scale);
+      hornL.rotation.z = -0.55; hornL.rotation.x = -0.2;
+      bNeck.add(hornL);
+      const hornR = new THREE.Mesh(hornGeo, hornMat);
+      hornR.position.set(0.35 * scale, 0.75 * scale, 0.1 * scale);
+      hornR.rotation.z = 0.55; hornR.rotation.x = -0.2;
+      bNeck.add(hornR);
+
+      // 5. Heavy Armored Legs
+      const bLegL = new THREE.Mesh(new THREE.BoxGeometry(0.35 * scale, 1.4 * scale, 0.35 * scale), darkPlateMat);
+      bLegL.position.set(-0.38 * scale, -0.7 * scale, 0); bLegL.castShadow = true; bPelvis.add(bLegL);
+      const bLegR = bLegL.clone(); bLegR.position.x = 0.38 * scale; bPelvis.add(bLegR);
+
+      // 6. GARGANTUAN 2-HANDED SERRATED CLEAVER (흑철 파천도 - 4.2m 대도)
+      const cleaverGroup = new THREE.Group();
+      cleaverGroup.position.set(1.4 * scale, 1.0 * scale, 0.5 * scale);
+      bPelvis.add(cleaverGroup);
+
+      const cleaverBlade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 4.4, 1.3),
+        new THREE.MeshStandardMaterial({ color: '#090d16', metalness: 0.95, roughness: 0.15 })
+      );
+      cleaverBlade.position.y = 2.0;
+      cleaverBlade.castShadow = true;
+      cleaverGroup.add(cleaverBlade);
+
+      // Serrated Teeth on Cleaver Spine (톱날 이빨)
+      for (let t = 0; t < 5; t++) {
+        const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.5, 4), darkPlateMat);
+        tooth.position.set(0, 0.8 + t * 0.7, -0.75); tooth.rotation.x = -Math.PI / 2;
+        cleaverGroup.add(tooth);
+      }
+
+      // Glowing Crimson Runic Fuller Edge
+      const bladeEdge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 4.0, 0.15), moltenCoreMat);
+      bladeEdge.position.set(0, 2.0, 0.65); cleaverGroup.add(bladeEdge);
+
+      const bossLight = new THREE.PointLight('#ef4444', 2.8, 22);
+      bossLight.position.y = 2.5 * scale; group.add(bossLight);
+
+      scene.add(group);
+
+      activeBoss = {
+        mesh: group, bPelvis: bPelvis, cleaverGroup: cleaverGroup,
+        hp: 750, maxHp: 750, speed: 3.8,
+        skillTimer: 4.0, isSpinning: false, spinDuration: 0,
+        hitFlash: 0
+      };
+
+      document.getElementById('bossHpBar').style.display = 'flex';
+      updateBossHpUI();
+      const alertEl = document.getElementById('bossAlert');
+      alertEl.classList.add('show');
+      setTimeout(() => alertEl.classList.remove('show'), 3800);
+    }
+
+    function updateBossHpUI() {
+      if (!activeBoss) {
+        document.getElementById('bossHpBar').style.display = 'none';
+        return;
+      }
+      const pct = Math.max(0, activeBoss.hp / activeBoss.maxHp * 100);
+      document.getElementById('bossHpFill').style.width = pct + '%';
+      document.getElementById('bossHpText').innerText = Math.ceil(activeBoss.hp) + ' / ' + activeBoss.maxHp;
+    }
+
+    // --- 11. BOSS CHEST & PORTAL ---
+    let activeChest = null;
+    let activePortal = null;
+
+    function spawnBossLootAndPortal(pos) {
+      spawningEnabled = false;
+
+      const chestGroup = new THREE.Group();
+      chestGroup.position.set(pos.x - 2.5, 0, pos.z);
+
+      const chestBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 1.1), goldMat);
+      chestBase.position.y = 0.5; chestBase.castShadow = true; chestGroup.add(chestBase);
+
+      const chestLid = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.6, 8, 1, false, 0, Math.PI), new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.6 }));
+      chestLid.rotation.z = Math.PI / 2; chestLid.position.y = 1.0; chestGroup.add(chestLid);
+
+      const chestLight = new THREE.PointLight('#fbbf24', 1.8, 14);
+      chestLight.position.y = 2.0; chestGroup.add(chestLight);
+      scene.add(chestGroup);
+
+      activeChest = { group: chestGroup, pos: chestGroup.position, opened: false };
+
+      const portalGroup = new THREE.Group();
+      portalGroup.position.set(pos.x + 2.5, 0, pos.z);
+
+      const portalRing = new THREE.Mesh(
+        new THREE.TorusGeometry(2.4, 0.25, 16, 32),
+        new THREE.MeshStandardMaterial({ color: '#38bdf8', emissive: '#0284c7', emissiveIntensity: 1.2 })
+      );
+      portalRing.position.y = 2.6; portalRing.rotation.y = Math.PI / 4; portalGroup.add(portalRing);
+
+      const portalBeam = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.5, 1.5, 6, 16, 1, true),
+        new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+      );
+      portalBeam.position.y = 3.0; portalGroup.add(portalBeam);
+
+      const portalLight = new THREE.PointLight('#38bdf8', 2.2, 18);
+      portalLight.position.y = 3.0; portalGroup.add(portalLight);
+      scene.add(portalGroup);
+
+      activePortal = { group: portalGroup, ring: portalRing, pos: portalGroup.position };
+      playSound('portal');
+    }
+
+    function handleInteraction() {
+      if (activeChest && !activeChest.opened && activeChest.pos.distanceTo(playerPos) < 3.8) {
+        activeChest.opened = true;
+        playSound('loot');
+        if (currentWeapon === 'qingyun') applyWeaponTransmog('flame');
+        else if (currentWeapon === 'flame') applyWeaponTransmog('ice');
+
+        scene.remove(activeChest.group);
+        activeChest = null;
+        document.getElementById('interactPrompt').style.display = 'none';
+      }
+
+      if (activePortal && activePortal.pos.distanceTo(playerPos) < 3.8) {
+        transitionToNextStage();
+      }
+    }
+
+    function transitionToNextStage() {
+      currentStage++;
+      stageKills = 0;
+      updateWaveProgress();
+      playSound('portal');
+
+      scene.remove(activePortal.group);
+      activePortal = null;
+      document.getElementById('interactPrompt').style.display = 'none';
+
+      const alertEl = document.getElementById('stageAlert');
+      const titleEl = document.getElementById('stageAlertTitle');
+      const stageTitleHUD = document.getElementById('stageTitle');
+
+      if (currentStage === 2) {
+        titleEl.innerText = '🌋 제 2 구역: 적벽 혈암곡 (赤壁) 진입 🌋';
+        stageTitleHUD.innerText = '【 제 2 구역 : 적벽 혈암곡 (赤壁谷) 】';
+        scene.fog.color.set('#200a0d');
+        scene.background.set('#200a0d');
+        groundMat.map = new THREE.CanvasTexture(createVolcanicGroundCanvas());
+        groundMat.map.wrapS = THREE.RepeatWrapping;
+        groundMat.map.wrapT = THREE.RepeatWrapping;
+        groundMat.map.repeat.set(8, 8);
+        groundMat.needsUpdate = true;
+      } else {
+        titleEl.innerText = '❄️ 제 ' + currentStage + ' 구역: 천산 빙설봉 (氷雪) 진입 ❄️';
+        stageTitleHUD.innerText = '【 제 ' + currentStage + ' 구역 : 천산 빙설봉 (氷雪峰) 】';
+        scene.fog.color.set('#0a192f');
+        scene.background.set('#0a192f');
+        groundMat.map = new THREE.CanvasTexture(createIceGroundCanvas());
+        groundMat.map.wrapS = THREE.RepeatWrapping;
+        groundMat.map.wrapT = THREE.RepeatWrapping;
+        groundMat.map.repeat.set(8, 8);
+        groundMat.needsUpdate = true;
+      }
+
+      alertEl.classList.add('show');
+      setTimeout(() => alertEl.classList.remove('show'), 3800);
+
+      spawningEnabled = true;
+      for (let i = 0; i < 8; i++) spawn3DEnemy(['melee', 'shuriken', 'poison', 'brute'][i % 4]);
+    }
+
+    function updateWaveProgress() {
+      const pct = Math.min(100, (stageKills / KILLS_FOR_BOSS) * 100);
+      document.getElementById('waveFill').style.width = pct + '%';
+      if (stageKills < KILLS_FOR_BOSS) {
+        document.getElementById('waveText').innerText = '⚔️ 마물 토벌 진행도: ' + stageKills + ' / ' + KILLS_FOR_BOSS + ' (달성 시 중간보스 출현)';
+      } else {
+        document.getElementById('waveText').innerText = '⚠️ 🔥 중간보스 출현 중! 보스를 격파하십시오! 🔥';
+      }
+    }
+
+    // Initial Spawns
+    for (let i = 0; i < 7; i++) spawn3DEnemy('melee');
+
+    // --- 12. 60FPS GAME LOOP ---
+    let lastTime = performance.now();
+
+    function gameLoop(now) {
+      requestAnimationFrame(gameLoop);
+      const dt = Math.min(0.08, (now - lastTime) / 1000);
+      lastTime = now;
+
+      // Player Movement
+      const moveDir = new THREE.Vector3();
+      if (keys['w'] || keys['arrowup']) moveDir.z -= 1;
+      if (keys['s'] || keys['arrowdown']) moveDir.z += 1;
+      if (keys['a'] || keys['arrowleft']) moveDir.x -= 1;
+      if (keys['d'] || keys['arrowright']) moveDir.x += 1;
+
+      const isMoving = moveDir.lengthSq() > 0;
+      const isDashing = keys[' '];
+
+      if (isDashing && dashTimer <= 0) {
+        dashTimer = 0.35;
+        playSound('whoosh');
+      }
+      if (dashTimer > 0) dashTimer -= dt;
+
+      let moveSpeedMult = 1.0;
+      if (activeBuffs.windGod > 0) {
+        activeBuffs.windGod -= dt;
+        moveSpeedMult = 1.7;
+      }
+      if (activeBuffs.invincible > 0) {
+        activeBuffs.invincible -= dt;
+        goldenBarrier.material.opacity = 0.7;
+        goldenBarrier.rotation.y += dt * 3;
+      } else {
+        goldenBarrier.material.opacity = 0;
+      }
+      if (activeBuffs.vitality > 0) {
+        activeBuffs.vitality -= dt;
+        playerHp = Math.min(maxHp, playerHp + 6 * dt);
+        document.getElementById('hpFill').style.width = (playerHp / maxHp * 100) + '%';
+      }
+
+      if (poisonTimer > 0) {
+        poisonTimer -= dt;
+        playerHp = Math.max(0, playerHp - 4 * dt);
+        document.getElementById('hpFill').style.width = (playerHp / maxHp * 100) + '%';
+        if (poisonTimer <= 0) document.getElementById('poisonVignette').style.opacity = '0';
+      }
+
+      // Buff UI sync
+      document.getElementById('buffInvincible').style.display = activeBuffs.invincible > 0 ? 'flex' : 'none';
+      document.getElementById('buffWind').style.display = activeBuffs.windGod > 0 ? 'flex' : 'none';
+      document.getElementById('buffVitality').style.display = activeBuffs.vitality > 0 ? 'flex' : 'none';
+
+      const baseSpeed = 7.5 * moveSpeedMult * (dashTimer > 0 ? 2.5 : 1.0);
+      if (isMoving) {
+        moveDir.normalize();
+        playerPos.addScaledVector(moveDir, baseSpeed * dt);
+        // Clamp player within the 160x90 Master Isometric Battle Arena
+        playerPos.x = Math.max(-72, Math.min(72, playerPos.x));
+        playerPos.z = Math.max(-38, Math.min(38, playerPos.z));
+        walkTimer += dt * 14 * moveSpeedMult;
+
+        // Realistic Running Animation Cycle
+        const legSwing = Math.sin(walkTimer) * 0.7;
+        leftHip.rotation.x = legSwing;
+        rightHip.rotation.x = -legSwing;
+        leftKnee.rotation.x = Math.max(0, -legSwing * 0.8);
+        rightKnee.rotation.x = Math.max(0, legSwing * 0.8);
+
+        // Arms pump in anti-phase
+        leftShoulder.rotation.x = -legSwing * 0.6;
+        if (!isAttacking) rightShoulder.rotation.x = legSwing * 0.4;
+
+        // Torso leans forward into sprint
+        spine.rotation.x = 0.18;
+        pelvis.position.y = 1.35 + Math.abs(Math.sin(walkTimer * 2)) * 0.08;
+
+        // Cape billows backwards with physics inertia
+        cape.rotation.x = -0.55 + Math.sin(walkTimer) * 0.15;
+        ribbonL.rotation.x = 0.6 + Math.sin(walkTimer) * 0.2;
+        ribbonR.rotation.x = 0.6 + Math.cos(walkTimer) * 0.2;
+
+      } else {
+        // Idle Stance
+        walkTimer += dt * 2.5;
+        leftHip.rotation.x *= 0.85; rightHip.rotation.x *= 0.85;
+        leftKnee.rotation.x *= 0.85; rightKnee.rotation.x *= 0.85;
+        leftShoulder.rotation.x *= 0.85;
+        if (!isAttacking) rightShoulder.rotation.x = Math.sin(walkTimer) * 0.06;
+
+        spine.rotation.x = 0;
+        pelvis.position.y = 1.35 + Math.sin(walkTimer) * 0.03;
+        cape.rotation.x = -0.15 + Math.sin(walkTimer) * 0.05;
+      }
+
+      heroRoot.position.copy(playerPos);
+      heroPointLight.position.set(playerPos.x, 3.5, playerPos.z);
+
+      // Hero Face Target (Mouse cursor or movement direction)
+      const lookTarget = isAttacking ? mouseWorldPos : (isMoving ? playerPos.clone().add(moveDir) : mouseWorldPos);
+      const targetAngle = Math.atan2(lookTarget.x - playerPos.x, lookTarget.z - playerPos.z);
+      heroRoot.rotation.y = targetAngle;
+
+      // Camera Smooth Follow
+      camera.position.set(playerPos.x + cameraOffset.x, cameraOffset.y, playerPos.z + cameraOffset.z);
+      camera.lookAt(playerPos.x, 1.2, playerPos.z);
+
+      // Attack Animation & Cooldown
+      if (isAttacking) {
+        attackTimer -= dt;
+        const progress = 1.0 - (attackTimer / attackDuration);
+        rightShoulder.rotation.x = -Math.sin(progress * Math.PI) * 1.6;
+        rightShoulder.rotation.y = -Math.sin(progress * Math.PI) * 0.8;
+        if (attackTimer <= 0) isAttacking = false;
+      }
+
+      // Auto Melee Trigger when close to enemies
+      autoMeleeCooldown -= dt;
+      if (autoMeleeCooldown <= 0 && !isAttacking) {
+        let nearestDist = Infinity;
+        enemies.forEach(en => {
+          const d = en.mesh.position.distanceTo(playerPos);
+          if (d < nearestDist) nearestDist = d;
+        });
+        if (activeBoss) {
+          const d = activeBoss.mesh.position.distanceTo(playerPos);
+          if (d < nearestDist) nearestDist = d;
+        }
+
+        if (nearestDist < MELEE_RANGE) {
+          triggerMeleeAttack(false);
+          autoMeleeCooldown = 0.38;
+        }
+      }
+
+      // Orbiting Flying Swords
+      flyingSwords.forEach((sw, i) => {
+        const orbitAngle = now * 0.0035 + (i * Math.PI * 2 / 3);
+        const radius = 2.4;
+        sw.position.set(
+          playerPos.x + Math.cos(orbitAngle) * radius,
+          1.5 + Math.sin(now * 0.005 + i) * 0.35,
+          playerPos.z + Math.sin(orbitAngle) * radius
+        );
+        sw.rotation.y = -orbitAngle;
+        sw.rotation.z = Math.PI * 0.25;
+
+        // Passive blade damage
+        enemies.forEach(en => {
+          if (en.mesh.position.distanceTo(sw.position) < 1.4) {
+            en.hp -= 22 * dt;
+            en.hitFlash = 0.1;
+          }
+        });
+      });
+
+      // Shrines Logic & Proximity
+      shrines.forEach(sh => {
+        sh.orb.rotation.y += dt * 1.5;
+        sh.orb.position.y = 2.9 + Math.sin(now * 0.004) * 0.25;
+
+        if (sh.active && sh.pos.distanceTo(playerPos) < 2.8) {
+          sh.active = false;
+          activeBuffs[sh.type] = 15.0; // 15 seconds buff
+          playSound('shrine');
+          sh.ring.material.opacity = 0.2; // dim ring
+        }
+      });
+
+      // Enemy Projectiles
+      for (let p = enemyProjectiles.length - 1; p >= 0; p--) {
+        const pr = enemyProjectiles[p];
+        pr.mesh.position.addScaledVector(pr.dir, pr.speed * dt);
+        pr.life -= dt;
+        if (pr.type === 'shuriken') pr.mesh.rotation.y += dt * 25;
+
+        if (pr.mesh.position.distanceTo(playerPos) < 1.3) {
+          playerTakeDamage(pr.type === 'poison' ? 12 : 18, pr.type === 'poison');
+          scene.remove(pr.mesh);
+          enemyProjectiles.splice(p, 1);
+          continue;
+        }
+
+        if (pr.life <= 0) {
+          scene.remove(pr.mesh);
+          enemyProjectiles.splice(p, 1);
+        }
+      }
+
+      // Enemies Update
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const en = enemies[i];
+
+        // Flash on hit
+        if (en.hitFlash > 0) {
+          en.hitFlash -= dt;
+          en.eTorsoMat.color.set('#ffffff');
+        } else {
+          en.eTorsoMat.color.set(en.type === 'brute' ? '#312e81' : (en.type === 'poison' ? '#166534' : '#0f172a'));
+        }
+
+        // Death Check
+        if (en.hp <= 0) {
+          createHitSpark(en.mesh.position, true);
+          scene.remove(en.mesh);
+          enemies.splice(i, 1);
+          killCount++;
+          stageKills++;
+          document.getElementById('totalKillsText').innerText = killCount;
+          updateWaveProgress();
+
+          if (stageKills === KILLS_FOR_BOSS) {
+            spawnBoss();
+          } else if (stageKills < KILLS_FOR_BOSS && spawningEnabled) {
+            setTimeout(() => spawn3DEnemy(['melee', 'shuriken', 'poison', 'brute'][Math.floor(Math.random() * 4)]), 1500);
+          }
+          continue;
+        }
+
+        // Enemy AI Movement
+        const toPlayer = playerPos.clone().sub(en.mesh.position);
+        const distToPlayer = toPlayer.length();
+        en.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+
+        en.walkCycle += dt * 10;
+        if (en.type === 'brute') {
+          // Hopping Jiangshi Jump Cycle
+          en.mesh.position.y = Math.abs(Math.sin(en.walkCycle * 0.7)) * 0.45;
+        } else {
+          en.eLegL.rotation.x = Math.sin(en.walkCycle) * 0.6;
+          en.eLegR.rotation.x = -Math.sin(en.walkCycle) * 0.6;
+        }
+
+        // Attack & Range Logic
+        if (en.type === 'poison' || en.type === 'shuriken') {
+          if (distToPlayer > 8.0) {
+            toPlayer.normalize();
+            en.mesh.position.addScaledVector(toPlayer, en.speed * dt);
+          } else {
+            en.shootCooldown -= dt;
+            if (en.shootCooldown <= 0) {
+              shootEnemyProjectile(en.mesh.position, toPlayer.clone(), en.type);
+              en.shootCooldown = 2.4;
+            }
+          }
+        } else {
+          // Melee Chaser
+          if (distToPlayer > 1.4) {
+            toPlayer.normalize();
+            en.mesh.position.addScaledVector(toPlayer, en.speed * dt);
+          } else {
+            playerTakeDamage(en.type === 'brute' ? 24 : 14);
+          }
+        }
+      }
+
+      // Boss AI Update
+      if (activeBoss) {
+        const toPlayer = playerPos.clone().sub(activeBoss.mesh.position);
+        const distToPlayer = toPlayer.length();
+        activeBoss.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+
+        // Stomping walk
+        activeBoss.skillTimer -= dt;
+        if (activeBoss.isSpinning) {
+          activeBoss.spinDuration -= dt;
+          activeBoss.mesh.rotation.y += dt * 18; // Whirlwind spin
+          activeBoss.cleaverGroup.rotation.y += dt * 18;
+
+          // Pull player in & damage
+          if (distToPlayer < 6.8) {
+            playerTakeDamage(28 * dt);
+          }
+          if (activeBoss.spinDuration <= 0) {
+            activeBoss.isSpinning = false;
+            activeBoss.cleaverGroup.rotation.y = 0;
+            activeBoss.skillTimer = 5.0;
+          }
+        } else {
+          if (activeBoss.skillTimer <= 0) {
+            // Whirlwind Skill (회풍광풍참)
+            activeBoss.isSpinning = true;
+            activeBoss.spinDuration = 3.2;
+            playSound('heavy');
+          } else if (distToPlayer > 2.8) {
+            toPlayer.normalize();
+            activeBoss.mesh.position.addScaledVector(toPlayer, activeBoss.speed * dt);
+          } else {
+            // Melee cleave
+            playerTakeDamage(32 * dt);
+          }
+        }
+
+        // Boss Death Check
+        if (activeBoss.hp <= 0) {
+          createHitSpark(activeBoss.mesh.position, true);
+          spawnBossLootAndPortal(activeBoss.mesh.position.clone());
+          scene.remove(activeBoss.mesh);
+          activeBoss = null;
+          updateBossHpUI();
+        }
+      }
+
+      // Interact Prompt Sync
+      const promptEl = document.getElementById('interactPrompt');
+      let showPrompt = false;
+      if (activeChest && !activeChest.opened && activeChest.pos.distanceTo(playerPos) < 3.8) {
+        showPrompt = true;
+        promptEl.innerHTML = '🎁 <span>[E]</span> 보스 황금 보물상자 열기 (전설 무기 획득!)';
+      } else if (activePortal && activePortal.pos.distanceTo(playerPos) < 3.8) {
+        showPrompt = true;
+        promptEl.innerHTML = '🌀 <span>[E]</span> 다음 구역 이동 (비도 포탈 입장)';
+      }
+      promptEl.style.display = showPrompt ? 'flex' : 'none';
+
+      // Portal swirl
+      if (activePortal) {
+        activePortal.ring.rotation.z += dt * 2.5;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

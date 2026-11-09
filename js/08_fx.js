@@ -248,8 +248,8 @@ function createShockwave(x, y, radius, color) {
 
 // 검은 배경 빛 이펙트 그림을 더하기 합성으로 그림 (검은색은 안 보이고 빛만 남음)
 // sy: 세로 눌림(바닥에 깔린 느낌), rot: 회전
-function drawFxImage(key, x, y, size, alpha = 1, rot = 0, sy = 1) {
-  const img = SPRITES[key];
+function drawFxImage(key, x, y, size, alpha = 1, rot = 0, sy = 1, tint = null) {
+  const img = tint ? tinted(SPRITES[key], tint) : SPRITES[key];
   if (!img || !img.width) return false;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
@@ -262,6 +262,17 @@ function drawFxImage(key, x, y, size, alpha = 1, rot = 0, sy = 1) {
   return true;
 }
 
+// 번개 줄기 점 만들기 (지그재그)
+function lightningPoints(x1, y1, x2, y2, segs = 9, jag = 26) {
+  const pts = [[x1, y1]];
+  for (let i = 1; i < segs; i++) {
+    const t = i / segs, nx = -(y2 - y1), ny = x2 - x1, l = Math.hypot(nx, ny) || 1;
+    const off = (Math.random() * 2 - 1) * jag * Math.sin(Math.PI * t);
+    pts.push([x1 + (x2 - x1) * t + nx / l * off, y1 + (y2 - y1) * t + ny / l * off]);
+  }
+  pts.push([x2, y2]);
+  return pts;
+}
 function createExplosion(x, y, radius) {
   // 벽력탄: '폭탄이 터지는 느낌' (테스터 피드백: 약하다)
   // 1) 하얀 섬광  2) 큰 번개 폭발 그림  3) 충격파 고리 2겹  4) 화면 흔들림  5) 파편·불씨  6) 그을린 자국  7) 폭발음

@@ -291,6 +291,15 @@ const SKILL_DEFS = {
 
 // --- Ultimate Evolution Skills (만렙 비급 초월 각성) ---
 const EVO_SKILL_DEFS = {
+  thunder_bomb: {
+    id: 'evo_thunder_bomb',
+    baseSkillId: 'thunder_bomb',
+    name: '구천뇌정 (九天雷霆)',
+    badge: '천뢰지존',
+    icon: '⚡💣',
+    color: '#7dd3fc',
+    desc: '벽력탄 4발이 한꺼번에 떨어지고, 터질 때마다 하늘에서 번개가 내리꽂혀 주변 적 3명에게 연쇄 번개가 튑니다!'
+  },
   flying_swords: {
     id: 'evo_flying_swords',
     baseSkillId: 'flying_swords',

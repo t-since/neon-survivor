@@ -213,6 +213,7 @@ function castDaggerRain() {
   const closest = enemies.length > 0 ? findClosestEnemy(player.x, player.y, 450) : null;
   const targetCenterX = closest ? closest.x : player.x + (player.facing * 110);
   const targetCenterY = closest ? closest.y : player.y;
+  if (isEvo) particles.push({ fxKey: 'fx_needles', x: targetCenterX, y: targetCenterY - 40, vx: 0, vy: 0, size: 320, rot: Math.random() * 6.28, life: 0.55, maxLife: 0.55 }); // 생사부: 독침 폭발
 
   for (let i = 0; i < needleCount; i++) {
     const spreadR = isEvo ? 140 : (75 + player.skills.dagger_rain * 20);
@@ -277,7 +278,8 @@ function castPalmBlast() {
 
 function castThunderBomb() {
   triggerSkillMotion('bomb', 0.35);
-  const bombCount = 1 + Math.floor(player.skills.thunder_bomb / 3);
+  const isEvo = !!player.evolutions.evo_thunder_bomb; // 구천뇌정
+  const bombCount = isEvo ? 4 : 1 + Math.floor(player.skills.thunder_bomb / 3);
   for (let i = 0; i < bombCount; i++) {
     const target = enemies.length > 0 ? enemies[Math.floor(Math.random() * enemies.length)] : null;
     const tx = target ? target.x + (Math.random() - 0.5) * 40 : player.x + (Math.random() - 0.5) * 300;
@@ -289,8 +291,10 @@ function castThunderBomb() {
       targetY: ty,
       progress: 0,
       duration: 0.65,
-      radius: 100 + player.skills.thunder_bomb * 18,
-      damage: 80 * player.atkMultiplier
+      radius: (100 + player.skills.thunder_bomb * 18) * (isEvo ? 1.7 : 1),
+      damage: 80 * player.atkMultiplier * (isEvo ? 2 : 1),
+      evo: isEvo,
+      duration: isEvo ? 0.5 + i * 0.12 : 0.65
     });
   }
 }
@@ -498,6 +502,7 @@ function onEnemyKilled(target) {
 
   // Evolution: Poison Nova on death if poisoned
   if (player.evolutions.evo_dagger_rain && target.poisonTimer > 0) {
+    particles.push({ fxKey: 'fx_needles', x: target.x, y: target.y - 30, vx: 0, vy: 0, size: 170, rot: Math.random() * 6.28, life: 0.4, maxLife: 0.4 });
     for (let i = 0; i < 8; i++) {
       const pAng = (i / 8) * Math.PI * 2;
       projectiles.push({
@@ -707,7 +712,7 @@ function showNextLevelUp() {
           <span class="skill-name" style="${c.isEvo || c.isBonus ? 'color:#fbbf24;font-weight:800;' : ''}">${c.def.name}</span>
           <span class="skill-lvl" style="${c.isEvo || c.isBonus ? 'color:#f59e0b;' : ''}">${c.isEvo ? '초월' : (c.isBonus ? '대성' : 'Lv.' + c.nextLvl)}</span>
         </div>
-        <div class="skill-desc">${c.def.getUpgradeDesc(c.nextLvl)}</div>
+        <div class="skill-desc">${c.def.getUpgradeDesc(c.nextLvl)}${statPreview(c)}</div>
       </div>
     `;
     card.onclick = () => {
@@ -755,6 +760,16 @@ function showNextLevelUp() {
   document.getElementById('levelUpModal').style.display = 'flex';
 }
 
+// 레벨업 카드에 '지금 → 다음' 숫자 (보조 무공이 얼마나 좋아지는지 보이게)
+function statPreview(c) {
+  const id = c.id, now = player.skills[id] || 0, nx = c.nextLvl;
+  const b = (a, z, label = '') => `<br><span style="color:#fde68a">${label.trim()} ${a} → ${z}</span>`;
+  if (id === 'qinggong_dash') return b(Math.round(player.baseSpeed * (1 + now * 0.15)), Math.round(player.baseSpeed * (1 + nx * 0.15)), ' 이동속도');
+  if (id === 'vajra_shield') return b(player.maxHp, player.maxHp + 35, ' 최대 혈기') + b(now ? 135 + now * 18 : 0, 135 + nx * 18, ' 충격파 범위');
+  if (id === 'qi_magnet') return b(player.magnetRadius, 190 + nx * 50, ' 흡수 범위');
+  if (id === 'flying_swords') return b(1 + now, 1 + nx, '비검 수');
+  return '';
+}
 function applySkillUpgrade(skillId) {
   player.skills[skillId] = (player.skills[skillId] || 0) + 1;
   const lvl = player.skills[skillId];
@@ -762,7 +777,7 @@ function applySkillUpgrade(skillId) {
   if (skillId === 'qinggong_dash') {
     player.speed = player.baseSpeed * (1 + lvl * 0.15);
   } else if (skillId === 'vajra_shield') {
-    player.maxHp = 120 + lvl * 35;
+    player.maxHp += 35; // 기존 체력(영약 보너스 포함)에 더하기
     player.hp = Math.min(player.maxHp, player.hp + 35);
   } else if (skillId === 'qi_magnet') {
     player.magnetRadius = 190 + lvl * 50;
