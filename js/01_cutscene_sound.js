@@ -472,28 +472,40 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.08);
   }
   playPickup() {
-    // 경험치 구슬: 음높이 없는 아주 짧고 작은 '톡' (예전 '띵'은 계속 들으면 거슬림)
+    // 경험치 구슬 '또로롱': 옥구슬 굴러가듯 세 음이 빠르게 올라감 (동양 5음계: 도 레 미 솔 라)
+    // 연달아 먹으면 시작 음이 한 칸씩 올라가 모으는 재미, 0.7초 쉬면 다시 낮은 음부터
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
-    if (this._lastPickup && now - this._lastPickup < 0.09) return;
+    if (this._lastPickup && now - this._lastPickup < 0.07) return;
+    this._pickStreak = (this._lastPickup && now - this._lastPickup < 0.7) ? Math.min((this._pickStreak || 0) + 1, 6) : 0;
     this._lastPickup = now;
-    if (!this._tickBuf) {
-      const len = Math.floor(this.ctx.sampleRate * 0.03);
-      this._tickBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-      const d = this._tickBuf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
-    }
-    const src = this.ctx.createBufferSource();
-    src.buffer = this._tickBuf;
-    const bp = this.ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 900 + Math.random() * 200;
-    bp.Q.value = 1.2;
-    const g = this.ctx.createGain();
-    g.gain.value = 0.12;
-    src.connect(bp); bp.connect(g); g.connect(this.ctx.destination);
-    src.start(now);
+    const SCALE = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51, 1567.98, 1760.0, 2093.0, 2349.32];
+    const base = this._pickStreak;
+    const out = this.ctx.createGain();
+    out.gain.value = 0.055;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 3200; // 날카로운 고음 깎기
+    out.connect(lp); lp.connect(this.ctx.destination);
+    [0, 1, 2].forEach((k, i) => {
+      const f = SCALE[Math.min(SCALE.length - 1, base + k)];
+      const t = now + i * 0.045;
+      // 부드러운 사인 + 한 옥타브 위 아주 살짝 (맑은 옥 소리)
+      [[f, 1], [f * 2, 0.18]].forEach(([freq, g]) => {
+        const o = this.ctx.createOscillator();
+        const e = this.ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(freq, t);
+        e.gain.setValueAtTime(0.0001, t);
+        e.gain.exponentialRampToValueAtTime(g, t + 0.008);
+        e.gain.exponentialRampToValueAtTime(0.0001, t + (i === 2 ? 0.22 : 0.09));
+        o.connect(e); e.connect(out);
+        o.start(t);
+        o.stop(t + 0.25);
+      });
+    });
   }
+
 
   playLevelUp() {
     if (this.playSample('wx_gong', 0.4, 1, 0.02, 1.0)) return;
