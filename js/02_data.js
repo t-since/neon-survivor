@@ -113,7 +113,14 @@ const SPRITE_URLS = {
   // 관문 테마별 바닥 (이음새 없이 이어지도록 처리됨)
   ground_new_bamboo: 'assets/ground/bamboo.jpg',
   ground_new_fortress: 'assets/ground/fortress.jpg',
-  ground_new_cavern: 'assets/ground/cavern.jpg'
+  ground_new_cavern: 'assets/ground/cavern.jpg',
+  // 구역별 바닥 (임시: 기존 바닥 색 바꿈 — 제미나이 그림이 생기면 같은 이름으로 교체)
+  ground_new_alley: 'assets/ground/alley.jpg',
+  ground_new_jungle: 'assets/ground/jungle.jpg',
+  ground_new_swamp: 'assets/ground/swamp.jpg',
+  ground_new_snow: 'assets/ground/snow.jpg',
+  ground_new_ice: 'assets/ground/ice.jpg',
+  ground_new_bloodpalace: 'assets/ground/bloodpalace.jpg'
 };
 // 새 몬스터 그림 (제미나이 2x2 시트에서 자름, assets/mobs). 새로 만든 몬스터는 이 목록에 이름만 추가
 const MOB_ART_NAMES = ['mob_assassin', 'mob_archer', 'mob_dartman', 'mob_jiangshi'];
