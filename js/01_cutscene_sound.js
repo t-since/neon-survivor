@@ -346,7 +346,7 @@ class SoundManager {
     this.sfx = {};
     this.sfxLast = {};
     // 무협 효과음 (코드로 합성: 바람·천·북·징, 쇳소리 없음) — tools/synth_wuxia.mjs 로 만듦
-    const names = ['wx_swing', 'wx_cut', 'wx_heavy', 'wx_hurt', 'wx_palm', 'wx_boom', 'wx_dash', 'wx_gong', 'wx_step'];
+    const names = ['wx_swing', 'wx_cut', 'wx_heavy', 'wx_hurt', 'wx_palm', 'wx_boom', 'wx_dash', 'wx_gong', 'wx_step', 'wx_grunt_a', 'wx_grunt_b', 'wx_grunt_c'];
     names.forEach(n => {
       fetch('assets/audio/' + n + '.mp3').then(r => r.arrayBuffer()).then(b => this.ctx.decodeAudioData(b)).then(buf => { this.sfx[n] = buf; }).catch(() => {});
     });
@@ -456,7 +456,7 @@ class SoundManager {
     src.start(t);
   }
   playHit() {
-    if (this.playSample('wx_hurt', 0.8, 1, 0.08, 0.35)) return;
+    if (this.playSample(['wx_grunt_a', 'wx_grunt_b', 'wx_grunt_c'][Math.floor(Math.random() * 3)], 0.75, 1, 0.04, 0.35) && (this.playSample('wx_hurt', 0.35, 1, 0.08, 0.35) || true)) return;
     if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
@@ -471,6 +471,22 @@ class SoundManager {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.08);
   }
+  playShrine() {
+    // 신단: 징(간격 제한 없이) + 도·레·미·솔·라 가 차례로 올라감
+    if (!this.enabled || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    if (this.sfx && this.sfx.wx_gong) { const keep = this.sfxLast.wx_gong; this.sfxLast.wx_gong = 0; this.playSample('wx_gong', 0.55, 1.1, 0, 0); this.sfxLast.wx_gong = keep; }
+    const out = this.ctx.createGain(); out.gain.value = 0.12;
+    const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3000;
+    out.connect(lp); lp.connect(this.ctx.destination);
+    [392.0, 440.0, 523.25, 587.33, 659.25, 783.99].forEach((f, i) => {
+      const t = now + 0.05 + i * 0.075;
+      const o = this.ctx.createOscillator(), e = this.ctx.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(f, t);
+      e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(1, t + 0.01); e.gain.exponentialRampToValueAtTime(0.0001, t + (i === 5 ? 0.7 : 0.25));
+      o.connect(e); e.connect(out); o.start(t); o.stop(t + 0.75);
+    });
+  }
   playPickup() {
     // 경험치 구슬 '또로롱': 옥구슬 굴러가듯 세 음이 빠르게 올라감 (동양 5음계: 도 레 미 솔 라)
     // 연달아 먹으면 시작 음이 한 칸씩 올라가 모으는 재미, 0.7초 쉬면 다시 낮은 음부터
@@ -482,7 +498,7 @@ class SoundManager {
     const SCALE = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51, 1567.98, 1760.0, 2093.0, 2349.32];
     const base = this._pickStreak;
     const out = this.ctx.createGain();
-    out.gain.value = 0.055;
+    out.gain.value = 0.11;
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.frequency.value = 3200; // 날카로운 고음 깎기

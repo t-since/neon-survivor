@@ -3,7 +3,9 @@ function updateSkills(dt) {
   // 1. Flying Swords (어검술) & 만검귀종 (초월)
   if (player.skills.flying_swords > 0) {
     const isEvo = !!player.evolutions.evo_flying_swords;
-    const swordCount = isEvo ? 8 : (1 + player.skills.flying_swords);
+    const bladesBuff = player.activeBuffs && player.activeBuffs.infinite_blades > 0; // 만천비검신단
+    const swordCount = (isEvo ? 8 : (1 + player.skills.flying_swords)) + (bladesBuff ? 3 : 0);
+    while (flyingSwords.length > swordCount && !flyingSwords[flyingSwords.length - 1].isLaunching) flyingSwords.pop();
     while (flyingSwords.length < swordCount) {
       flyingSwords.push({
         angle: (flyingSwords.length / swordCount) * Math.PI * 2,
@@ -34,7 +36,7 @@ function updateSkills(dt) {
           if (closest) {
             sw.isLaunching = true;
             triggerSkillMotion('sword', 0.22);
-            sw.cooldown = 1.0 / (1 + (isEvo ? 7 : player.skills.flying_swords) * 0.18);
+            sw.cooldown = 1.0 / (1 + (isEvo ? 7 : player.skills.flying_swords) * 0.18) * (bladesBuff ? 0.5 : 1);
             const dx = closest.x - sw.x;
             const dy = closest.y - sw.y;
             const len = Math.hypot(dx, dy) || 1;
@@ -306,7 +308,7 @@ function triggerMeleeAttack(target) {
   player.isAttacking = true;
   player.attackDuration = isFinisher ? 0.5 : 0.4; // 베기 한 번 걸리는 시간 (사용자: 조금 빠름 → 늘림)
   player.attackTimer = player.attackDuration;
-  player.attackCooldownTimer = Math.max(0.42, 0.68 - (player.level * 0.01)) * (isFinisher ? 1.3 : 1);
+  player.attackCooldownTimer = Math.max(0.42, 0.68 - (player.level * 0.01)) * (isFinisher ? 1.3 : 1) / ((player.activeBuffs && player.activeBuffs.blood_fury > 0) ? 1.5 : 1);
   player.attackAim = aim;
 
   // 대상 쪽으로 몸 돌리기 (거의 위/아래면 그대로)
@@ -368,6 +370,7 @@ function findClosestEnemy(x, y, maxDist = 500) {
 }
 
 function dealDamage(target, baseDmg, canCrit = true) {
+  if (player.activeBuffs && player.activeBuffs.blood_fury > 0) baseDmg *= 2; // 태을혈기신단: 공격력 2배
   sound.playSample('wx_cut', 0.16, 1.15, 0.12, 0.1); // 적이 맞는 소리 (작게, 0.1초에 한 번까지)
   let isCrit = false;
   let dmg = baseDmg;

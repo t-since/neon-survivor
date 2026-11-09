@@ -94,3 +94,21 @@ save('wx_boom', boom(1.4), 0.9);                                                
 save('wx_dash', flutter(0.3), 0.6);                                                    // 대시 펄럭
 save('wx_gong', gong(1.8, 98), 0.7);                                                   // 레벨업 징
 save('wx_step', taiko(0.5, 48), 0.85);                                                 // 보스 발걸음 '쿵'
+
+// 피격 목소리 '억!': 성대 울림(톱니파) + 모음 '어'의 입 모양 울림(포먼트 3개) + 숨소리, 끝은 'ㄱ'처럼 뚝 끊김
+function grunt(f0, dur, f1 = 620, f2 = 1050, f3 = 2450) {
+  const n = Math.floor(dur * SR), src = new Float32Array(n);
+  let ph = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    const f = f0 * (1.08 - 0.3 * t / dur) * (1 + 0.02 * Math.sin(2 * Math.PI * 23 * t)); // 처음 살짝 높고 떨어짐
+    ph = (ph + f / SR) % 1;
+    src[i] = (2 * ph - 1) * 0.8 + rnd() * 0.18; // 성대 + 숨
+  }
+  const v = mix(dur, [svf(src, () => f1, 5, 'bp'), 1], [svf(src, () => f2, 8, 'bp'), 0.55], [svf(src, () => f3, 11, 'bp'), 0.22]);
+  // 소리 모양: 빠르게 터지고, 마지막 25ms 는 'ㄱ' 처럼 급히 닫힘
+  return shape(v, t => Math.min(1, t / 0.012) * (t > dur - 0.025 ? Math.max(0, (dur - t) / 0.025) : 1) * (1 - 0.35 * t / dur));
+}
+[['wx_grunt_a', 150, 0.17], ['wx_grunt_b', 128, 0.19], ['wx_grunt_c', 172, 0.15]].forEach(([nm, f0, d]) => {
+  save(nm, mix(d + 0.02, [grunt(f0, d), 1], [thud(d + 0.02, 300, 150, 0.05, 0.6, 1800), 0.25]), 0.9);
+});

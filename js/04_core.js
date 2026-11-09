@@ -476,7 +476,7 @@ function triggerDash() {
   if (player.dashTimer > 0 || player.isDashing || state.isPaused || state.isGameOver) return;
   player.isDashing = true;
   player.dashElapsed = 0;
-  player.dashTimer = Math.max(0.8, player.dashCooldown - player.skills.qinggong_dash * 0.35);
+  player.dashTimer = Math.max(0.8, player.dashCooldown - player.skills.qinggong_dash * 0.35) * ((player.activeBuffs && player.activeBuffs.wind_god > 0) ? 0.5 : 1);
 
   let dirX = player.vx;
   let dirY = player.vy;

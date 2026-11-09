@@ -837,6 +837,14 @@ function renderShrines() {
         ctx.restore();
       } else {
         ctx.filter = 'grayscale(1) brightness(0.55)'; // 이미 쓴 신단은 빛이 꺼진 돌
+        if (s.respawn > 0 && Math.hypot(player.x - s.x, player.y - s.y) < 300) {
+          ctx.save(); ctx.filter = 'none';
+          ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+          ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+          const txt = Math.ceil(s.respawn) + '초 뒤 다시 깨어남';
+          ctx.strokeText(txt, 0, -h + w * 0.2 - 12); ctx.fillStyle = '#cbd5e1'; ctx.fillText(txt, 0, -h + w * 0.2 - 12);
+          ctx.restore();
+        }
       }
       ctx.drawImage(simg, -w / 2, -h + w * 0.2, w, h);
       ctx.filter = 'none';

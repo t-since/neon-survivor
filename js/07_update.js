@@ -147,7 +147,7 @@ function updateGame(dt) {
   }
 
   // 2. Update Skills & Attacks
-  updateSkills(dt);
+  updateSkills(dt * ((player.activeBuffs && player.activeBuffs.blood_fury > 0) ? 1.5 : 1)); // 태을혈기: 무공 1.5배 빠르게
 
   // 3. Update Projectiles
   for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -966,11 +966,24 @@ function updateGame(dt) {
   // 5.8 Update Diablo-Style Shrines (신단 / 기연 비석 상호작용)
   for (let s of shrines) {
     s.pulse = (s.pulse || 0) + dt * 3.5;
+    if (!s.active) {
+      // 40초 뒤 다시 기운이 차오름
+      s.respawn = (s.respawn === undefined ? 40 : s.respawn) - dt;
+      if (s.respawn <= 0) {
+        s.active = true; s.respawn = undefined;
+        createShockwave(s.x, s.y, 90, s.color);
+        PixelFX.spawnPickupSparkle(s.x, s.y, 'chest');
+      }
+    }
     if (s.active && Math.hypot(player.x - s.x, player.y - s.y) < player.radius + 48) {
       s.active = false;
+      s.respawn = 40;
       player.activeBuffs[s.type] = s.duration;
-      sound.playLevelUp();
+      sound.playShrine();
       createShockwave(s.x, s.y, 75, s.color);
+      createShockwave(player.x, player.y, 160, s.color);
+      setTimeout(() => createShockwave(player.x, player.y, 240, s.color), 120);
+      state.screenShake = Math.max(state.screenShake || 0, 8);
       PixelFX.spawnPickupSparkle(s.x, s.y, 'chest');
       // 화면 가운데 큰 배너 대신, 머리 위 짧은 글씨 + 위쪽 버프 표시로만 알림
       damageTexts.push({
