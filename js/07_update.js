@@ -1153,12 +1153,11 @@ function updateGame(dt) {
     }
   }
 
-  // 6.5 Update Speed Buff Timer
+  // 6.5 Update Speed Buff Timer (약초 쾌속 보법)
+  // 이동속도는 위쪽 'Speed Calculation'에서 한 번에 계산함 (약초 1.35배·풍신선풍 1.6배·빙공 둔화 0.55배)
+  // 예전에는 여기서 속도를 다시 덮어써서 풍신선풍과 둔화가 지워졌음 → 시간만 줄임
   if (player.speedBuffTimer > 0) {
     player.speedBuffTimer -= dt;
-    player.speed = player.baseSpeed * (1 + (player.skills.qinggong_dash || 0) * 0.15) * 1.35;
-  } else {
-    player.speed = player.baseSpeed * (1 + (player.skills.qinggong_dash || 0) * 0.15);
   }
 
   // 6.8 Update Chests (무림 비급 상자)
