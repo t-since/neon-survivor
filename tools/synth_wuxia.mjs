@@ -163,13 +163,22 @@ function playerHit(v) {
   const hit = mix(len,
     [fleshSlap(len, v.slap), 1.0],
     [boneClicks(len, 4), 0.7],
-    [sweepSine(len, v.b0, v.b1, 0.11, 0.002), 1.0],                  // 저음 '쿵'
+    [sweepSine(len, v.b0, v.b1, 0.11, 0.002), 0.15],                 // 저음 '쿵' (둔탁해서 크게 줄임)
     [crack(len, 3000, 0.006), 0.6]);
   const huff = offset(breath(0.16, v.f1, v.f2, v.f3), 0.035);       // 숨 '헉'
   let x = mix(len + 0.08, [pre, 0.35], [offset(saturate(hit, 2.3), 0.045), 1], [huff, v.huff]);
-  return reverb(pad(x, 0.25), 0.2);
+  x = svf(x, () => 220, 0.7, 'hp'); // 220Hz 아래 둔탁한 저음 걸러냄
+  return reverb(pad(x, 0.25), 0.14);
 }
 [['wx_hurt_1', { slap: 1500, b0: 190, b1: 65, f1: 640, f2: 1100, f3: 2500, huff: 0.55 }],
  ['wx_hurt_2', { slap: 1250, b0: 170, b1: 58, f1: 560, f2: 980, f3: 2350, huff: 0.6 }],
  ['wx_hurt_3', { slap: 1750, b0: 210, b1: 72, f1: 700, f2: 1200, f3: 2650, huff: 0.5 }]
 ].forEach(([nm, v]) => save(nm, playerHit(v), 0.95));
+
+// ===== 적이 맞는 소리 (둔탁한 저음 없이 가볍고 날카로운 '착') =====
+function lightCut(len, slapFc, crackFc) {
+  const x = mix(len, [fleshSlap(len, slapFc), 0.9], [crack(len, crackFc, 0.005), 0.8], [boneClicks(len, 2), 0.4]);
+  return reverb(pad(svf(saturate(x, 1.6), () => 350, 0.7, 'hp'), 0.12), 0.1);
+}
+save('wx_cut', lightCut(0.12, 1900, 3800), 0.8);                                                   // 무공에 맞을 때 (작고 가볍게)
+save('wx_slash_hit', mix(0.4, [swing(0.09, 900, 2400, 1.4), 0.5], [offset(lightCut(0.16, 1500, 3400), 0.045), 1]), 0.9); // 칼에 베일 때
