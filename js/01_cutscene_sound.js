@@ -351,7 +351,7 @@ class SoundManager {
     });
   }
   // 효과음 재생: vol 크기, rate 높낮이(1=그대로), jitter 매번 살짝 다르게, gap 같은 소리 최소 간격(초)
-  playSample(name, vol = 0.5, rate = 1, jitter = 0.08, gap = 0.05) {
+  playSample(name, vol = 0.5, rate = 1, jitter = 0.08, gap = 0.05, lowpass = 0) {
     if (!this.enabled || !this.ctx || !this.sfx || !this.sfx[name]) return false;
     const now = this.ctx.currentTime;
     if (this.sfxLast[name] && now - this.sfxLast[name] < gap) return true; // 너무 잦으면 건너뜀(소리 뭉개짐 방지)
@@ -361,12 +361,24 @@ class SoundManager {
     src.playbackRate.value = rate * (1 + (Math.random() * 2 - 1) * jitter);
     const g = this.ctx.createGain();
     g.gain.value = vol;
-    src.connect(g); g.connect(this.ctx.destination);
+    if (lowpass > 0) {
+      // 날카로운 고음을 깎아 부드럽게 (쉭 → 훅)
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = lowpass;
+      src.connect(lp); lp.connect(g);
+    } else {
+      src.connect(g);
+    }
+    g.connect(this.ctx.destination);
     src.start();
     return true;
   }
+  playEnemyShot() {
+    this.playSample('whoosh', 0.07, 1.25, 0.08, 0.3, 900);
+  }
   playSwordSlash() {
-    if (this.playSample('swish', 0.45, 1, 0.1, 0.06)) return;
+    if (this.playSample('swish', 0.22, 0.78, 0.06, 0.14, 1500)) return;
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -385,7 +397,7 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.12);
   }
   playPalmBlast() {
-    if (this.playSample('whoosh', 0.6, 0.9)) return;
+    if (this.playSample('whoosh', 0.45, 0.85, 0.05, 0.2, 2200)) return;
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -400,7 +412,7 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.28);
   }
   playDaggerRain() {
-    if (this.playSample('swish', 0.35, 1.5, 0.1)) return;
+    if (this.playSample('whoosh', 0.22, 1.1, 0.05, 0.25, 1500)) return;
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -439,7 +451,7 @@ class SoundManager {
     src.start(t);
   }
   playHit() {
-    if (this.playSample('impact', 0.35, 1.2, 0.1, 0.12)) return;
+    if (this.playSample('impact', 0.25, 1.05, 0.08, 0.2, 2500)) return;
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -454,21 +466,31 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.08);
   }
   playPickup() {
+    // 경험치 구슬: 음높이 없는 아주 짧고 작은 '톡' (예전 '띵'은 계속 들으면 거슬림)
     if (!this.enabled || !this.ctx) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(520, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.14, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.1);
+    const now = this.ctx.currentTime;
+    if (this._lastPickup && now - this._lastPickup < 0.09) return;
+    this._lastPickup = now;
+    if (!this._tickBuf) {
+      const len = Math.floor(this.ctx.sampleRate * 0.03);
+      this._tickBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const d = this._tickBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._tickBuf;
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 900 + Math.random() * 200;
+    bp.Q.value = 1.2;
+    const g = this.ctx.createGain();
+    g.gain.value = 0.12;
+    src.connect(bp); bp.connect(g); g.connect(this.ctx.destination);
+    src.start(now);
   }
+
   playLevelUp() {
-    if (this.playSample('shimmer', 0.55, 1, 0.02, 0.3)) return;
+    if (this.playSample('shimmer', 0.28, 0.62, 0.02, 1.0, 1800)) return;
     if (!this.enabled || !this.ctx) return;
     const notes = [440, 554, 659, 880];
     notes.forEach((freq, i) => {
@@ -485,7 +507,7 @@ class SoundManager {
     });
   }
   playDash() {
-    if (this.playSample('whoosh', 0.4, 1.35)) return;
+    if (this.playSample('whoosh', 0.3, 1.15, 0.05, 0.2, 2000)) return;
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();

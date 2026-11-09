@@ -467,7 +467,7 @@ function updateGame(dt) {
             radius: 6,
             color: '#cbd5e1'
           });
-          sound.playSwordSlash();
+          sound.playEnemyShot(); // 적 발사: 작고 낮게
         }
       } else if (e.type === 'poison_assassin') {
         // 독표창 살수: 호를 그리며 측면 기습 무빙
@@ -494,7 +494,7 @@ function updateGame(dt) {
               color: '#10b981'
             });
           }
-          sound.playSwordSlash();
+          sound.playEnemyShot(); // 적 발사: 작고 낮게
         }
       } else if (e.type === 'spearman') {
         // 암기 수리검 살수: 재빠른 측면 접근 및 회전 강철 수리검 2연사!
@@ -519,7 +519,7 @@ function updateGame(dt) {
               color: '#e2e8f0'
             });
           }
-          sound.playSwordSlash();
+          sound.playEnemyShot(); // 적 발사: 작고 낮게
         }
       } else if (e.type === 'curse_mage' || e.type === 'necromancer') {
         // 흑마 주술사 / 사령술사: 고요한 공중부양 비행 & 명확한 스킬 시전 예고 (뒤뚱거림 없음)
@@ -1019,7 +1019,6 @@ function updateGame(dt) {
       player.poisonTickTimer = 0.45;
       const pDmg = 8;
       player.hp = Math.max(1, player.hp - pDmg);
-      sound.playHit();
       createPoisonBubble(player.x, player.y);
       damageTexts.push({
         x: player.x + (Math.random() - 0.5) * 16,

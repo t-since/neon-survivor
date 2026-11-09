@@ -42,7 +42,6 @@ function updateSkills(dt) {
             sw.vx = (dx / len) * speed;
             sw.vy = (dy / len) * speed;
             sw.life = 1.3;
-            sound.playSwordSlash();
           }
         }
       } else {
