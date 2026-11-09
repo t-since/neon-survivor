@@ -343,7 +343,7 @@ function triggerMeleeAttack(target) {
   }
 
   if (hits > 0) {
-    sound.playSample(isFinisher ? 'wx_heavy' : 'wx_cut', isFinisher ? 0.7 : 0.5, 1, 0.1, 0.08);
+    sound.playSample(isFinisher ? 'wx_slash_heavy' : 'wx_slash_hit', isFinisher ? 0.8 : 0.6, 1, 0.08, 0.08); // 묵직한 베기 타격
     // 검기 흡혈: 근거리로 싸우면 맞는 만큼 조금씩 회복 (근거리가 맞기만 한다는 의견 반영)
     const heal = Math.min(4, hits) * (isFinisher ? 2 : 1);
     if (player.hp < player.maxHp) {

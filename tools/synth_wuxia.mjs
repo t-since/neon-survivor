@@ -112,3 +112,30 @@ function grunt(f0, dur, f1 = 620, f2 = 1050, f3 = 2450) {
 [['wx_grunt_a', 150, 0.17], ['wx_grunt_b', 128, 0.19], ['wx_grunt_c', 172, 0.15]].forEach(([nm, f0, d]) => {
   save(nm, mix(d + 0.02, [grunt(f0, d), 1], [thud(d + 0.02, 300, 150, 0.05, 0.6, 1800), 0.25]), 0.9);
 });
+
+// ===== 묵직한 타격 계열 (귀무자류 '특징'을 참고해 새로 합성: 날카로운 첫소리 + 묵직한 몸통 + 거친 질감 + 짧은 울림) =====
+function saturate(x, drive) { const k = Math.tanh(drive); for (let i = 0; i < x.length; i++) x[i] = Math.tanh(x[i] * drive) / k; return x; }
+function pad(x, sec) { const y = new Float32Array(x.length + Math.floor(sec * SR)); y.set(x); return y; }
+function reverb(x, wet = 0.2, size = 1) {
+  // 작은 방 울림 (콤 필터 4개 + 올패스 2개)
+  const combs = [29.7, 37.1, 41.1, 43.7].map(ms => ({ d: Math.floor(ms * size * SR / 1000), fb: 0.72 }));
+  const y = new Float32Array(x.length);
+  for (const c of combs) { const b = new Float32Array(c.d); let p = 0; for (let i = 0; i < x.length; i++) { const o = b[p]; b[p] = x[i] + o * c.fb; p = (p + 1) % c.d; y[i] += o * 0.25; } }
+  for (const ms of [5.0, 1.7]) { const d = Math.floor(ms * SR / 1000), b = new Float32Array(d); let p = 0; for (let i = 0; i < y.length; i++) { const v = b[p], u = y[i] + v * 0.7; b[p] = u; y[i] = v - u * 0.7; p = (p + 1) % d; } }
+  const o = new Float32Array(x.length); for (let i = 0; i < x.length; i++) o[i] = x[i] * (1 - wet) + y[i] * wet * 2.2; return o;
+}
+const crack = (sec, fc, dec) => shape(svf(noise(Math.floor(sec * SR)), () => fc, 0.8, 'bp'), t => Math.exp(-t / dec));
+const offset = (x, sec) => { const y = new Float32Array(x.length + Math.floor(sec * SR)); y.set(x, Math.floor(sec * SR)); return y; };
+function impact(sec, { crackFc = 3200, crackDec = 0.008, body0 = 210, body1 = 70, bodyDec = 0.09, grit = 2.2, wet = 0.2, mud = 0.6 } = {}) {
+  const c = crack(sec, crackFc, crackDec);
+  const b = sweepSine(sec, body0, body1, bodyDec, 0.002);
+  const m = shape(svf(noise(Math.floor(sec * SR)), () => 800, 0.9, 'lp'), t => Math.exp(-t / 0.05));
+  const x = saturate(mix(sec, [c, 0.9], [b, 1], [m, mud]), grit);
+  return reverb(pad(x, 0.3), wet);
+}
+// 서진 피격: 묵직하게 꽂히는 '퍽!' + 짧은 울림 (목소리 없음)
+save('wx_hit_player', impact(0.22, { crackFc: 2600, body0: 230, body1: 80, bodyDec: 0.1, grit: 2.6, wet: 0.22, mud: 0.8 }), 0.95);
+// 적 베기: 짧은 칼바람 뒤 '착!' 갈라지는 타격
+save('wx_slash_hit', mix(0.5, [swing(0.09, 900, 2400, 1.4), 0.5], [offset(impact(0.16, { crackFc: 3600, crackDec: 0.006, body0: 260, body1: 110, bodyDec: 0.06, grit: 1.8, wet: 0.15, mud: 0.5 }), 0.045), 1]), 0.9);
+// 3타 큰 베기: 크게 휘두른 뒤 '쾅!' + 북 울림 + 긴 잔향
+save('wx_slash_heavy', mix(0.9, [swing(0.24, 380, 1500), 0.7], [offset(impact(0.3, { crackFc: 3000, crackDec: 0.01, body0: 160, body1: 50, bodyDec: 0.16, grit: 2.4, wet: 0.3, mud: 0.9 }), 0.17), 1], [offset(taiko(0.5, 55), 0.17), 0.6]), 0.95);

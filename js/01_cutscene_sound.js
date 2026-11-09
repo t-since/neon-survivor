@@ -346,7 +346,7 @@ class SoundManager {
     this.sfx = {};
     this.sfxLast = {};
     // 무협 효과음 (코드로 합성: 바람·천·북·징, 쇳소리 없음) — tools/synth_wuxia.mjs 로 만듦
-    const names = ['wx_swing', 'wx_cut', 'wx_heavy', 'wx_hurt', 'wx_palm', 'wx_boom', 'wx_dash', 'wx_gong', 'wx_step', 'wx_grunt_a', 'wx_grunt_b', 'wx_grunt_c'];
+    const names = ['wx_swing', 'wx_cut', 'wx_heavy', 'wx_hurt', 'wx_palm', 'wx_boom', 'wx_dash', 'wx_gong', 'wx_step', 'wx_grunt_a', 'wx_grunt_b', 'wx_grunt_c', 'wx_hit_player', 'wx_slash_hit', 'wx_slash_heavy'];
     names.forEach(n => {
       fetch('assets/audio/' + n + '.mp3').then(r => r.arrayBuffer()).then(b => this.ctx.decodeAudioData(b)).then(buf => { this.sfx[n] = buf; }).catch(() => {});
     });
@@ -456,7 +456,7 @@ class SoundManager {
     src.start(t);
   }
   playHit() {
-    if (this.playSample(['wx_grunt_a', 'wx_grunt_b', 'wx_grunt_c'][Math.floor(Math.random() * 3)], 0.75, 1, 0.04, 0.35) && (this.playSample('wx_hurt', 0.35, 1, 0.08, 0.35) || true)) return;
+    if (this.playSample('wx_hit_player', 0.85, 1, 0.07, 0.35)) return;
     if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
