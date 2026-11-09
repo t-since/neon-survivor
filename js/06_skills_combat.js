@@ -341,7 +341,7 @@ function triggerMeleeAttack(target) {
   }
 
   if (hits > 0) {
-    sound.playSample(isFinisher ? 'slice' : 'blade_hit', isFinisher ? 0.6 : 0.35, isFinisher ? 1 : 1.15, 0.08, 0.08);
+    sound.playSample(isFinisher ? 'wx_heavy' : 'wx_cut', isFinisher ? 0.7 : 0.5, 1, 0.1, 0.08);
     // 검기 흡혈: 근거리로 싸우면 맞는 만큼 조금씩 회복 (근거리가 맞기만 한다는 의견 반영)
     const heal = Math.min(4, hits) * (isFinisher ? 2 : 1);
     if (player.hp < player.maxHp) {
@@ -368,6 +368,7 @@ function findClosestEnemy(x, y, maxDist = 500) {
 }
 
 function dealDamage(target, baseDmg, canCrit = true) {
+  sound.playSample('wx_cut', 0.16, 1.15, 0.12, 0.1); // 적이 맞는 소리 (작게, 0.1초에 한 번까지)
   let isCrit = false;
   let dmg = baseDmg;
   if (canCrit && Math.random() < player.critRate) {

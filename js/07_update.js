@@ -1267,7 +1267,7 @@ function bossFootstep(e) {
     });
   }
   createShockwave(footX, footY, 46, '#57534e');
-  sound.playSample('slam', 0.3 * Math.max(0.3, 1 - Math.hypot(player.x - e.x, player.y - e.y) / 900), 0.75, 0.05, 0.3);
+  sound.playSample('wx_step', 0.5 * Math.max(0.3, 1 - Math.hypot(player.x - e.x, player.y - e.y) / 900), 1, 0.05, 0.3);
   const d = Math.hypot(player.x - e.x, player.y - e.y);
   if (d < 700) state.screenShake = Math.max(state.screenShake || 0, 6 * (1 - d / 700) + 1.5);
 }

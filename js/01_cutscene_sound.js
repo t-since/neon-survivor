@@ -345,9 +345,10 @@ class SoundManager {
     if (this.sfx || !this.ctx) return;
     this.sfx = {};
     this.sfxLast = {};
-    const names = ['impact', 'whoosh', 'swish', 'blade_hit', 'boom', 'shimmer', 'slice', 'slam'];
+    // 무협 효과음 (코드로 합성: 바람·천·북·징, 쇳소리 없음) — tools/synth_wuxia.mjs 로 만듦
+    const names = ['wx_swing', 'wx_cut', 'wx_heavy', 'wx_hurt', 'wx_palm', 'wx_boom', 'wx_dash', 'wx_gong', 'wx_step'];
     names.forEach(n => {
-      fetch('assets/audio/sfx_' + n + '.mp3').then(r => r.arrayBuffer()).then(b => this.ctx.decodeAudioData(b)).then(buf => { this.sfx[n] = buf; }).catch(() => {});
+      fetch('assets/audio/' + n + '.mp3').then(r => r.arrayBuffer()).then(b => this.ctx.decodeAudioData(b)).then(buf => { this.sfx[n] = buf; }).catch(() => {});
     });
   }
   // 효과음 재생: vol 크기, rate 높낮이(1=그대로), jitter 매번 살짝 다르게, gap 같은 소리 최소 간격(초)
@@ -375,10 +376,11 @@ class SoundManager {
     return true;
   }
   playEnemyShot() {
-    this.playSample('whoosh', 0.07, 1.25, 0.08, 0.3, 900);
+    this.playSample('wx_swing', 0.08, 1.2, 0.1, 0.3);
   }
   playSwordSlash() {
-    if (this.playSample('swish', 0.22, 0.78, 0.06, 0.14, 1500)) return;
+    if (this.playSample('wx_swing', 0.38, 1, 0.08, 0.12)) return;
+    if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -397,7 +399,8 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.12);
   }
   playPalmBlast() {
-    if (this.playSample('whoosh', 0.45, 0.85, 0.05, 0.2, 2200)) return;
+    if (this.playSample('wx_palm', 0.6, 1, 0.05, 0.2)) return;
+    if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -412,7 +415,8 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.28);
   }
   playDaggerRain() {
-    if (this.playSample('whoosh', 0.22, 1.1, 0.05, 0.25, 1500)) return;
+    if (this.playSample('wx_swing', 0.22, 1.35, 0.08, 0.25)) return;
+    if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -427,7 +431,8 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.08);
   }
   playExplosion() {
-    if (this.playSample('boom', 0.75, 1, 0.06, 0.08)) { this.playSample('impact', 0.4, 0.9, 0.05, 0.08); return; }
+    if (this.playSample('wx_boom', 0.8, 1, 0.06, 0.08)) return;
+    if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
@@ -451,7 +456,8 @@ class SoundManager {
     src.start(t);
   }
   playHit() {
-    if (this.playSample('impact', 0.25, 1.05, 0.08, 0.2, 2500)) return;
+    if (this.playSample('wx_hurt', 0.42, 1, 0.08, 0.35)) return;
+    if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -490,7 +496,8 @@ class SoundManager {
   }
 
   playLevelUp() {
-    if (this.playSample('shimmer', 0.28, 0.62, 0.02, 1.0, 1800)) return;
+    if (this.playSample('wx_gong', 0.4, 1, 0.02, 1.0)) return;
+    if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const notes = [440, 554, 659, 880];
     notes.forEach((freq, i) => {
@@ -507,7 +514,8 @@ class SoundManager {
     });
   }
   playDash() {
-    if (this.playSample('whoosh', 0.3, 1.15, 0.05, 0.2, 2000)) return;
+    if (this.playSample('wx_dash', 0.4, 1, 0.08, 0.2)) return;
+    if (this.sfx) return; // 예비 합성음(삐삐·띵)은 쓰지 않음
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
