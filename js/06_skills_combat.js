@@ -171,8 +171,17 @@ function castManGeomGwiJong() {
 function triggerSkillMotion(poseType, duration = 0.3) {
   player.isAttacking = true;
   player.skillPose = poseType;
-  player.attackTimer = duration;
-  player.attackDuration = duration;
+  player.attackTimer = Math.max(duration, 0.32);
+  player.attackDuration = Math.max(duration, 0.32);
+  // 시전 손끝 번쩍임 (앞쪽 손 위치)
+  const handX = player.x + player.facing * 34, handY = player.y - 78;
+  const color = { palm: '#a5f3fc', rain: '#e9d5ff', sword: '#7dd3fc', bomb: '#fdba74' }[poseType] || '#ffffff';
+  particles.push({ flash: true, x: handX, y: handY, vx: 0, vy: 0, size: 46, life: 0.16, maxLife: 0.16 });
+  for (let k = 0; k < 6; k++) {
+    const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 90;
+    particles.push({ x: handX, y: handY, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, color, radius: 2 + Math.random() * 2, life: 0.3, maxLife: 0.3 });
+  }
+  if (poseType === 'palm' || poseType === 'bomb') state.screenShake = Math.max(state.screenShake || 0, 4);
 }
 
 function applyPoison(target, duration, dps) {
@@ -266,6 +275,7 @@ function castPalmBlast() {
 }
 
 function castThunderBomb() {
+  triggerSkillMotion('bomb', 0.35);
   const bombCount = 1 + Math.floor(player.skills.thunder_bomb / 3);
   for (let i = 0; i < bombCount; i++) {
     const target = enemies.length > 0 ? enemies[Math.floor(Math.random() * enemies.length)] : null;
@@ -292,6 +302,7 @@ function triggerMeleeAttack(target) {
   const aim = Math.atan2(ty - player.y, tx - player.x);
 
   player.attackCombo = ((player.attackCombo || 0) + 1) % 3;
+  player.skillPose = null; // 무공 시전 자세가 아니라 칼 베기
   const isFinisher = player.attackCombo === 2;
   player.isAttacking = true;
   player.attackDuration = isFinisher ? 0.5 : 0.4; // 베기 한 번 걸리는 시간 (사용자: 조금 빠름 → 늘림)
@@ -305,7 +316,7 @@ function triggerMeleeAttack(target) {
 
   sound.playSwordSlash();
 
-  const range = isFinisher ? 190 : 160;
+  const range = isFinisher ? 205 : 180;
   const halfArc = isFinisher ? Math.PI * 0.75 : Math.PI * 0.39; // 보통 140°, 큰 베기 270°
   let hits = 0;
   for (const e of enemies) {
@@ -520,7 +531,7 @@ function addExp(amount) {
   while (player.exp >= player.nextExp) {
     player.exp -= player.nextExp;
     player.level++;
-    player.nextExp = Math.round(player.nextExp * 1.3 + 12);
+    player.nextExp = Math.round(player.nextExp * 1.27 + 10);
     pendingLevelUps++;
   }
 
@@ -748,7 +759,7 @@ function applySkillUpgrade(skillId) {
     player.maxHp = 120 + lvl * 35;
     player.hp = Math.min(player.maxHp, player.hp + 35);
   } else if (skillId === 'qi_magnet') {
-    player.magnetRadius = 140 + lvl * 50;
+    player.magnetRadius = 190 + lvl * 50;
   }
   updateHud();
 }
@@ -840,6 +851,13 @@ function onSectorVictory() {
   state.isGameOver = true;
   state.isPaused = true;
   markCurrentSectorCleared();
+
+  // 마지막(5)구역까지 모두 깨면 승리 창 대신 엔딩 크레딧이 바로 나옴 (끝에 '다시 시작' / '처음으로')
+  if (currentSelectedSector >= 5) {
+    sound.playLevelUp();
+    openEndingCredits();
+    return;
+  }
 
   const sector = SECTOR_DEFS[currentSelectedSector - 1] || SECTOR_DEFS[0];
   document.getElementById('vicSector').innerText = `제${currentSelectedSector}구역: ${sector.name.split(':')[1] || sector.name}`;

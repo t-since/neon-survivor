@@ -229,7 +229,7 @@ function updateEnemySpawning(dt) {
 
   // Regular Mob Spawning with diversified archetypes
   enemySpawnTimer += dt;
-  const targetEnemyCount = Math.min(220, 24 + Math.floor(state.gameTime * 2.6) + (curZone - 1) * 25);
+  const targetEnemyCount = Math.round(Math.min(220, 24 + Math.floor(state.gameTime * 2.6) + (curZone - 1) * 25) * difficultyCfg().count);
   const spawnInterval = Math.max(0.18, 0.72 - state.gameTime * 0.005);
 
   if (enemySpawnTimer >= spawnInterval && enemies.length < targetEnemyCount) {

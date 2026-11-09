@@ -1,5 +1,6 @@
 // 게임 루프와 매 순간 계산
 let lastTime = performance.now();
+let contactDmgSum = 0, contactDmgMax = 0; // 몸통 피해 합산용
 
 function gameLoop(time) {
   const dt = Math.min(0.1, (time - lastTime) / 1000);
@@ -118,7 +119,7 @@ function updateGame(dt) {
 
   // Auto Combat Strike when enemies are close
   if (player.attackCooldownTimer <= 0 && enemies.length > 0) {
-    const nearbyEnemy = findClosestEnemy(player.x, player.y, 140);
+    const nearbyEnemy = findClosestEnemy(player.x, player.y, 165);
     if (nearbyEnemy) {
       triggerMeleeAttack(nearbyEnemy);
     }
@@ -329,8 +330,13 @@ function updateGame(dt) {
   }
 
   // 5. Update Enemies & Animations
+  // 몸통 피해 합산 (지난 계산에서 닿은 적들): 여러 마리에 둘러싸여도 가장 센 적의 2.5배까지만
+  if (contactDmgSum > 0) playerTakeDamage(Math.min(contactDmgSum, contactDmgMax * 2.5) * dt);
+  contactDmgSum = 0;
+  contactDmgMax = 0;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
+    if (!e._diffApplied) { e._diffApplied = true; const k = difficultyCfg().hp; e.hp *= k; e.maxHp = (e.maxHp || e.hp) * k; }
     if (e.hp <= 0) {
       enemies.splice(i, 1);
       continue;
@@ -868,7 +874,9 @@ function updateGame(dt) {
     }
 
     if (dist < player.radius + e.radius && !player.isDashing) {
-      playerTakeDamage(e.damage * dt);
+      // 바로 깎지 않고 모아 두었다가 다음 계산 때 한 번에 (아래 '몸통 피해 합산' 참고)
+      contactDmgSum += e.damage;
+      contactDmgMax = Math.max(contactDmgMax, e.damage);
     }
 
     // 공격 동작 신호 (새 몬스터 그림의 공격 4장을 재생하는 시간)
@@ -1241,7 +1249,9 @@ function playerTakeDamage(amount) {
   if (state.isGodMode || (player.activeBuffs && player.activeBuffs.invincible > 0)) return;
 
   const reduction = player.dmgReduction || 0;
-  const actualDmg = Math.max(1, amount * (1 - reduction));
+  let actualDmg = amount * (1 - reduction) * difficultyCfg().dmg;
+  if (player.isAttacking) actualDmg *= 0.7; // 베는 동안 호신강기: 피해 30% 감소
+  actualDmg = Math.max(1, actualDmg);
 
   player.hp -= actualDmg;
   player.hitFlashTimer = 0.35; // 피격 플래시 & 경직 모션

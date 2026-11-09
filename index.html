@@ -55,6 +55,7 @@
       <p class="title-epic-lore">“만겁(萬劫)의 혈겁을 뚫고, 천하제일검(天下第一劍)의 길을 열어라.”</p>
 
       <div style="margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+        <button class="start-icon-btn" id="difficultyBtn" onclick="sound.init(); cycleDifficulty();" style="order: 2;">난이도 : 보통  ▸</button>
         <button class="start-game-btn" id="quickEnterBtn" onclick="sound.init(); quickEnter();">
           <span class="btn-sword-icon">⚔️</span> <span id="quickEnterLabel">강호 입장</span> <span class="btn-kbd-pill kbd-only">ENTER / SPACE</span>
         </button>
@@ -344,7 +345,7 @@
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
-        <button class="btn-action" id="btnOpenEndingCredits" style="background: linear-gradient(135deg, #7c2d12, #b45309); border-color: #fbbf24; font-size: 15px; padding: 10px 14px; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);">
+        <button class="btn-action" id="btnOpenEndingCredits" style="display: none; background: linear-gradient(135deg, #7c2d12, #b45309); border-color: #fbbf24; font-size: 15px; padding: 10px 14px; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);">
           📜 강호 평정 엔딩 크레딧 감상 ➔
         </button>
         <div style="display: flex; gap: 10px;">

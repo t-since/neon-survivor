@@ -95,6 +95,16 @@ const SPRITE_URLS = {
   fx_wind: 'assets/fx/fx_wind.jpg',
   fx_thunder: 'assets/fx/fx_thunder.jpg',
   fx_poison: 'assets/fx/fx_poison.jpg',
+  fx_fissure: 'assets/fx/fx_fissure.png',      // 지열혈파 갈라진 바닥 (보통 합성)
+  fx_shield: 'assets/fx/fx_shield.jpg',        // 금강불괴 보호막
+  fx_needles: 'assets/fx/fx_needles.jpg',      // 독침 폭발 (다음에 사용)
+  fx_bloodslash: 'assets/fx/fx_bloodslash.jpg', // 혈검 베기 (다음에 사용)
+  fx_buddha_palm: 'assets/fx/fx_buddha_palm.jpg', // 여래신장 금빛 손바닥
+  // 서진 무공 시전 4동작: 0 장풍, 1 은침, 2 검결지(어검술), 3 벽력탄 던지기
+  seojin_cast_0: 'assets/hero/seojin_cast_0.png',
+  seojin_cast_1: 'assets/hero/seojin_cast_1.png',
+  seojin_cast_2: 'assets/hero/seojin_cast_2.png',
+  seojin_cast_3: 'assets/hero/seojin_cast_3.png',
 
   // 관문 테마별 바닥 (이음새 없이 이어지도록 처리됨)
   ground_new_bamboo: 'assets/ground/bamboo.jpg',

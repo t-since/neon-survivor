@@ -263,12 +263,25 @@ function drawFxImage(key, x, y, size, alpha = 1, rot = 0, sy = 1) {
 }
 
 function createExplosion(x, y, radius) {
-  // 벽력탄 번개 폭발 그림 (0.45초 동안 커지며 사라짐)
+  // 벽력탄: '폭탄이 터지는 느낌' (테스터 피드백: 약하다)
+  // 1) 하얀 섬광  2) 큰 번개 폭발 그림  3) 충격파 고리 2겹  4) 화면 흔들림  5) 파편·불씨  6) 그을린 자국  7) 폭발음
+  particles.push({ flash: true, x, y: y - 10, vx: 0, vy: 0, size: radius * 3.2, life: 0.18, maxLife: 0.18 });
   if (SPRITES.fx_thunder && SPRITES.fx_thunder.width) {
-    particles.push({ fxKey: 'fx_thunder', x, y: y - 10, vx: 0, vy: 0, size: radius * 2.6, rot: Math.random() * Math.PI * 2, life: 0.45, maxLife: 0.45 });
+    particles.push({ fxKey: 'fx_thunder', x, y: y - 14, vx: 0, vy: 0, size: radius * 3.4, rot: Math.random() * Math.PI * 2, life: 0.55, maxLife: 0.55 });
   }
-  // pixelfx: 단순 폭죽이 아닌 묵직한 화약 뇌격 폭발 (Heavy Gunpowder Blast)
-  PixelFX.spawnThunderBombExplosion(x, y, radius);
+  createShockwave(x, y, radius * 1.3, '#fde68a');
+  setTimeout(() => createShockwave(x, y, radius * 1.9, '#fb923c'), 70);
+  const d = Math.hypot(player.x - x, player.y - y);
+  state.screenShake = Math.max(state.screenShake || 0, d < 900 ? 14 * (1 - d / 900) + 4 : 3);
+  for (let k = 0; k < 22; k++) {
+    const a = Math.random() * Math.PI * 2, sp = 180 + Math.random() * 380;
+    particles.push({ x, y: y - 10, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 - 120, gravity: 520,
+      color: Math.random() < 0.5 ? '#fbbf24' : (Math.random() < 0.5 ? '#f97316' : '#57534e'),
+      radius: 2 + Math.random() * 3.5, life: 0.5 + Math.random() * 0.35, maxLife: 0.85 });
+  }
+  groundDecals.push({ type: 'scorch', x, y, radius: radius * 0.95, life: 3.5, maxLife: 3.5 });
+  if (sound.playExplosion) sound.playExplosion();
+  // (예전 PixelFX 화약 구슬 효과는 새 폭발 그림과 겹쳐 어색해서 뺌)
 }
 
 // --- Rendering Loop & 16-Bit Retro Pixel Downscaler Pipeline ---

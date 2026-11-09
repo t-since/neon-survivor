@@ -496,6 +496,33 @@ function renderGroundDecals() {
     const alpha = Math.min(1.0, d.life / 0.6);
     ctx.globalAlpha = alpha;
 
+    if (d.type === 'scorch') {
+      // 벽력탄이 터진 자리의 검게 그을린 자국 (천천히 사라짐)
+      ctx.globalAlpha = Math.min(1, d.life / 1.5) * 0.7;
+      const g = ctx.createRadialGradient(0, 0, d.radius * 0.1, 0, 0, d.radius);
+      g.addColorStop(0, 'rgba(10, 8, 6, 0.85)');
+      g.addColorStop(0.6, 'rgba(30, 20, 12, 0.45)');
+      g.addColorStop(1, 'rgba(30, 20, 12, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, d.radius, d.radius * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    if (d.type === 'blood_fissure' && SPRITES.fx_fissure && SPRITES.fx_fissure.width) {
+      const size = d.radius * 2.5;
+      const t = 1 - d.life / (d.maxLife || 2.2);
+      const grow = Math.min(1, t / 0.12); // 처음에 확 갈라짐
+      ctx.globalAlpha = Math.min(1, d.life / 0.6);
+      ctx.drawImage(SPRITES.fx_fissure, -size / 2 * grow, -size / 2 * 0.62 * grow, size * grow, size * 0.62 * grow);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = Math.min(1, d.life / 0.6) * (0.35 + Math.sin(state.gameTime * 10) * 0.15);
+      ctx.drawImage(SPRITES.fx_fissure, -size / 2 * grow, -size / 2 * 0.62 * grow, size * grow, size * 0.62 * grow);
+      ctx.restore();
+      return;
+    }
     if (d.type === 'blood_fissure') {
       // 1. 그을린 분화구 암흑 적색 베이스
       const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, d.radius);

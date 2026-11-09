@@ -340,6 +340,29 @@ class SoundManager {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.08);
   }
+  playExplosion() {
+    if (!this.enabled || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const g1 = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, t);
+    osc.frequency.exponentialRampToValueAtTime(28, t + 0.35);
+    g1.gain.setValueAtTime(0.5, t);
+    g1.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+    osc.connect(g1); g1.connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + 0.4);
+    const len = Math.floor(this.ctx.sampleRate * 0.35);
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+    const src = this.ctx.createBufferSource();
+    const g2 = this.ctx.createGain();
+    src.buffer = buf;
+    g2.gain.setValueAtTime(0.35, t);
+    src.connect(g2); g2.connect(this.ctx.destination);
+    src.start(t);
+  }
   playHit() {
     if (!this.enabled || !this.ctx) return;
     const osc = this.ctx.createOscillator();

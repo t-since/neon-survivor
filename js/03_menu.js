@@ -91,6 +91,7 @@ function navScreen(screenName) {
 
   if (screenName === 'title') {
     refreshQuickEnterLabel();
+    refreshDifficultyButton();
     startTitleParticles();
   } else {
     stopTitleParticles();
@@ -305,7 +306,7 @@ function confirmStartGame() {
   player.vy = 0;
   player.level = 1;
   player.exp = 0;
-  player.nextExp = 25; // 첫 레벨업에 필요한 진기 (예전 10: 너무 잦음 / 50: 너무 느림)
+  player.nextExp = 20; // 첫 레벨업에 필요한 진기 (예전 10: 너무 잦음 / 50: 너무 느림 / 25: 테스터 '느리다')
   player.atkMultiplier = 1.0;
   player.speedBuffTimer = 0;
   player.evolutions = {};

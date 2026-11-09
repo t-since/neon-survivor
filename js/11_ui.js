@@ -54,9 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCreditsReturn) {
     btnCreditsReturn.onclick = () => {
       closeEndingCredits();
-      document.getElementById('victoryModal').style.display = 'none';
-      togglePause(false);
-      resetToTitle();
+      endingReturnToTitle();
     };
   }
 
@@ -64,9 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCreditsRestart) {
     btnCreditsRestart.onclick = () => {
       closeEndingCredits();
-      document.getElementById('victoryModal').style.display = 'none';
-      togglePause(false);
-      startRun();
+      endingRestart();
     };
   }
 });
@@ -222,8 +218,23 @@ document.getElementById('closeTreasureBtn').onclick = () => {
   state.isPaused = false;
 };
 document.getElementById('btnVictoryNextSector').onclick = () => {
+  // 마지막(5)구역을 깼으면 같은 구역을 다시 돌지 않고 엔딩 크레딧으로
+  if (currentSelectedSector >= 5) { openEndingCredits(); return; }
   continueToNextSector();
 };
+// 엔딩 뒤: 처음 화면으로 / 1구역부터 다시
+function endingReturnToTitle() {
+  ['victoryModal', 'gameOverModal'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  state.isGameStarted = false;
+  state.isPaused = false;
+  state.isGameOver = false;
+  navScreen('title');
+}
+function endingRestart() {
+  ['victoryModal', 'gameOverModal'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  selectSector(1);
+  confirmStartGame();
+}
 document.getElementById('btnVictoryReturnHQ').onclick = () => {
   document.getElementById('victoryModal').style.display = 'none';
   state.isGameStarted = false;

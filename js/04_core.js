@@ -8,6 +8,27 @@ let ctx = mainCtx;
 const DEBUG_MODE = /[?&]debug=1/.test(location.search);
 document.body.classList.toggle('debug', DEBUG_MODE);
 
+// --- 난이도 (첫 화면에서 선택, 이 브라우저에 기억) ---
+// dmg: 받는 피해 배율, hp: 적 체력 배율, count: 적 숫자 배율
+const DIFFICULTY = {
+  easy:   { label: '쉬움',   dmg: 0.45, hp: 0.7,  count: 0.75 },
+  normal: { label: '보통',   dmg: 1.0,  hp: 1.0,  count: 1.0 },
+  hard:   { label: '어려움', dmg: 1.35, hp: 1.4,  count: 1.25 }
+};
+let difficultyKey = 'normal';
+try { const d = localStorage.getItem('wuxia_difficulty'); if (DIFFICULTY[d]) difficultyKey = d; } catch (e) {}
+function difficultyCfg() { return DIFFICULTY[difficultyKey] || DIFFICULTY.normal; }
+function cycleDifficulty() {
+  const order = ['easy', 'normal', 'hard'];
+  difficultyKey = order[(order.indexOf(difficultyKey) + 1) % order.length];
+  try { localStorage.setItem('wuxia_difficulty', difficultyKey); } catch (e) {}
+  refreshDifficultyButton();
+}
+function refreshDifficultyButton() {
+  const b = document.getElementById('difficultyBtn');
+  if (b) b.innerText = '난이도 : ' + difficultyCfg().label + '  ▸';
+}
+
 // --- 화면 크기 맞춤 (PC·모바일 공통) ---
 // gameWidth / gameHeight 는 "보이는 세상의 넓이(월드 단위)" 입니다.
 // 화면의 짧은 쪽에 항상 VIEW_MIN_WORLD 만큼의 세상이 보이도록 확대/축소하므로
@@ -117,7 +138,7 @@ const player = {
   hp: 100,
   level: 1,
   exp: 0,
-  nextExp: 25,
+  nextExp: 20,
   baseSpeed: 195,
   speed: 195,
   speedBuffTimer: 0,
@@ -130,7 +151,7 @@ const player = {
   isMoving: false,
   critRate: 0.25,
   atkMultiplier: 1.0,
-  magnetRadius: 140,
+  magnetRadius: 190,
 
   // Dash (경공)
   dashCooldown: 2.2,

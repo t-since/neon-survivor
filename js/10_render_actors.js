@@ -12,7 +12,13 @@ function renderPlayer() {
   // 2. Diablo-style Shrine Buff Auras (태을혈기, 풍신선풍, 금강불괴, 만천비검)
   if (player.activeBuffs) {
     const pulse = 1 + Math.sin(state.gameTime * 5) * 0.08;
-    if (player.activeBuffs.invincible > 0) {
+    if (player.activeBuffs.invincible > 0 && SPRITES.fx_shield && SPRITES.fx_shield.width) {
+      // 금강불괴: 금빛 보호막 (그림, 숨쉬듯 커졌다 작아짐)
+      ctx.save();
+      ctx.shadowBlur = 0;
+      drawFxImage('fx_shield', 0, -62, 170 * pulse, 0.6 + Math.sin(state.gameTime * 4) * 0.1);
+      ctx.restore();
+    } else if (player.activeBuffs.invincible > 0) {
       // 황금 종형 금강불괴 무적 결계
       ctx.strokeStyle = '#fbbf24';
       ctx.lineWidth = 3.5;
@@ -71,7 +77,14 @@ function renderPlayer() {
   const t = state.gameTime;
   let frameKey = 'seojin_walk_1'; // 서 있기 = 다리를 모은 걷기 2번
   let lean = 0, sy = 1, forward = 0, glow = null;
-  if (player.isAttacking) {
+  const CAST_FRAME = { palm: 0, rain: 1, sword: 2, bomb: 3 };
+  if (player.isAttacking && player.skillPose && CAST_FRAME[player.skillPose] !== undefined && SPRITES['seojin_cast_0']) {
+    // 무공 시전: 무공마다 다른 자세 (칼 베기와 구분)
+    const prog = Math.min(1, Math.max(0, 1 - (player.attackTimer / (player.attackDuration || 0.35))));
+    frameKey = 'seojin_cast_' + CAST_FRAME[player.skillPose];
+    forward = Math.sin(Math.min(1, prog * 2) * Math.PI / 2) * 5; // 내지르며 살짝 앞으로
+    glow = player.skillPose === 'sword' ? '#38bdf8' : (player.skillPose === 'palm' ? '#67e8f9' : null);
+  } else if (player.isAttacking) {
     const prog = Math.min(1, Math.max(0, 1 - (player.attackTimer / (player.attackDuration || 0.32))));
     // 들어 올리기 → 내리치기 → 찌르기 → 회복
     const idx = prog < 0.22 ? 0 : prog < 0.45 ? 1 : prog < 0.75 ? 2 : 3;
@@ -1227,6 +1240,17 @@ function renderProjectiles() {
       ctx.restore();
       drawFxImage('fx_wind', p.x, p.y - 20, size, 0.95 * lifeK, pAngle);
       ctx.save();
+    } else if (p.type === 'palm_wave' && p.isBuddhaPalm && SPRITES.fx_buddha_palm && SPRITES.fx_buddha_palm.width) {
+      const dir = p.vx >= 0 ? 1 : -1;
+      const size = Math.max(230, (p.width || 220) * 1.25);
+      const lifeK = Math.min(1, p.life / 0.35);
+      const pulse = 1 + Math.sin(state.gameTime * 14) * 0.04;
+      ctx.restore();
+      // 잔상 2개 (뒤쪽으로 흐려지며)
+      drawFxImage('fx_buddha_palm', p.x - dir * 150, p.y - 40, size * 0.8, 0.12 * lifeK, dir * 0.12);
+      drawFxImage('fx_buddha_palm', p.x - dir * 80, p.y - 40, size * 0.9, 0.2 * lifeK, dir * 0.12);
+      drawFxImage('fx_buddha_palm', p.x, p.y - 40, size * pulse, 0.78 * lifeK, dir * 0.12);
+      ctx.save();
     } else if (p.type === 'palm_wave') {
       const pAngle = Math.atan2(p.vy, p.vx);
       ctx.rotate(pAngle);
@@ -1581,6 +1605,21 @@ function renderParticles() {
     // 60FPS Frustum Culling
     if (Math.abs(p.x - camX) > cullW || Math.abs(p.y - camY) > cullH) return;
 
+    if (p.flash) {
+      const t = 1 - p.life / p.maxLife;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * (0.6 + t * 0.4));
+      g.addColorStop(0, `rgba(255, 255, 240, ${0.95 * (1 - t)})`);
+      g.addColorStop(0.35, `rgba(253, 224, 71, ${0.6 * (1 - t)})`);
+      g.addColorStop(1, 'rgba(249, 115, 22, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
     if (p.fxKey) {
       const t = 1 - p.life / p.maxLife;
       drawFxImage(p.fxKey, p.x, p.y, p.size * (0.75 + t * 0.4), (1 - t) * 1.2, p.rot || 0);
