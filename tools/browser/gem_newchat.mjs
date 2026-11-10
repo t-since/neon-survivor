@@ -20,6 +20,14 @@ await send('Page.bringToFront'); await sleep(600);
 if (await ev(`document.querySelectorAll('model-response, user-query').length`)) {
   await ev(`(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>(x.innerText||'').trim()==='새 채팅'); if(a) a.click(); return !!a})()`); await sleep(3000);
 }
+// 모델: 그림을 그릴 수 있는 Pro 로 (한도 뒤에 Flash-Lite 로 바뀌어 있으면 그림을 못 그림)
+const modeBtn = await waitRect(`[...document.querySelectorAll('button')].filter(b=>/모드 선택/.test(b.getAttribute('aria-label')||'') && b.getClientRects().length)[0]`);
+if (modeBtn && !(await ev(`[...document.querySelectorAll('button')].some(b=>/현재 Pro 모드/.test(b.getAttribute('aria-label')||''))`))) {
+  await mouse(modeBtn.x, modeBtn.y); await sleep(1000);
+  const pro = await waitRect(`[...document.querySelectorAll('*')].filter(x=>x.children.length===0 && /^\\d+(\\.\\d+)? Pro$/.test((x.textContent||'').trim()) && x.getClientRects().length)[0]`);
+  if (pro) { await mouse(pro.x, pro.y); await sleep(1000); }
+  if (!(await ev(`[...document.querySelectorAll('button')].some(b=>/현재 Pro 모드/.test(b.getAttribute('aria-label')||''))`))) { console.log('Pro 모델을 고를 수 없음 (한도일 수 있음)'); process.exit(3); }
+}
 // 이미지 도구
 const plus = await waitRect(`[...document.querySelectorAll('button[aria-label="업로드 및 도구"]')].filter(x=>x.getBoundingClientRect().width>0).pop()`);
 await mouse(plus.x, plus.y);

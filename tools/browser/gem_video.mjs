@@ -33,6 +33,15 @@ for (let i = 0; i < 3; i++) {
   await sleep(3000);
 }
 if (await ev(`document.querySelectorAll('model-response, user-query').length`)) { console.log('새 채팅을 못 엶'); process.exit(1); }
+// 모델을 Pro 로 (한도 뒤 Flash-Lite 로 바뀌어 있으면 도구가 안 될 수 있음)
+const isPro = () => ev(`[...document.querySelectorAll('button')].some(b=>/현재 Pro 모드/.test(b.getAttribute('aria-label')||''))`);
+if (!(await isPro())) {
+  const mb = await rect(`[...document.querySelectorAll('button')].filter(b=>/모드 선택/.test(b.getAttribute('aria-label')||'') && b.getClientRects().length)[0]`);
+  if (mb) { await mouse(mb.x, mb.y); await sleep(1000);
+    const pro = await rect(`[...document.querySelectorAll('*')].filter(x=>x.children.length===0 && /^\\d+(\\.\\d+)? Pro$/.test((x.textContent||'').trim()) && x.getClientRects().length)[0]`);
+    if (pro) { await mouse(pro.x, pro.y); await sleep(1000); } }
+  if (!(await isPro())) { console.log('Pro 모델을 고를 수 없음 (한도)'); process.exit(3); }
+}
 // 1. 동영상 도구
 // 메뉴가 늦게 뜰 수 있으니 뜰 때까지 기다림 (안 뜨면 + 를 다시 누름)
 const openMenuAndPick = async text => {

@@ -323,6 +323,7 @@ function confirmStartGame() {
   player.dashTimer = 0;
   player.isDashing = false;
   player.afterImages = [];
+  applyTrainings(player); // 문파 수련(영구 강화) 적용 + 이번 판 은자 기록 초기화 (js/14_progress.js)
 
   // Reset skills and assign starting skill!
   for (let k in player.skills) {
@@ -443,6 +444,7 @@ function continueToNextSector() {
   droppedItems.length = 0;
 
   // 신규 구역 진행 상태 초기화
+  state.runBossKills = 0; state.runMiniKills = 0; state.silverAwarded = false; // 은자는 구역마다 따로 계산
   state.isGameStarted = true;
   state.isPaused = false;
   state.isGameOver = false;

@@ -59,6 +59,7 @@
 
       <div style="margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
         <button class="start-icon-btn" id="difficultyBtn" onclick="sound.init(); cycleDifficulty();" style="order: 2;">난이도 : 보통  ▸</button>
+        <button class="start-icon-btn train-open-btn" id="trainingBtn" onclick="sound.init(); openTraining();" style="order: 3;">🏯 문파 수련 · 💰 <span class="silver-count">0</span></button>
         <button class="start-game-btn" id="quickEnterBtn" onclick="sound.init(); quickEnter();">
           <span class="btn-sword-icon">⚔️</span> <span id="quickEnterLabel">강호 입장</span> <span class="btn-kbd-pill kbd-only">ENTER / SPACE</span>
         </button>
@@ -339,6 +340,7 @@
         <div class="stat-item"><span class="stat-name">소요 시간</span><span class="stat-val" id="vicTime">03:00</span></div>
         <div class="stat-item"><span class="stat-name">최종 경지</span><span class="stat-val" id="vicTier">초절정 고수</span></div>
       </div>
+      <div class="silver-box" id="vicSilver"></div>
 
       <div style="text-align: left; margin: 10px 0 14px;">
         <div style="font-size: 12px; color: var(--wuxia-gold); margin-bottom: 6px; font-weight: bold;">
@@ -471,10 +473,21 @@
         <div class="stat-item"><span class="stat-name">생존 시간</span><span class="stat-val" id="goTime">00:00</span></div>
         <div class="stat-item"><span class="stat-name">최종 레벨</span><span class="stat-val" id="goLevel">1</span></div>
       </div>
+      <div class="silver-box" id="goSilver"></div>
       <div style="display: flex; gap: 10px; margin-top: 14px;">
         <button class="btn-action" id="restartBtn" style="flex: 1.2;">강호 재출도 (다시 시작)</button>
         <button class="btn-action" id="btnDefeatReturnHQ" style="flex: 1; background: rgba(30, 41, 59, 0.9); border-color: #475569;">◀ 작전 본부 복귀</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 문파 수련 (영구 강화, js/14_progress.js) -->
+  <div class="modal-overlay" id="trainingModal" style="display: none;">
+    <div class="modal-box training-box">
+      <div class="modal-title" style="color: #fbbf24;">🏯 문파 수련 (門派修鍊)</div>
+      <div class="modal-subtitle">모은 은자로 기본기를 닦으면 다음 판부터 계속 적용됩니다. 보유 은자 💰 <b class="silver-count" style="color:#fbbf24">0</b></div>
+      <div class="training-list" id="trainingList"></div>
+      <button class="btn-action" onclick="closeTraining()" style="margin-top: 12px;">닫기</button>
     </div>
   </div>
 
@@ -498,5 +511,6 @@
 <script src="js/11_ui.js"></script>
 <script src="js/12_bosses.js"></script>
 <script src="js/13_cinematics.js"></script>
+<script src="js/14_progress.js"></script>
 </body>
 </html>

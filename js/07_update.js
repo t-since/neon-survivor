@@ -1378,6 +1378,7 @@ function onGameOver() {
   document.getElementById('goKills').innerText = `${state.kills}명`;
   document.getElementById('goTime').innerText = formatTime(state.gameTime);
   document.getElementById('goLevel').innerText = player.level;
+  awardSilver(false, 'goSilver'); // 쓰러져도 은자는 남음 (js/14_progress.js)
   document.getElementById('gameOverModal').style.display = 'flex';
 }
 

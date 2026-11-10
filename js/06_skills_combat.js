@@ -451,6 +451,8 @@ function onEnemyKilled(target) {
   if (target._dead) return; // 한 적은 한 번만 처치 (구슬·상자·독 폭발 중복 방지)
   target._dead = true;
   state.kills++;
+  if (target.isBoss) state.runBossKills = (state.runBossKills || 0) + 1;          // 은자 계산용
+  else if (target.isMiniBoss) state.runMiniKills = (state.runMiniKills || 0) + 1;
   document.getElementById('killText').innerText = state.kills;
 
   // pixelfx: 적 사망 시 픽셀 소멸 파편 & 보스 대폭발 연출!
@@ -923,6 +925,7 @@ function onSectorVictory() {
   state.isGameOver = true;
   state.isPaused = true;
   markCurrentSectorCleared();
+  awardSilver(true, 'vicSilver'); // 구역 돌파 은자 (js/14_progress.js)
 
   // 마지막(5)구역까지 모두 깨면 승리 창 대신 엔딩 크레딧이 바로 나옴 (끝에 '다시 시작' / '처음으로')
   if (currentSelectedSector >= 5) {
