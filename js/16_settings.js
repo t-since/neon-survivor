@@ -62,6 +62,7 @@ document.addEventListener('click', (e) => {
   if (btn) {
     const k = btn.dataset.set, raw = btn.dataset.val;
     gameSettings[k] = raw === 'true' ? true : raw === 'false' ? false : (isNaN(+raw) ? raw : +raw);
+    if (k === 'effects') gameSettings.effectsChosen = true; // 직접 고르면 자동으로 바꾸지 않음 (17_mobile)
     saveSettings();
     renderSettings();
     if (k === 'shake' && gameSettings.shake > 0) state.screenShake = 8 * gameSettings.shake; // 미리 느껴 보기
