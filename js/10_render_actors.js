@@ -887,8 +887,72 @@ function renderEnemiesInner() {
   });
 }
 
+// ---------- 매화만개: 매화나무 (한 번 그려 둔 그림을 키우며 씀) ----------
+let plumTreeSprite = null;
+function buildPlumTreeSprite() {
+  const W = 520, H = 500, c = document.createElement('canvas'); // 꽃이 위·옆으로 잘리지 않게 넉넉히
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const tips = [];
+  g.lineCap = 'round';
+  const branch = (x, y, ang, len, w, depth) => {
+    const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
+    // 굽은 가지 (먹선 느낌)
+    g.strokeStyle = depth > 3 ? '#2b1a14' : '#3b2418';
+    g.lineWidth = w;
+    g.beginPath(); g.moveTo(x, y);
+    g.quadraticCurveTo((x + x2) / 2 + (rnd() - 0.5) * len * 0.4, (y + y2) / 2 + (rnd() - 0.5) * len * 0.3, x2, y2);
+    g.stroke();
+    if (depth <= 0 || len < 14) { tips.push([x2, y2]); return; }
+    const n = depth > 3 ? 2 : 2 + (rnd() < 0.5 ? 1 : 0);
+    for (let i = 0; i < n; i++) {
+      const na = ang + (i - (n - 1) / 2) * (0.55 + rnd() * 0.3) + (rnd() - 0.5) * 0.3;
+      branch(x2, y2, na, len * (0.68 + rnd() * 0.12), w * 0.66, depth - 1);
+    }
+    if (depth < 4) tips.push([(x + x2) / 2, (y + y2) / 2]);
+  };
+  branch(W / 2, H - 6, -Math.PI / 2 + 0.05, 92, 24, 6);
+  // 꽃송이: 가지 끝마다 연분홍·흰 매화
+  const flower = (x, y, r, col) => {
+    g.fillStyle = col;
+    for (let k = 0; k < 5; k++) { const a = k * 1.2566; g.beginPath(); g.ellipse(x + Math.cos(a) * r * 0.5, y + Math.sin(a) * r * 0.5, r * 0.55, r * 0.38, a, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#fde68a'; g.beginPath(); g.arc(x, y, r * 0.2, 0, Math.PI * 2); g.fill();
+  };
+  g.globalAlpha = 0.35; // 꽃구름 바탕
+  tips.forEach(([x, y]) => { g.fillStyle = '#fbcfe8'; g.beginPath(); g.arc(x, y, 22 + rnd() * 10, 0, Math.PI * 2); g.fill(); });
+  g.globalAlpha = 1;
+  tips.forEach(([x, y]) => {
+    for (let i = 0; i < 4; i++) flower(x + (rnd() - 0.5) * 34, y + (rnd() - 0.5) * 26, 6 + rnd() * 5, rnd() < 0.7 ? '#f9a8d4' : '#fff1f2');
+  });
+  plumTreeSprite = c;
+}
+setTimeout(() => { try { buildPlumTreeSprite(); } catch (e) {} }, 0); // 첫 매화나무 때 끊기지 않게 미리 그려 둠
+function drawPlumTrees() {
+  if (!plumTrees.length) return;
+  if (!plumTreeSprite) buildPlumTreeSprite();
+  const L = PLUM_TREE.life, G = PLUM_TREE.grow;
+  plumTrees.forEach(tr => {
+    const grow = Math.min(1, tr.t / G), ease = 1 - Math.pow(1 - grow, 3);
+    const fade = Math.min(1, (L - tr.t) / 0.4);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, fade);
+    // 바닥: 꽃잎이 떨어지는 범위
+    ctx.fillStyle = 'rgba(249, 168, 212, 0.16)';
+    ctx.beginPath(); ctx.ellipse(tr.x, tr.y, PLUM_TREE.radius * ease, PLUM_TREE.radius * 0.6 * ease, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(244, 114, 182, 0.45)'; ctx.lineWidth = 2;
+    ctx.stroke();
+    // 나무: 아래(뿌리)를 기준으로 솟아남
+    const w = plumTreeSprite.width * 0.85 * ease, h = plumTreeSprite.height * 0.85 * ease;
+    ctx.drawImage(plumTreeSprite, tr.x - w / 2, tr.y - h, w, h);
+    ctx.restore();
+  });
+}
+
 function renderProjectiles() {
-  // 1. Eastern Long Flying Swords (청운 장검 & 만검귀종)
+  drawPlumTrees(); // 매화만개 매화나무 (검·투사체 아래)
+  // 1. Eastern Long Flying Swords (이십사수매화검법 매화검)
   flyingSwords.forEach(sw => {
     ctx.save();
     ctx.translate(sw.x, sw.y);
@@ -899,7 +963,7 @@ function renderProjectiles() {
     ctx.scale(sw.isEvo ? 0.85 : 0.72, sw.isEvo ? 0.85 : 0.72);
 
     const look = (player.equipped && player.equipped.weapon) ? player.equipped.weapon.lookEffect : null;
-    let mainColor = sw.isEvo ? '#fbbf24' : '#38bdf8';
+    let mainColor = sw.isEvo ? '#fb7185' : '#f9a8d4'; // 이십사수매화검법: 매화빛 검
     if (look === 'frost_blade') mainColor = '#38bdf8';
     else if (look === 'blood_blade') mainColor = '#ef4444';
     else if (look === 'thunder_blade') mainColor = '#c084fc';
@@ -934,16 +998,16 @@ function renderProjectiles() {
       bladeGrad.addColorStop(0.35, '#ffffff');
       bladeGrad.addColorStop(0.7, '#d8b4fe');
       bladeGrad.addColorStop(1, '#7e22ce');
-    } else if (sw.isEvo) {
-      bladeGrad.addColorStop(0, '#fef3c7');
+    } else if (sw.isEvo) { // 매화만개: 짙은 매화빛
+      bladeGrad.addColorStop(0, '#ffe4e6');
       bladeGrad.addColorStop(0.35, '#ffffff');
-      bladeGrad.addColorStop(0.7, '#fde047');
-      bladeGrad.addColorStop(1, '#d97706');
-    } else {
-      bladeGrad.addColorStop(0, '#c7d2fe');
+      bladeGrad.addColorStop(0.7, '#fda4af');
+      bladeGrad.addColorStop(1, '#e11d48');
+    } else { // 이십사수매화검법: 연분홍 매화검
+      bladeGrad.addColorStop(0, '#fce7f3');
       bladeGrad.addColorStop(0.35, '#ffffff');
-      bladeGrad.addColorStop(0.7, '#bae6fd');
-      bladeGrad.addColorStop(1, '#38bdf8');
+      bladeGrad.addColorStop(0.7, '#f9a8d4');
+      bladeGrad.addColorStop(1, '#db2777');
     }
     ctx.fillStyle = bladeGrad;
 
@@ -957,7 +1021,7 @@ function renderProjectiles() {
     ctx.fill();
 
     // Central Fuller & Qi Core
-    ctx.strokeStyle = sw.isEvo ? '#b45309' : '#0284c7';
+    ctx.strokeStyle = sw.isEvo ? '#9f1239' : '#be185d';
     ctx.lineWidth = 1.1;
     ctx.beginPath();
     ctx.moveTo(42, 0);
@@ -999,7 +1063,7 @@ function renderProjectiles() {
     ctx.fill();
 
     // E. Red/Gold Silk Tassel
-    ctx.strokeStyle = sw.isEvo ? '#f59e0b' : '#ef4444';
+    ctx.strokeStyle = sw.isEvo ? '#fb7185' : '#f472b6'; // 매화빛 술
     ctx.lineWidth = 1.6;
     const wave = Math.sin(state.gameTime * 14 + sw.x * 0.05) * 3.5;
     const wave2 = Math.cos(state.gameTime * 12 + sw.y * 0.05) * 2.5;
@@ -1022,45 +1086,7 @@ function renderProjectiles() {
     ctx.save();
     ctx.translate(p.x, p.y);
 
-    if (p.type === 'plum_petal') {
-      // 매화 꽃잎 검기 (꽃잎 5장 + 꼬리) — 많이 그려지므로 그림자 효과 없이
-      if (p.delay > 0) { ctx.restore(); return; }
-      const fade = Math.min(1, p.life / 0.22);
-      ctx.globalAlpha = fade;
-      const ang = Math.atan2(p.vy, p.vx);
-      ctx.strokeStyle = p.isEvo ? 'rgba(253, 164, 175, 0.6)' : 'rgba(249, 168, 212, 0.5)';
-      ctx.lineWidth = 5;
-      ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-Math.cos(ang) * 46, -Math.sin(ang) * 46); ctx.stroke();
-      ctx.rotate(p.rot);
-      const r = p.isEvo ? 17 : 14;
-      ctx.fillStyle = p.isEvo ? '#fda4af' : '#f9a8d4';
-      for (let k = 0; k < 5; k++) {
-        const a = k * 1.2566;
-        ctx.beginPath();
-        ctx.ellipse(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.58, r * 0.4, a, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.fillStyle = '#fde68a';
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.24, 0, Math.PI * 2); ctx.fill();
-      ctx.globalAlpha = 1;
-    } else if (p.type === 'plum_bloom') {
-      // 매화만개: 커다란 매화가 피어남 (0.5초)
-      const k = 1 - Math.max(0, p.life) / p.maxLife; // 0 → 1
-      const r = 22 + k * 38;
-      ctx.globalAlpha = (0.5 - 0.3 * k) * Math.min(1, k * 6 + 0.2); // 겹쳐도 화면을 가리지 않게 옅게, 피어나며 점점 사라짐
-      ctx.rotate(p.rot + k * 0.8);
-      ctx.fillStyle = '#f9a8d4';
-      for (let i = 0; i < 5; i++) {
-        const a = i * 1.2566;
-        ctx.beginPath();
-        ctx.ellipse(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.55, r * 0.38, a, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.fillStyle = '#fff1f2';
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2); ctx.fill();
-      ctx.globalAlpha = 1;
-    } else if (p.type === 'golden_sword_ki') {
+    if (p.type === 'golden_sword_ki') {
       const angle = Math.atan2(p.vy, p.vx);
       ctx.rotate(angle);
       ctx.fillStyle = '#fffbeb';
@@ -1501,6 +1527,25 @@ function renderParticles() {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+      return;
+    }
+    if (p.petal) {
+      // 매화 꽃잎 (이십사수매화검법): 꽃잎 5장, 사라질 때 옅어짐
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, p.life / 0.35) * 0.95;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      const r = p.size;
+      for (let k = 0; k < 5; k++) {
+        const a = k * 1.2566;
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5, r * 0.55, r * 0.36, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
       return;
     }

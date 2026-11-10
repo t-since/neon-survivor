@@ -341,6 +341,7 @@ function confirmStartGame() {
   fallingNeedles.length = 0;
   poisonZones.length = 0;
   if (typeof bossHazards !== 'undefined') bossHazards.length = 0;
+  plumTrees.length = 0;
   groundDecals.length = 0;
   corpses.length = 0;
   herbs.length = 0;
@@ -434,6 +435,7 @@ function continueToNextSector() {
   fallingNeedles.length = 0;
   poisonZones.length = 0;
   if (typeof bossHazards !== 'undefined') bossHazards.length = 0;
+  plumTrees.length = 0;
   groundDecals.length = 0;
   corpses.length = 0;
   herbs.length = 0;

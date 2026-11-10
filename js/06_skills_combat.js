@@ -50,11 +50,15 @@ function updateSkills(dt) {
         sw.x += sw.vx * dt;
         sw.y += sw.vy * dt;
         sw.life -= dt;
+        // 날아가는 매화검 뒤로 꽃잎이 흩어짐
+        if (Math.random() < 0.35 * (state.frameK || 1)) spawnPetals(sw.x, sw.y, 1, 0.3);
 
         for (let e of enemies) {
+          if (e.hp <= 0) continue;
           if (Math.hypot(e.x - sw.x, e.y - sw.y) < e.radius + 16) {
             dealDamage(e, (isEvo ? 85 : 42) * player.atkMultiplier, true);
-            createHitSparks(sw.x, sw.y, isEvo ? '#fbbf24' : '#38bdf8');
+            createHitSparks(sw.x, sw.y, isEvo ? '#fb7185' : '#f9a8d4');
+            spawnPetals(e.x, e.y - 30, isEvo ? 8 : 4 + player.skills.flying_swords); // 벤 자리에 매화가 흩날림
             sw.isLaunching = false;
             sw.orbitDist = isEvo ? 75 : 60;
             break;
@@ -66,14 +70,7 @@ function updateSkills(dt) {
       }
     });
 
-    // 만검귀종 궁극 오의: 2.5초마다 12방향 전방위 황금 검기 방출
-    if (isEvo) {
-      player.evoTimer.flying_swords = (player.evoTimer.flying_swords || 0) + dt;
-      if (player.evoTimer.flying_swords >= 2.5) {
-        player.evoTimer.flying_swords = 0;
-        castManGeomGwiJong();
-      }
-    }
+    // 초월 '매화만개'의 매화나무는 updatePlumTrees() 에서
   }
 
   // 2. Dagger Rain (만천화우)
@@ -106,15 +103,7 @@ function updateSkills(dt) {
     }
   }
 
-  // 4.5 이십사수매화검법 / 매화만개(초월)
-  if (player.skills.plum_blossom > 0) {
-    player.timers.plum_blossom = (player.timers.plum_blossom || 0) + dt;
-    const interval = Math.max(1.4, 3.2 - player.skills.plum_blossom * 0.3);
-    if (player.timers.plum_blossom >= interval) {
-      player.timers.plum_blossom = 0;
-      castPlumBlossom();
-    }
-  }
+  updatePlumTrees(dt);
 
   // 5. Vajra Shield pulse (금강불괴 / 무적신공)
   if (player.skills.vajra_shield > 0) {
@@ -158,67 +147,64 @@ function updateSkills(dt) {
   }
 }
 
-function castManGeomGwiJong() {
-  triggerSkillMotion('sword', 0.4);
-  sound.playSwordSlash();
-  createShockwave(player.x, player.y, 80, '#fbbf24');
-  for (let i = 0; i < 12; i++) {
-    const ang = (i / 12) * Math.PI * 2 + state.gameTime * 2;
-    projectiles.push({
-      type: 'golden_sword_ki',
-      x: player.x,
-      y: player.y - 20,
-      vx: Math.cos(ang) * 640,
-      vy: Math.sin(ang) * 640,
-      life: 1.5,
-      damage: 140 * player.atkMultiplier,
-      penetrates: true,
-      hitList: new Set(),
-      color: '#fbbf24'
+
+// ---------- 이십사수매화검법 (어검술 자리) ----------
+// 매화 꽃잎 입자: 벤 자리·날아가는 검 뒤에 흩날림 (particles 에 petal 표시, 그리기는 renderParticles)
+function spawnPetals(x, y, n, spread = 1, color = null) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = (40 + Math.random() * 110) * spread;
+    particles.push({
+      petal: true, x: x + (Math.random() - 0.5) * 14, y: y + (Math.random() - 0.5) * 14,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 - 20,
+      rot: Math.random() * Math.PI * 2, spin: (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 6),
+      size: 5 + Math.random() * 4, color: color || (Math.random() < 0.75 ? '#f9a8d4' : '#fff1f2'),
+      life: 0.7 + Math.random() * 0.5, maxLife: 1.2
     });
   }
 }
 
-// 이십사수매화검법: 가장 가까운 적 쪽으로 매화 꽃잎 검기를 부채꼴로 (Lv1 8수 → Lv5 24수)
-// 초월 '매화만개': 24수가 사방으로, 베인 자리에 매화가 피었다가 터짐 (plum_bloom)
-const PLUM_BLOOM_MAX = 36; // 동시에 피어 있는 매화 최대 수 (렉 방지)
-function castPlumBlossom() {
-  const lvl = player.skills.plum_blossom || 1;
-  const isEvo = !!player.evolutions.evo_plum_blossom;
-  const count = isEvo ? 24 : Math.min(24, 4 + lvl * 4);
-  const target = findClosestEnemy(player.x, player.y, 520);
-  const base = target ? Math.atan2(target.y - player.y, target.x - player.x) : (player.facing >= 0 ? 0 : Math.PI);
-  triggerSkillMotion('sword', 0.36);
-  sound.playSwordSlash();
-  const spread = isEvo ? Math.PI * 2 : 0.9 + lvl * 0.1; // 부채꼴 폭 (라디안)
-  const dmg = (isEvo ? 48 : 22 + lvl * 5) * player.atkMultiplier;
-  for (let i = 0; i < count; i++) {
-    const t = isEvo ? i / count : (count === 1 ? 0.5 : i / (count - 1));
-    const ang = isEvo ? base + t * Math.PI * 2 : base - spread / 2 + spread * t + (Math.random() - 0.5) * 0.08;
-    const sp = 380 + Math.random() * 160;
-    projectiles.push({
-      type: 'plum_petal',
-      x: player.x + Math.cos(ang) * 22,
-      y: player.y - 34 + Math.sin(ang) * 22,
-      vx: Math.cos(ang) * sp,
-      vy: Math.sin(ang) * sp,
-      curve: (Math.random() - 0.5) * 2.4,      // 꽃잎이 휘어 나는 정도
-      delay: (i % 6) * 0.03,                    // 검초가 차례로 피어나는 느낌
-      life: isEvo ? 0.85 : 0.62,
-      damage: dmg,
-      pierce: isEvo ? 3 : 2,
-      hitList: new Set(),
-      rot: Math.random() * Math.PI * 2,
-      spin: (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 6),
-      isEvo
-    });
+// 매화만개(초월): 3초마다 적이 가장 많이 몰린 곳에 매화나무가 솟아 꽃잎으로 거듭 벰
+const PLUM_TREE = { every: 3.0, life: 2.6, grow: 0.45, tick: 0.3, radius: 190, dmg: 70, max: 3 };
+function spawnPlumTree() {
+  // 서진 주변 520 안의 적 중, 160 안에 이웃이 가장 많은 적 자리 (적이 많으면 40마리만 견줌)
+  const near = enemies.filter(e => e.hp > 0 && Math.hypot(e.x - player.x, e.y - player.y) < 520);
+  if (!near.length) return;
+  const sample = near.length > 40 ? near.sort(() => Math.random() - 0.5).slice(0, 40) : near;
+  let best = sample[0], bestN = -1;
+  for (const a of sample) {
+    let n = 0;
+    for (const b of near) if (Math.abs(a.x - b.x) < 160 && Math.abs(a.y - b.y) < 160) n++;
+    if (n > bestN) { bestN = n; best = a; }
   }
+  if (plumTrees.length >= PLUM_TREE.max) plumTrees.shift();
+  plumTrees.push({ x: best.x, y: best.y + 30, t: 0, nextTick: PLUM_TREE.grow, seed: Math.random() * 1000 });
+  triggerSkillMotion('sword', 0.4);
+  sound.playSwordSlash();
+  createShockwave(best.x, best.y + 30, 70, 'rgba(249, 168, 212, 0.7)');
 }
-function spawnPlumBloom(x, y) {
-  let n = 0;
-  for (const p of projectiles) if (p.type === 'plum_bloom') n++;
-  if (n >= PLUM_BLOOM_MAX) return;
-  projectiles.push({ type: 'plum_bloom', x, y: y - 20, vx: 0, vy: 0, life: 0.5, maxLife: 0.5, damage: 60 * player.atkMultiplier, radius: 72, rot: Math.random() * Math.PI });
+function updatePlumTrees(dt) {
+  if (player.evolutions.evo_flying_swords) {
+    player.evoTimer.flying_swords = (player.evoTimer.flying_swords || 0) + dt;
+    if (player.evoTimer.flying_swords >= PLUM_TREE.every) { player.evoTimer.flying_swords = 0; spawnPlumTree(); }
+  }
+  for (let i = plumTrees.length - 1; i >= 0; i--) {
+    const tr = plumTrees[i];
+    tr.t += dt;
+    // 꽃이 핀 뒤 0.3초마다: 나무 아래 적에게 피해 + 꽃잎이 흩날려 떨어짐
+    if (tr.t >= tr.nextTick && tr.t < PLUM_TREE.life - 0.3) {
+      tr.nextTick += PLUM_TREE.tick;
+      for (const e of enemies) {
+        if (e.hp <= 0) continue;
+        const dx = e.x - tr.x, dy = (e.y - tr.y) / 0.6;
+        if (dx * dx + dy * dy <= PLUM_TREE.radius * PLUM_TREE.radius) dealDamage(e, PLUM_TREE.dmg * player.atkMultiplier, true);
+      }
+      for (let k = 0; k < 7; k++) {
+        const a = Math.random() * Math.PI * 2, r = Math.random() * PLUM_TREE.radius * 0.9;
+        spawnPetals(tr.x + Math.cos(a) * r, tr.y - 150 + Math.sin(a) * r * 0.35, 1, 0.5);
+      }
+    }
+    if (tr.t >= PLUM_TREE.life) plumTrees.splice(i, 1);
+  }
 }
 
 function triggerSkillMotion(poseType, duration = 0.3) {
@@ -678,7 +664,7 @@ function showNextLevelUp() {
     if (titleEl) titleEl.innerText = "경지 돌파 (境界突破)";
     if (subEl) subEl.innerText = "새로운 무공을 전수받거나 기존 무공을 연마하십시오.";
     available.sort(() => Math.random() - 0.5);
-    const RANGED = ['flying_swords', 'dagger_rain', 'palm_blast', 'thunder_bomb', 'plum_blossom'];
+    const RANGED = ['flying_swords', 'dagger_rain', 'palm_blast', 'thunder_bomb'];
     const rangedOwned = RANGED.filter(k => (player.skills[k] || 0) > 0).length;
     if (rangedOwned < 3) {
       // 원거리 무공 3개를 갖출 때까지: 카드 2장은 원거리 (아직 없는 무공 먼저)
@@ -832,8 +818,7 @@ function statPreview(c) {
   if (id === 'qinggong_dash') return b(Math.round(player.baseSpeed * (1 + now * 0.15)), Math.round(player.baseSpeed * (1 + nx * 0.15)), ' 이동속도');
   if (id === 'vajra_shield') return b(player.maxHp, player.maxHp + 35, ' 최대 혈기') + b(now ? 135 + now * 18 : 0, 135 + nx * 18, ' 충격파 범위');
   if (id === 'qi_magnet') return b(player.magnetRadius, 190 + nx * 50, ' 흡수 범위');
-  if (id === 'flying_swords') return b(1 + now, 1 + nx, '비검 수');
-  if (id === 'plum_blossom') return b(now ? Math.min(24, 4 + now * 4) + '수' : '없음', Math.min(24, 4 + nx * 4) + '수', '검초');
+  if (id === 'flying_swords') return b(1 + now, 1 + nx, '매화검 수');
   return '';
 }
 function applySkillUpgrade(skillId) {

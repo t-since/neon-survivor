@@ -232,35 +232,6 @@ function updateGame(dt) {
           break;
         }
       }
-    } else if (p.type === 'plum_petal') {
-      // 매화 검기: 잠깐 기다렸다가(검초가 차례로 피어남) 휘어 날며 감속, 적 2~3명까지 관통
-      if (p.delay > 0) {
-        p.delay -= dt; p.x -= p.vx * dt; p.y -= p.vy * dt; p.life += dt; // 기다리는 동안은 제자리
-      } else {
-        const c = p.curve * dt, cs = Math.cos(c), sn = Math.sin(c);
-        const nvx = p.vx * cs - p.vy * sn; p.vy = p.vx * sn + p.vy * cs; p.vx = nvx;
-        p.vx *= 1 - 1.1 * dt; p.vy *= 1 - 1.1 * dt;
-        p.rot += p.spin * dt;
-        for (let e of enemies) {
-          if (e.hp <= 0 || p.hitList.has(e)) continue;
-          if (Math.hypot(e.x - p.x, e.y - p.y) < (e.radius || 18) + 14) {
-            p.hitList.add(e);
-            dealDamage(e, p.damage, true);
-            createHitSparks(e.x, e.y, '#f9a8d4');
-            if (p.isEvo) spawnPlumBloom(e.x, e.y);
-            if (p.hitList.size >= p.pierce) { p.life = 0; break; }
-          }
-        }
-      }
-    } else if (p.type === 'plum_bloom') {
-      // 매화만개: 피었다가 터지며 주변 적을 벰
-      if (p.life <= 0) {
-        for (let e of enemies) {
-          if (e.hp <= 0) continue;
-          if (Math.hypot(e.x - p.x, e.y - (p.y + 20)) <= p.radius) dealDamage(e, p.damage, false);
-        }
-        createShockwave(p.x, p.y + 20, p.radius, 'rgba(249, 168, 212, 0.65)');
-      }
     } else if (p.type === 'dagger') {
       for (let e of enemies) {
         if (e.hp <= 0) continue;
@@ -1281,11 +1252,16 @@ function updateGame(dt) {
   }
 
   // 7. Update Particles (with PixelFX Physics) - 60FPS Hard Cap
-  if (particles.length > 130) {
-    particles.splice(0, particles.length - 130);
+  if (particles.length > 160) { // 매화 꽃잎 몫까지 조금 늘림 (예전 130)
+    particles.splice(0, particles.length - 160);
   }
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
+    if (p.petal) { // 매화 꽃잎: 점점 느려지며 살랑살랑 내려앉음
+      p.vx *= 1 - 2.2 * dt; p.vy = p.vy * (1 - 2.2 * dt) + 38 * dt;
+      p.x += Math.sin(p.life * 6 + p.rot) * 12 * dt;
+      p.rot += p.spin * dt;
+    }
     if (p.gravity) p.vy += p.gravity * dt;
     p.x += (p.vx || 0) * dt;
     p.y += (p.vy || 0) * dt;

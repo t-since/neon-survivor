@@ -169,7 +169,6 @@ const player = {
     dagger_rain: 0,
     palm_blast: 0,
     thunder_bomb: 0,
-    plum_blossom: 0,
     qinggong_dash: 0,
     vajra_shield: 0,
     qi_magnet: 0
@@ -182,7 +181,6 @@ const player = {
     dagger_rain: 0,
     palm_blast: 0,
     thunder_bomb: 0,
-    plum_blossom: 0,
     vajra_shield: 0
   },
   evoTimer: {
@@ -212,6 +210,7 @@ let enemies = [];
 let particles = [];
 let damageTexts = [];
 let expGems = [];
+let plumTrees = []; // 매화만개(이십사수매화검법 초월): 솟아난 매화나무
 let herbs = [];
 let chests = [];
 let environmentPetals = [];

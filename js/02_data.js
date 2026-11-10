@@ -240,11 +240,11 @@ function getTier(lvl) {
 const SKILL_DEFS = {
   flying_swords: {
     id: 'flying_swords',
-    name: '청운 어검술 (御劍術)',
-    icon: '🗡️',
-    desc: '예리한 비검(도검)이 주위를 선회하다가 적을 포착하면 번개처럼 꿰뚫고 관통합니다.',
+    name: '화산 이십사수매화검법 (二十四手梅花劍法)',
+    icon: '🌸',
+    desc: '매화검이 주위를 맴돌다 적을 향해 쏘아져 베고, 벤 자리마다 매화 꽃잎이 흩날립니다. 연마할수록 검이 늘고 빨라집니다.',
     maxLevel: 5,
-    getUpgradeDesc: (lvl) => lvl === 1 ? '기본 어검 1자루 전개' : `어검 수 +1, 검기 관통력 및 속도 증가 (Lv.${lvl})`
+    getUpgradeDesc: (lvl) => lvl === 1 ? '매화검 1자루 전개' : `매화검 +1자루, 검의 속도·꽃잎 증가 (Lv.${lvl})`
   },
   dagger_rain: {
     id: 'dagger_rain',
@@ -269,14 +269,6 @@ const SKILL_DEFS = {
     desc: '무림 폭탄인 벽력탄을 무작위 적 위치에 투척하여 광범위 화염 폭발을 일으킵니다.',
     maxLevel: 5,
     getUpgradeDesc: (lvl) => lvl === 1 ? '주기적으로 벽력탄 1개 투척' : `폭발 범위 25% 증가, 폭탄 수 +1 (Lv.${lvl})`
-  },
-  plum_blossom: {
-    id: 'plum_blossom',
-    name: '화산 이십사수매화검법 (二十四手梅花劍法)',
-    icon: '🌸',
-    desc: '검끝에서 매화 꽃잎 같은 검기가 부채꼴로 흩날리며 앞의 적들을 베어 냅니다. 연마할수록 검초가 늘어 끝내 스물네 수에 이릅니다.',
-    maxLevel: 5,
-    getUpgradeDesc: (lvl) => lvl === 1 ? '매화 검기 8수를 부채꼴로 흩뿌림' : `검초 +4수 (총 ${Math.min(24, 4 + lvl * 4)}수), 검기 피해·발동 속도 증가 (Lv.${lvl})`
   },
   qinggong_dash: {
     id: 'qinggong_dash',
@@ -318,11 +310,11 @@ const EVO_SKILL_DEFS = {
   flying_swords: {
     id: 'evo_flying_swords',
     baseSkillId: 'flying_swords',
-    name: '만검귀종 (萬劍歸宗)',
-    badge: '천하제일검',
-    icon: '✨🗡️',
-    color: '#fbbf24',
-    desc: '8자루의 황금 어검이 상시 선회하며, 2.5초마다 12방향 전방위 황금 검기 파동을 방출하여 전 화면의 적을 관통 소탕합니다!'
+    name: '매화만개 (梅花滿開)',
+    badge: '매화 검선',
+    icon: '🌸🌳',
+    color: '#f9a8d4',
+    desc: '8자루의 매화검이 선회하고, 3초마다 적이 가장 많이 몰린 곳에 매화나무가 솟아 꽃을 활짝 피웁니다. 흩날리는 꽃잎이 나무 아래의 적을 거듭 벱니다!'
   },
   palm_blast: {
     id: 'evo_palm_blast',
@@ -341,15 +333,6 @@ const EVO_SKILL_DEFS = {
     icon: '🌸☠️',
     color: '#c084fc',
     desc: '자수정빛 빙백은침 소나기와 맹독 장판이 폭포수처럼 쏟아지며, 중독된 적이 사망할 때마다 연쇄 독 폭발(Poison Nova)을 일으킵니다!'
-  },
-  plum_blossom: {
-    id: 'evo_plum_blossom',
-    baseSkillId: 'plum_blossom',
-    name: '매화만개 (梅花滿開)',
-    badge: '매화 검선',
-    icon: '🌸⚔️',
-    color: '#f9a8d4',
-    desc: '스물네 수의 매화 검기가 사방으로 피어나고, 검기에 베인 자리마다 매화가 활짝 피었다가 터지며 주변 적까지 함께 벱니다!'
   },
   vajra_shield: {
     id: 'evo_vajra_shield',
