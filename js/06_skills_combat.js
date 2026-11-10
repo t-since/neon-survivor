@@ -106,6 +106,16 @@ function updateSkills(dt) {
     }
   }
 
+  // 4.5 이십사수매화검법 / 매화만개(초월)
+  if (player.skills.plum_blossom > 0) {
+    player.timers.plum_blossom = (player.timers.plum_blossom || 0) + dt;
+    const interval = Math.max(1.4, 3.2 - player.skills.plum_blossom * 0.3);
+    if (player.timers.plum_blossom >= interval) {
+      player.timers.plum_blossom = 0;
+      castPlumBlossom();
+    }
+  }
+
   // 5. Vajra Shield pulse (금강불괴 / 무적신공)
   if (player.skills.vajra_shield > 0) {
     player.timers.vajra_shield += dt;
@@ -167,6 +177,48 @@ function castManGeomGwiJong() {
       color: '#fbbf24'
     });
   }
+}
+
+// 이십사수매화검법: 가장 가까운 적 쪽으로 매화 꽃잎 검기를 부채꼴로 (Lv1 8수 → Lv5 24수)
+// 초월 '매화만개': 24수가 사방으로, 베인 자리에 매화가 피었다가 터짐 (plum_bloom)
+const PLUM_BLOOM_MAX = 36; // 동시에 피어 있는 매화 최대 수 (렉 방지)
+function castPlumBlossom() {
+  const lvl = player.skills.plum_blossom || 1;
+  const isEvo = !!player.evolutions.evo_plum_blossom;
+  const count = isEvo ? 24 : Math.min(24, 4 + lvl * 4);
+  const target = findClosestEnemy(player.x, player.y, 520);
+  const base = target ? Math.atan2(target.y - player.y, target.x - player.x) : (player.facing >= 0 ? 0 : Math.PI);
+  triggerSkillMotion('sword', 0.36);
+  sound.playSwordSlash();
+  const spread = isEvo ? Math.PI * 2 : 0.9 + lvl * 0.1; // 부채꼴 폭 (라디안)
+  const dmg = (isEvo ? 48 : 22 + lvl * 5) * player.atkMultiplier;
+  for (let i = 0; i < count; i++) {
+    const t = isEvo ? i / count : (count === 1 ? 0.5 : i / (count - 1));
+    const ang = isEvo ? base + t * Math.PI * 2 : base - spread / 2 + spread * t + (Math.random() - 0.5) * 0.08;
+    const sp = 380 + Math.random() * 160;
+    projectiles.push({
+      type: 'plum_petal',
+      x: player.x + Math.cos(ang) * 22,
+      y: player.y - 34 + Math.sin(ang) * 22,
+      vx: Math.cos(ang) * sp,
+      vy: Math.sin(ang) * sp,
+      curve: (Math.random() - 0.5) * 2.4,      // 꽃잎이 휘어 나는 정도
+      delay: (i % 6) * 0.03,                    // 검초가 차례로 피어나는 느낌
+      life: isEvo ? 0.85 : 0.62,
+      damage: dmg,
+      pierce: isEvo ? 3 : 2,
+      hitList: new Set(),
+      rot: Math.random() * Math.PI * 2,
+      spin: (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 6),
+      isEvo
+    });
+  }
+}
+function spawnPlumBloom(x, y) {
+  let n = 0;
+  for (const p of projectiles) if (p.type === 'plum_bloom') n++;
+  if (n >= PLUM_BLOOM_MAX) return;
+  projectiles.push({ type: 'plum_bloom', x, y: y - 20, vx: 0, vy: 0, life: 0.5, maxLife: 0.5, damage: 60 * player.atkMultiplier, radius: 72, rot: Math.random() * Math.PI });
 }
 
 function triggerSkillMotion(poseType, duration = 0.3) {
@@ -626,7 +678,7 @@ function showNextLevelUp() {
     if (titleEl) titleEl.innerText = "경지 돌파 (境界突破)";
     if (subEl) subEl.innerText = "새로운 무공을 전수받거나 기존 무공을 연마하십시오.";
     available.sort(() => Math.random() - 0.5);
-    const RANGED = ['flying_swords', 'dagger_rain', 'palm_blast', 'thunder_bomb'];
+    const RANGED = ['flying_swords', 'dagger_rain', 'palm_blast', 'thunder_bomb', 'plum_blossom'];
     const rangedOwned = RANGED.filter(k => (player.skills[k] || 0) > 0).length;
     if (rangedOwned < 3) {
       // 원거리 무공 3개를 갖출 때까지: 카드 2장은 원거리 (아직 없는 무공 먼저)
@@ -781,6 +833,7 @@ function statPreview(c) {
   if (id === 'vajra_shield') return b(player.maxHp, player.maxHp + 35, ' 최대 혈기') + b(now ? 135 + now * 18 : 0, 135 + nx * 18, ' 충격파 범위');
   if (id === 'qi_magnet') return b(player.magnetRadius, 190 + nx * 50, ' 흡수 범위');
   if (id === 'flying_swords') return b(1 + now, 1 + nx, '비검 수');
+  if (id === 'plum_blossom') return b(now ? Math.min(24, 4 + now * 4) + '수' : '없음', Math.min(24, 4 + nx * 4) + '수', '검초');
   return '';
 }
 function applySkillUpgrade(skillId) {

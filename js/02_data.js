@@ -270,6 +270,14 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getUpgradeDesc: (lvl) => lvl === 1 ? '주기적으로 벽력탄 1개 투척' : `폭발 범위 25% 증가, 폭탄 수 +1 (Lv.${lvl})`
   },
+  plum_blossom: {
+    id: 'plum_blossom',
+    name: '화산 이십사수매화검법 (二十四手梅花劍法)',
+    icon: '🌸',
+    desc: '검끝에서 매화 꽃잎 같은 검기가 부채꼴로 흩날리며 앞의 적들을 베어 냅니다. 연마할수록 검초가 늘어 끝내 스물네 수에 이릅니다.',
+    maxLevel: 5,
+    getUpgradeDesc: (lvl) => lvl === 1 ? '매화 검기 8수를 부채꼴로 흩뿌림' : `검초 +4수 (총 ${Math.min(24, 4 + lvl * 4)}수), 검기 피해·발동 속도 증가 (Lv.${lvl})`
+  },
   qinggong_dash: {
     id: 'qinggong_dash',
     name: '답설무흔 (踏雪無痕)',
@@ -333,6 +341,15 @@ const EVO_SKILL_DEFS = {
     icon: '🌸☠️',
     color: '#c084fc',
     desc: '자수정빛 빙백은침 소나기와 맹독 장판이 폭포수처럼 쏟아지며, 중독된 적이 사망할 때마다 연쇄 독 폭발(Poison Nova)을 일으킵니다!'
+  },
+  plum_blossom: {
+    id: 'evo_plum_blossom',
+    baseSkillId: 'plum_blossom',
+    name: '매화만개 (梅花滿開)',
+    badge: '매화 검선',
+    icon: '🌸⚔️',
+    color: '#f9a8d4',
+    desc: '스물네 수의 매화 검기가 사방으로 피어나고, 검기에 베인 자리마다 매화가 활짝 피었다가 터지며 주변 적까지 함께 벱니다!'
   },
   vajra_shield: {
     id: 'evo_vajra_shield',

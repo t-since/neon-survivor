@@ -169,6 +169,7 @@ const player = {
     dagger_rain: 0,
     palm_blast: 0,
     thunder_bomb: 0,
+    plum_blossom: 0,
     qinggong_dash: 0,
     vajra_shield: 0,
     qi_magnet: 0
@@ -181,6 +182,7 @@ const player = {
     dagger_rain: 0,
     palm_blast: 0,
     thunder_bomb: 0,
+    plum_blossom: 0,
     vajra_shield: 0
   },
   evoTimer: {

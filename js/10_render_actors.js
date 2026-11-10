@@ -1022,7 +1022,45 @@ function renderProjectiles() {
     ctx.save();
     ctx.translate(p.x, p.y);
 
-    if (p.type === 'golden_sword_ki') {
+    if (p.type === 'plum_petal') {
+      // 매화 꽃잎 검기 (꽃잎 5장 + 꼬리) — 많이 그려지므로 그림자 효과 없이
+      if (p.delay > 0) { ctx.restore(); return; }
+      const fade = Math.min(1, p.life / 0.22);
+      ctx.globalAlpha = fade;
+      const ang = Math.atan2(p.vy, p.vx);
+      ctx.strokeStyle = p.isEvo ? 'rgba(253, 164, 175, 0.6)' : 'rgba(249, 168, 212, 0.5)';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-Math.cos(ang) * 46, -Math.sin(ang) * 46); ctx.stroke();
+      ctx.rotate(p.rot);
+      const r = p.isEvo ? 17 : 14;
+      ctx.fillStyle = p.isEvo ? '#fda4af' : '#f9a8d4';
+      for (let k = 0; k < 5; k++) {
+        const a = k * 1.2566;
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.58, r * 0.4, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.24, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if (p.type === 'plum_bloom') {
+      // 매화만개: 커다란 매화가 피어남 (0.5초)
+      const k = 1 - Math.max(0, p.life) / p.maxLife; // 0 → 1
+      const r = 22 + k * 38;
+      ctx.globalAlpha = (0.5 - 0.3 * k) * Math.min(1, k * 6 + 0.2); // 겹쳐도 화면을 가리지 않게 옅게, 피어나며 점점 사라짐
+      ctx.rotate(p.rot + k * 0.8);
+      ctx.fillStyle = '#f9a8d4';
+      for (let i = 0; i < 5; i++) {
+        const a = i * 1.2566;
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.55, r * 0.38, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#fff1f2';
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if (p.type === 'golden_sword_ki') {
       const angle = Math.atan2(p.vy, p.vx);
       ctx.rotate(angle);
       ctx.fillStyle = '#fffbeb';
