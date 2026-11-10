@@ -72,6 +72,7 @@ const SPRITE_URLS = {
 
   // 배경 소품 (제미나이로 서진과 같은 그림체로 생성, 2026-11)
   prop_bamboo: 'assets/props/bamboo.png',
+  prop_plum_tree: 'assets/props/plum_tree.png', // 매화만개(이십사수매화검법 초월) 매화나무
   prop_rock_big: 'assets/props/rock_big.png',
   prop_rock_small: 'assets/props/rock_small.png',
   prop_lantern: 'assets/props/lantern.png',

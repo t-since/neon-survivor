@@ -928,10 +928,13 @@ function buildPlumTreeSprite() {
   });
   plumTreeSprite = c;
 }
-setTimeout(() => { try { buildPlumTreeSprite(); } catch (e) {} }, 0); // 첫 매화나무 때 끊기지 않게 미리 그려 둠
 function drawPlumTrees() {
   if (!plumTrees.length) return;
-  if (!plumTreeSprite) buildPlumTreeSprite();
+  // 제미나이로 그린 매화나무 그림(소품과 같은 그림체). 못 불러왔으면 코드로 그린 나무
+  const art = SPRITES.prop_plum_tree && SPRITES.prop_plum_tree.width ? SPRITES.prop_plum_tree : null;
+  if (!art && !plumTreeSprite) buildPlumTreeSprite();
+  const img = art || plumTreeSprite;
+  const treeH = art ? 400 : img.height * 0.85; // 게임 속 나무 키
   const L = PLUM_TREE.life, G = PLUM_TREE.grow;
   plumTrees.forEach(tr => {
     const grow = Math.min(1, tr.t / G), ease = 1 - Math.pow(1 - grow, 3);
@@ -944,8 +947,8 @@ function drawPlumTrees() {
     ctx.strokeStyle = 'rgba(244, 114, 182, 0.45)'; ctx.lineWidth = 2;
     ctx.stroke();
     // 나무: 아래(뿌리)를 기준으로 솟아남
-    const w = plumTreeSprite.width * 0.85 * ease, h = plumTreeSprite.height * 0.85 * ease;
-    ctx.drawImage(plumTreeSprite, tr.x - w / 2, tr.y - h, w, h);
+    const h = treeH * ease, w = h * img.width / img.height;
+    ctx.drawImage(img, tr.x - w / 2, tr.y - h + 8, w, h); // 뿌리가 범위 원 가운데에 오게
     ctx.restore();
   });
 }

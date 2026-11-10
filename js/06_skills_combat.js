@@ -200,7 +200,7 @@ function updatePlumTrees(dt) {
       }
       for (let k = 0; k < 7; k++) {
         const a = Math.random() * Math.PI * 2, r = Math.random() * PLUM_TREE.radius * 0.9;
-        spawnPetals(tr.x + Math.cos(a) * r, tr.y - 150 + Math.sin(a) * r * 0.35, 1, 0.5);
+        spawnPetals(tr.x + Math.cos(a) * r * 0.8, tr.y - 250 + Math.sin(a) * r * 0.45, 1, 0.5); // 나무 꽃가지 높이에서
       }
     }
     if (tr.t >= PLUM_TREE.life) plumTrees.splice(i, 1);
