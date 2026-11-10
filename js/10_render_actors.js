@@ -199,7 +199,9 @@ const ENEMY_ART = {
   barbarian: { key: 'mob_barbarian', h: 150 },    // 쌍도객
   butcher: { key: 'mob_butcher', h: 175 },        // 도살마인 (덩치 큼)
   ghoul: { key: 'mob_ghoul', h: 125 },            // 부패시귀 (웅크림)
-  necromancer: { key: 'mob_necromancer', h: 150 } // 사령술사
+  necromancer: { key: 'mob_necromancer', h: 150 }, // 사령술사
+  sorceress: { key: 'mob_sorceress', h: 150 },     // 혈선녀
+  curse_mage: { key: 'mob_curse_mage', h: 150 }    // 저주술사
 };
 function enemyHasArt(e) {
   const art = ENEMY_ART[e.type];

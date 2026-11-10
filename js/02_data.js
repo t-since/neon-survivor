@@ -125,7 +125,7 @@ const SPRITE_URLS = {
 // 새 몬스터 그림 (제미나이 2x2 시트에서 자름, assets/mobs). 새로 만든 몬스터는 이 목록에 이름만 추가
 const MOB_ART_NAMES = ['mob_assassin', 'mob_archer', 'mob_dartman', 'mob_jiangshi',
   'mob_skeleton', 'mob_barbarian', 'mob_butcher', 'mob_ghoul', // 2026-11-10 추가
-  'mob_necromancer']; // 공격 그림은 안티그래비티로 (혈선녀·저주술사는 그림 완성 뒤)
+  'mob_necromancer', 'mob_sorceress', 'mob_curse_mage']; // 이 셋의 그림 일부는 안티그래비티로 만듦
 for (const n of MOB_ART_NAMES) {
   for (const kind of ['walk', 'attack']) {
     for (let i = 0; i < 4; i++) SPRITE_URLS[`${n}_${kind}_${i}`] = `assets/mobs/${n}_${kind}_${i}.png`;
