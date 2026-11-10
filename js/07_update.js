@@ -1431,8 +1431,9 @@ function updateGame(dt) {
   }
 
   // 7. Update Particles (with PixelFX Physics) - 60FPS Hard Cap
-  if (particles.length > 200) { // 매화 꽃잎·매화검우 몫까지 늘림 (예전 130 → 160 → 200)
-    particles.splice(0, particles.length - 200);
+  const pCap = (typeof particleCap === 'function') ? particleCap() : 200; // 설정 '효과 양: 적게'면 90
+  if (particles.length > pCap) { // 매화 꽃잎·매화검우 몫까지 늘림 (예전 130 → 160 → 200)
+    particles.splice(0, particles.length - pCap);
   }
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
@@ -1523,6 +1524,7 @@ function playerTakeDamage(amount) {
     state.hitStop = Math.max(state.hitStop || 0, 0.05);
   }
   player.hitFlashTimer = 0.35; // 피격 플래시 & 경직 모션
+  if (typeof vibrateHit === 'function') vibrateHit(actualDmg >= 25 ? 80 : 35); // 폰 진동 (설정에서 끔)
   state.screenShake = Math.min(16, (state.screenShake || 0) + 7); // 강렬한 화면 피격 진동
 
   sound.playHit();

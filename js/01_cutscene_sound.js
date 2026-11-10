@@ -327,7 +327,7 @@ class SoundManager {
     a.muted = !this.enabled;
     a.play().catch(() => {});
     this.music = a;
-    this.fade(a, 0, BGM_VOLUME, 1200);
+    this.fade(a, 0, BGM_VOLUME * ((typeof gameSettings !== 'undefined') ? gameSettings.music : 1), 1200); // 설정의 배경음 크기
   }
   fade(a, from, to, ms, done) {
     const t0 = performance.now();
@@ -337,6 +337,11 @@ class SoundManager {
       if (k < 1) requestAnimationFrame(step); else if (done) done();
     };
     step();
+  }
+  // 효과음은 모두 이 소리 크기 마디(out)를 거침 — 설정의 효과음 크기 (js/16_settings.js)
+  dest() {
+    if (!this.out) { this.out = this.ctx.createGain(); this.out.gain.value = (typeof gameSettings !== 'undefined') ? gameSettings.sfx : 1; this.out.connect(this.ctx.destination); }
+    return this.out;
   }
   applyEnabled() { if (this.music) this.music.muted = !this.enabled; }
 
@@ -371,7 +376,7 @@ class SoundManager {
     } else {
       src.connect(g);
     }
-    g.connect(this.ctx.destination);
+    g.connect(this.dest());
     src.start();
     return true;
   }
@@ -394,7 +399,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.dest());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.12);
   }
@@ -410,7 +415,7 @@ class SoundManager {
     gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.dest());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.28);
   }
@@ -426,7 +431,7 @@ class SoundManager {
     gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.dest());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.08);
   }
@@ -442,7 +447,7 @@ class SoundManager {
     osc.frequency.exponentialRampToValueAtTime(28, t + 0.35);
     g1.gain.setValueAtTime(0.5, t);
     g1.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-    osc.connect(g1); g1.connect(this.ctx.destination);
+    osc.connect(g1); g1.connect(this.dest());
     osc.start(t); osc.stop(t + 0.4);
     const len = Math.floor(this.ctx.sampleRate * 0.35);
     const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -452,7 +457,7 @@ class SoundManager {
     const g2 = this.ctx.createGain();
     src.buffer = buf;
     g2.gain.setValueAtTime(0.35, t);
-    src.connect(g2); g2.connect(this.ctx.destination);
+    src.connect(g2); g2.connect(this.dest());
     src.start(t);
   }
   playHit() {
@@ -467,7 +472,7 @@ class SoundManager {
     gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.dest());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.08);
   }
@@ -478,7 +483,7 @@ class SoundManager {
     if (this.sfx && this.sfx.wx_gong) { const keep = this.sfxLast.wx_gong; this.sfxLast.wx_gong = 0; this.playSample('wx_gong', 0.55, 1.1, 0, 0); this.sfxLast.wx_gong = keep; }
     const out = this.ctx.createGain(); out.gain.value = 0.12;
     const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3000;
-    out.connect(lp); lp.connect(this.ctx.destination);
+    out.connect(lp); lp.connect(this.dest());
     [392.0, 440.0, 523.25, 587.33, 659.25, 783.99].forEach((f, i) => {
       const t = now + 0.05 + i * 0.075;
       const o = this.ctx.createOscillator(), e = this.ctx.createGain();
@@ -502,7 +507,7 @@ class SoundManager {
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.frequency.value = 3200; // 날카로운 고음 깎기
-    out.connect(lp); lp.connect(this.ctx.destination);
+    out.connect(lp); lp.connect(this.dest());
     [0, 1, 2].forEach((k, i) => {
       const f = SCALE[Math.min(SCALE.length - 1, base + k)];
       const t = now + i * 0.045;
@@ -536,7 +541,7 @@ class SoundManager {
       gain.gain.setValueAtTime(0.24, this.ctx.currentTime + i * 0.08);
       gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.08 + 0.28);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.dest());
       osc.start(this.ctx.currentTime + i * 0.08);
       osc.stop(this.ctx.currentTime + i * 0.08 + 0.28);
     });
@@ -553,7 +558,7 @@ class SoundManager {
     gain.gain.setValueAtTime(0.24, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.dest());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.15);
   }

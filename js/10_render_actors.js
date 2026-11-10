@@ -1755,7 +1755,9 @@ function renderParticles() {
     ctx.restore();
   });
 
+  const showNums = (typeof gameSettings === 'undefined') || gameSettings.damageNumbers; // 설정: 피해 숫자 숨기기
   damageTexts.forEach(d => {
+    if (!showNums && /^\d+$/.test(String(d.text))) return; // 숫자만 숨기고 '백골 소환!' 같은 글은 그대로
     ctx.save();
     ctx.font = `bold ${d.size}px -apple-system, sans-serif`;
     ctx.textAlign = 'center';

@@ -1,8 +1,9 @@
 // 화면 그리기: 바닥, 날씨, 장애물, 신단, 포탈
 function renderWorldContents() {
   ctx.save();
-  const shakeX = (state.screenShake > 0) ? (Math.random() - 0.5) * state.screenShake : 0;
-  const shakeY = (state.screenShake > 0) ? (Math.random() - 0.5) * state.screenShake : 0;
+  const shakeK = (typeof gameSettings !== 'undefined') ? gameSettings.shake : 1; // 설정: 화면 흔들림 끄기/약하게/보통
+  const shakeX = (state.screenShake > 0) ? (Math.random() - 0.5) * state.screenShake * shakeK : 0;
+  const shakeY = (state.screenShake > 0) ? (Math.random() - 0.5) * state.screenShake * shakeK : 0;
   ctx.translate(gameWidth / 2 - state.camera.x + shakeX, gameHeight / 2 - state.camera.y + shakeY);
 
   // 1. Draw Ground Tiles

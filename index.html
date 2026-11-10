@@ -60,6 +60,7 @@
       <div style="margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
         <button class="start-icon-btn" id="difficultyBtn" onclick="sound.init(); cycleDifficulty();" style="order: 2;">난이도 : 보통  ▸</button>
         <button class="start-icon-btn train-open-btn" id="trainingBtn" onclick="sound.init(); openTraining();" style="order: 3;">🏯 문파 수련 · 💰 <span class="silver-count">0</span></button>
+        <button class="start-icon-btn" id="settingsBtnTitle" onclick="sound.init(); openSettings();" style="order: 4;">⚙ 설정</button>
         <button class="start-game-btn" id="quickEnterBtn" onclick="sound.init(); quickEnter();">
           <span class="btn-sword-icon">⚔️</span> <span id="quickEnterLabel">강호 입장</span> <span class="btn-kbd-pill kbd-only">ENTER / SPACE</span>
         </button>
@@ -458,6 +459,7 @@
         <div class="owned-skills" id="pauseSkillList"></div>
       </div>
 
+      <button class="btn-action" id="settingsBtnPause" onclick="openSettings();" style="background:#1e293b;margin-bottom:8px;">⚙ 설정</button>
       <button class="btn-action" id="resumeBtn">비무 속개 (재개)</button>
     </div>
   </div>
@@ -478,6 +480,15 @@
         <button class="btn-action" id="restartBtn" style="flex: 1.2;">강호 재출도 (다시 시작)</button>
         <button class="btn-action" id="btnDefeatReturnHQ" style="flex: 1; background: rgba(30, 41, 59, 0.9); border-color: #475569;">◀ 작전 본부 복귀</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 설정 (js/16_settings.js) -->
+  <div class="modal-overlay" id="settingsModal" style="display: none;">
+    <div class="modal-box settings-box">
+      <div class="modal-title">⚙ 설정</div>
+      <div class="settings-list" id="settingsList"></div>
+      <button class="btn-action" onclick="closeSettings();">닫기</button>
     </div>
   </div>
 
@@ -513,5 +524,6 @@
 <script src="js/13_cinematics.js"></script>
 <script src="js/14_progress.js"></script>
 <script src="js/15_tutorial.js"></script>
+<script src="js/16_settings.js"></script>
 </body>
 </html>
