@@ -272,21 +272,34 @@ const MB_SECTOR_TINT = [null, 'hue-rotate(160deg) saturate(1.2)', 'hue-rotate(90
 function miniBossLook(e) {
   if (e._look) return e._look;
   const n = e.name || '';
-  let art = null;
-  if (/살수|척후|정찰|사자|기사/.test(n)) art = 'mob_assassin';
-  else if (/독술|주술|조련|수호|괴마/.test(n)) art = 'mob_dartman';
-  else if (/강시/.test(n)) art = 'mob_jiangshi';
+  // 이름별 그림 (2026-11-10: 새 몬스터 그림 7종이 생겨 중간보스마다 어울리는 그림으로)
+  const BY_NAME = {
+    '흑호 정찰대장': 'mob_assassin', '흑풍 돌격도두': 'mob_barbarian', '마교 혈호사자': 'mob_assassin',
+    '하오문 척후조장': 'mob_assassin', '녹혈 독술장로': 'mob_necromancer', '중장 철갑마인': 'mob_butcher',
+    '독충 조련사': 'mob_curse_mage', '천년 강시왕': 'mob_jiangshi', '만독 괴마인': 'mob_ghoul',
+    '서리 살수장': 'mob_assassin', '설산 백발마인': 'mob_barbarian', '빙백 수호수': 'mob_butcher',
+    '정예 혈기사장': 'mob_skeleton', '마교 우호법': 'mob_barbarian', '삼천혈해 사자': 'mob_sorceress'
+  };
+  let art = BY_NAME[n] || null;
+  if (!art) { // 목록에 없는 이름은 글자로 짐작
+    if (/살수|척후|정찰|사자|기사/.test(n)) art = 'mob_assassin';
+    else if (/독술|주술|조련|수호|괴마/.test(n)) art = 'mob_dartman';
+    else if (/강시/.test(n)) art = 'mob_jiangshi';
+  }
+  if (art && !SPRITES[art + '_walk_0']) art = null; // 그림을 못 불러왔으면 예전 그림
   const sec = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
-  e._look = { art, filter: MB_SECTOR_TINT[sec], h: art ? 215 : 0 };
+  const H = { mob_butcher: 250, mob_ghoul: 190 };
+  e._look = { art, filter: MB_SECTOR_TINT[sec], h: art ? (H[art] || 215) : 0 };
   return e._look;
 }
-// 중간보스 기술 고르기: 모습에 맞게 (살수형 돌진·암기 / 술사형 암기·혈파 / 중장형 혈파·돌진)
+// 중간보스 기술 고르기: 모습에 맞게 (0 돌진 베기 / 1 암기 폭풍 / 2 혈파 강타)
+// 살수·쌍도형: 돌진 위주 / 술사형: 암기·혈파 / 중장·시체형: 혈파·돌진
 function pickMiniBossSkill(e) {
   const art = miniBossLook(e).art;
   const r = Math.random();
-  if (art === 'mob_assassin') return r < 0.6 ? 0 : 1;
-  if (art === 'mob_dartman') return r < 0.6 ? 1 : 2;
-  if (art === 'mob_jiangshi') return r < 0.6 ? 2 : 0;
+  if (art === 'mob_assassin' || art === 'mob_barbarian') return r < 0.6 ? 0 : 1;
+  if (art === 'mob_dartman' || art === 'mob_necromancer' || art === 'mob_curse_mage' || art === 'mob_sorceress') return r < 0.6 ? 1 : 2;
+  if (art === 'mob_jiangshi' || art === 'mob_butcher' || art === 'mob_ghoul' || art === 'mob_skeleton') return r < 0.6 ? 2 : 0;
   return r < 0.45 ? 2 : (r < 0.8 ? 0 : 1);
 }
 
