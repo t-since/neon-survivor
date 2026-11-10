@@ -15,7 +15,7 @@ function applyPlayerDebuff(kind, seconds) {
 }
 
 function pickMusicKey() {
-  if (typeof Cinema !== 'undefined' && Cinema.active && Cinema.music) return Cinema.music;
+  if (typeof Cinema !== 'undefined' && Cinema.active) return Cinema.music; // 영상이면 null → 배경음악 끔
   if (!state.isGameStarted) return 'title';
   if (state.boss) return 'boss';
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));

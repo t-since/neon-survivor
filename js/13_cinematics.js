@@ -159,6 +159,29 @@ function resolveCinemaMedia(id) {
   return cinemaMediaCache[id];
 }
 
+// 편집된 영상 한 편: assets/cinema/<이름>.mp4 + <이름>.json(자막 시간표) — tools/cinema_edit.mjs 가 만듦
+const cinemaFilmCache = {};
+function findCinemaFilm(key) {
+  if (cinemaFilmCache[key]) return cinemaFilmCache[key];
+  cinemaFilmCache[key] = fetch(CINEMA_DIR + key + '.json', { cache: 'no-cache' })
+    .then(r => r.ok ? r.json() : null)
+    .then(meta => {
+      if (!meta) return null;
+      return new Promise(res => {
+        const v = document.createElement('video');
+        let done = false;
+        const end = r => { if (!done) { done = true; res(r); } };
+        v.preload = 'metadata';
+        v.onloadedmetadata = () => end({ src: CINEMA_DIR + key + '.mp4', cues: meta.cues || [], duration: v.duration });
+        v.onerror = () => end(null);
+        setTimeout(() => end(null), 6000);
+        v.src = CINEMA_DIR + key + '.mp4';
+      });
+    })
+    .catch(() => null);
+  return cinemaFilmCache[key];
+}
+
 // ---------------------------------------------------------------------
 // 재생기
 // ---------------------------------------------------------------------
@@ -201,29 +224,76 @@ const Cinema = {
 
   play(key, onDone) {
     const def = CINEMATICS[key];
-    if (!def || !def.shots.length) { if (onDone) onDone(); return; }
     this.build();
     try { sound.init(); } catch (e) {}
     this.key = key;
-    this.music = def.music || null;
-    this.shots = def.shots;
+    this.music = null; // 영상인지 그림 컷인지 정해질 때까지 음악은 잠깐 줄임
+    this.shots = [];
+    this.film = null;
     this.onDone = onDone || null;
     this.idx = -1;
     this.active = true;
-    this.token++;
-    def.shots.forEach(s => resolveCinemaMedia(s.id)); // 미리 찾아 두기
+    const tok = ++this.token;
     this.stage.innerHTML = '';
-    this.dotsEl.innerHTML = def.shots.map(() => '<i></i>').join('');
+    this.dotsEl.innerHTML = '';
+    this.whoEl.textContent = '';
+    this.lineEl.textContent = '';
     let seen = [];
     try { seen = JSON.parse(localStorage.getItem('wuxia_cinema_seen') || '[]'); } catch (e) {}
     this.skipBtn.classList.toggle('hot', seen.includes(key)); // 이미 본 컷신이면 건너뛰기 버튼을 눈에 띄게
+    this.root.classList.remove('film');
     this.root.classList.add('on');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    this.next();
+    // 편집된 영상이 있으면 영상, 없으면 그림 컷
+    findCinemaFilm(key).then(film => {
+      if (tok !== this.token || !this.active) return;
+      if (film) { this.playFilm(film); return; }
+      if (!def || !def.shots.length) { this.end(); return; }
+      this.music = def.music || null;
+      this.shots = def.shots;
+      def.shots.forEach(s => resolveCinemaMedia(s.id)); // 미리 찾아 두기
+      this.dotsEl.innerHTML = def.shots.map(() => '<i></i>').join('');
+      this.next();
+    });
+  },
+
+  // 영상 한 편 재생: 배경음악은 끄고 영상 소리, 자막은 시간표대로
+  playFilm(film) {
+    this.film = film;
+    this.root.classList.add('film');
+    const v = document.createElement('video');
+    v.className = 'cn-film';
+    v.src = film.src;
+    v.playsInline = true;
+    v.muted = !(typeof sound !== 'undefined' && sound.enabled);
+    v.volume = 1;
+    this.stage.appendChild(v);
+    this.filmEl = v;
+    const p = v.play();
+    if (p && p.catch) p.catch(() => { v.muted = true; v.play().catch(() => {}); }); // 소리 자동 재생이 막히면 소리 없이라도
+    v.onended = () => { if (this.film === film) this.end(); };
+    v.onerror = () => { if (this.film === film) this.end(); };
+    let shown = null;
+    const tick = () => {
+      if (this.film !== film || !this.active) return;
+      const t = v.currentTime;
+      const cue = film.cues.find(c => t >= c.t0 && t < c.t1) || null;
+      if (cue !== shown) {
+        shown = cue;
+        this.whoEl.textContent = cue ? cue.who : '';
+        this.lineEl.textContent = cue ? cue.text : '';
+        this.root.classList.toggle('narr', !!cue && !cue.who);
+        this.lineEl.parentElement.classList.remove('show');
+        if (cue) requestAnimationFrame(() => this.lineEl.parentElement.classList.add('show'));
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   },
 
   next() {
     if (!this.active) return;
+    if (this.film) return; // 영상은 클릭으로 넘기지 않음 (건너뛰기 버튼·Esc·Space)
     if (this.typing) { this.finishTyping(); return; }
     clearTimeout(this.advTimer);
     this.idx++;
@@ -354,7 +424,8 @@ const Cinema = {
       if (!seen.includes(this.key)) { seen.push(this.key); localStorage.setItem('wuxia_cinema_seen', JSON.stringify(seen)); }
     } catch (e) {}
     this.root.classList.remove('on');
-    this.stage.querySelectorAll('video').forEach(v => v.pause());
+    this.film = null;
+    this.stage.querySelectorAll('video').forEach(v => { v.pause(); v.muted = true; });
     setTimeout(() => { if (!this.active) this.stage.innerHTML = ''; }, 500);
     const cb = this.onDone;
     this.onDone = null;
@@ -365,7 +436,11 @@ const Cinema = {
   handleKey(e) {
     if (!this.active) return false;
     if (e.key === 'Escape') { e.preventDefault(); this.skipAll(); }
-    else if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); this.next(); }
+    else if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (e.repeat) return; // 누르고 있는 키로 넘어가지 않게
+      if (this.film) this.skipAll(); else this.next();
+    }
     return true;
   }
 };

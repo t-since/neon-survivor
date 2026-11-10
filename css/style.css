@@ -1786,4 +1786,14 @@
     #cinema .cn-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.25); }
     #cinema .cn-dots i.on { background: #fbbf24; }
     @media (pointer: coarse) { #cinema .cn-hint { display: none; } }
+    /* 편집된 영상 한 편: 영상은 잘리지 않게 화면에 맞추고, 검은 띠 대신 아래쪽 그림자 위에 자막 */
+    #cinema .cn-film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+    #cinema.film { cursor: default; }
+    #cinema.film .cn-bar { background: transparent; }
+    #cinema.film .cn-bot { height: 22vh; align-items: flex-end; padding-bottom: 6vh; background: linear-gradient(transparent, rgba(0,0,0,.55)); }
+    #cinema.film .cn-sub { opacity: 0; transform: translateY(6px); transition: opacity .45s ease, transform .45s ease; }
+    #cinema.film .cn-sub.show { opacity: 1; transform: none; }
+    #cinema.film .cn-line { text-shadow: 0 2px 6px #000, 0 0 2px #000; }
+    #cinema.film .cn-skip { top: 16px; }
+    #cinema.film .cn-hint, #cinema.film .cn-dots { display: none; }
     @media (prefers-reduced-motion: reduce) { #cinema .cn-media { animation: none !important; } #cinema .cn-layer { transition-duration: .2s; } }
