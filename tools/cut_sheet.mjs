@@ -59,7 +59,20 @@ for (const c of comps.slice(4)) {
 }
 // 3. 배율: 걷기는 키 중간값으로, --scale 이 있으면 그 값
 const heights = frames.map(f => f.y1 - f.y0 + 1).sort((a, b) => a - b);
-const scale = FIXED_SCALE || TARGET_H / ((heights[1] + heights[2]) / 2);
+// --match <기존 프레임.png>: 그 프레임의 인물 키에 이 시트의 마지막 칸(준비 자세) 키를 맞춤 (공격 시트를 기존 걷기 그림 크기로)
+let matchScale = null;
+const mi = args.indexOf('--match');
+if (mi >= 0) {
+  const ref = args[mi + 1];
+  const mraw = path.join(tmp, 'm.raw');
+  spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', ref, '-f', 'rawvideo', '-pix_fmt', 'rgba', mraw]);
+  const m = fs.readFileSync(mraw); let top = FH, bot = 0;
+  for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) if (m[(y * FW + x) * 4 + 3] > 128) { if (y < top) top = y; if (y > bot) bot = y; }
+  const refH = bot - top + 1, last = frames[3];
+  matchScale = refH / (last.y1 - last.y0 + 1);
+  console.log(`기준 프레임 키 ${refH}px ← 이 시트 마지막 칸 키 ${last.y1 - last.y0 + 1}px`);
+}
+const scale = FIXED_SCALE || matchScale || TARGET_H / ((heights[1] + heights[2]) / 2);
 console.log(`배율 ${scale.toFixed(4)} (프레임 키 ${frames.map(f => f.y1 - f.y0 + 1).join(', ')})`);
 // 4. 프레임마다: 그 프레임 덩어리(+가장자리 반투명)만 담아 배율로 줄이고, 발을 (220,320)에
 frames.forEach((f, fi) => {
