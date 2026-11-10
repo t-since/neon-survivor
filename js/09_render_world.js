@@ -626,6 +626,7 @@ function renderGround() {
 
   state.groundKey = (groundImg === newImg) ? newKey : null; // 빙판 미끄러짐 등에서 씀 (07_update)
   drawGroundFx(state.groundKey);
+  if (typeof drawEnemyTelegraphs === 'function') drawEnemyTelegraphs(); // 묵직한 공격 경고 (07_update)
 
   // 2. 매크로 라이팅 & 대기감 (타일 격자감을 완전히 지우는 자연스러운 조명/그늘 비네트)
   // (화면 가장자리 어둡게 하기는 index.html 의 #vignette 고정 층으로 옮김 — 매번 그리면 PC에서 느림)

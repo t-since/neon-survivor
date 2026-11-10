@@ -1,6 +1,81 @@
 // 게임 루프와 매 순간 계산
 let lastTime = performance.now();
 let contactDmgSum = 0, contactDmgMax = 0; // 몸통 피해 합산용
+// ---------- 몬스터 종류별 근접 공격 (몸에 닿으면 계속 깎이던 방식 대신, 준비 → 휘두르기) ----------
+// spd: 이동 속도 배율, windup: 휘두르기 준비 시간(초), cd: 다음 공격까지, mul: 한 방 피해 = e.damage × mul
+// heavy: 멈춰 서서 바닥에 붉은 경고 → 범위(aoe) 안에 있으면 큰 피해 + 밀려남 (경고를 보고 피할 수 있음)
+const ENEMY_MELEE = {
+  assassin:        { spd: 1.12, windup: 0.16, cd: 0.50, mul: 0.6, reach: 10 },              // 빠르고 약하게
+  poison_assassin: { spd: 1.12, windup: 0.16, cd: 0.50, mul: 0.6, reach: 10, poison: 3 },
+  ghoul:           { spd: 1.08, windup: 0.20, cd: 0.55, mul: 0.7, reach: 8, poison: 3 },
+  skeleton:        { spd: 1.00, windup: 0.36, cd: 0.85, mul: 1.1, reach: 14 },              // 보통
+  barbarian:       { spd: 1.00, windup: 0.30, cd: 0.75, mul: 0.6, reach: 16, double: true }, // 쌍도: 두 번 연속
+  butcher:         { spd: 0.72, windup: 0.85, cd: 1.6, mul: 2.0, reach: 40, heavy: true, aoe: 95 } // 느리고 묵직하게
+};
+function updateEnemySwing(e, prof, dist, dt) {
+  e.swingCd = (e.swingCd === undefined ? Math.random() * prof.cd : e.swingCd) - dt;
+  const reach = player.radius + e.radius * 1.2 + prof.reach;
+  if (e.swingT > 0) {
+    e.swingT -= dt;
+    if (e.stunTimer > 0.15 && !prof.heavy) { e.swingT = 0; e.swingCd = prof.cd * 0.5; return; } // 맞아서 휘청이면 공격 끊김
+    if (e.swingT <= 0) enemyStrike(e, prof);
+    return;
+  }
+  if (e.swingHits > 0) { // 쌍도객 두 번째 칼
+    e.swingHitT -= dt;
+    if (e.swingHitT <= 0) { e.swingHits--; enemyStrike(e, prof, true); }
+  }
+  if (e.swingCd <= 0 && dist < reach && !(e.stunTimer > 0)) {
+    e.swingT = prof.windup;
+    e.animAtk = e.animAtkMax = prof.windup / 0.55; // 공격 그림 4장 중 3번째 장에서 내려침
+    if (prof.heavy) { // 내려칠 자리를 미리 정함 (서진 쪽 앞)
+      const a = Math.atan2(player.y - e.y, player.x - e.x);
+      e.swingX = e.x + Math.cos(a) * (e.radius + 34);
+      e.swingY = e.y + Math.sin(a) * (e.radius + 34);
+      e.swingAim = a;
+    }
+  }
+}
+function enemyStrike(e, prof, second) {
+  e.swingCd = prof.cd;
+  if (prof.double && !second) { e.swingHits = 1; e.swingHitT = 0.14; }
+  if (player.isDashing) return; // 경공 중엔 피함
+  if (prof.heavy) {
+    createShockwave(e.swingX, e.swingY, prof.aoe, 'rgba(239, 68, 68, 0.8)');
+    PixelFX.spawnHitSparks(e.swingX, e.swingY, '#fca5a5', 10);
+    state.screenShake = Math.max(state.screenShake || 0, 9);
+    sound.playSample && sound.playSample('wx_slash_heavy', 0.7, 0.7, 0.05, 0.1);
+    const dx = player.x - e.swingX, dy = player.y - e.swingY, d = Math.hypot(dx, dy);
+    if (d > prof.aoe + player.radius) return; // 경고 밖으로 피했음
+    playerTakeDamage(e.damage * prof.mul);
+    const n = d || 1; // 내려친 자리 밖으로 밀려남
+    player.x += dx / n * 55; player.y += dy / n * 55;
+    return;
+  }
+  const d = Math.hypot(player.x - e.x, player.y - e.y);
+  if (d > player.radius + e.radius * 1.2 + prof.reach + 18) return; // 휘두르는 사이 빠져나감
+  playerTakeDamage(e.damage * prof.mul);
+  if (prof.poison) applyPlayerDebuff('poison', prof.poison);
+}
+// 묵직한 공격 경고: 내려칠 자리에 붉은 원이 차오름 (renderGround 끝에서 그림)
+function drawEnemyTelegraphs() {
+  for (const e of enemies) {
+    if (!(e.swingT > 0) || e.isBoss || e.isMiniBoss) continue;
+    const prof = ENEMY_MELEE[e.type];
+    if (!prof || !prof.heavy) continue;
+    const k = 1 - e.swingT / prof.windup;
+    ctx.save();
+    ctx.translate(e.swingX, e.swingY);
+    ctx.scale(1, 0.62);
+    ctx.fillStyle = `rgba(239, 68, 68, ${0.10 + k * 0.18})`;
+    ctx.beginPath(); ctx.arc(0, 0, prof.aoe, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(239, 68, 68, ${0.25 + k * 0.25})`;
+    ctx.beginPath(); ctx.arc(0, 0, prof.aoe * k, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(254, 202, 202, 0.85)'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 0, prof.aoe, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+}
 const ENEMY_CELL = 80;           // 몬스터 겹침 검사 칸 크기
 const ENEMY_GRID = new Map();    // 칸 번호 → 그 칸의 몬스터들 (매 프레임 새로 채움)
 
@@ -433,7 +508,9 @@ function updateGame(dt) {
     }
 
     // Poison status tick & slow
-    let currentSpeed = e.speed;
+    const meleeProf = (!e.isBoss && !e.isMiniBoss) ? ENEMY_MELEE[e.type] : null;
+    let currentSpeed = e.speed * (meleeProf ? meleeProf.spd : 1);
+    if (meleeProf && e.swingT > 0) currentSpeed *= meleeProf.heavy ? 0 : 0.35; // 휘두르는 동안 멈춤(묵직) / 느려짐
     if (e.poisonTimer > 0) {
       e.poisonTimer -= dt;
       currentSpeed *= 0.75;
@@ -982,6 +1059,10 @@ function updateGame(dt) {
       }
     }
 
+    const prof = (!e.isBoss && !e.isMiniBoss) ? ENEMY_MELEE[e.type] : null;
+    if (prof) {
+      updateEnemySwing(e, prof, dist, dt); // 종류별 휘두르기 (빠르고 약하게 / 느리고 묵직하게)
+    } else
     // 몸통 피해 거리: 몬스터는 bodyMin(player.radius + e.radius*1.2)에서 멈추므로 그보다 조금 넓게
     if (dist < player.radius + (e.isBoss ? e.radius : e.radius * 1.2 + 10) && !player.isDashing) {
       // 바로 깎지 않고 모아 두었다가 다음 계산 때 한 번에 (아래 '몸통 피해 합산' 참고)
@@ -993,7 +1074,7 @@ function updateGame(dt) {
 
     // 공격 동작 신호 (새 몬스터 그림의 공격 4장을 재생하는 시간)
     if (e.animAtk > 0) e.animAtk -= dt;
-    if (!(e.animAtk > 0)) {
+    if (!(e.animAtk > 0) && !prof) { // 휘두르기가 정해진 종류는 updateEnemySwing 이 동작을 정함
       if (dist < player.radius + e.radius + 30) { e.animAtk = e.animAtkMax = 0.5; }       // 붙어서 휘두름
       else if (e.isAttacking) { e.animAtk = e.animAtkMax = 0.5; }
     }
