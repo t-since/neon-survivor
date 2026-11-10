@@ -1,10 +1,11 @@
 # 브라우저 자동화 (제미나이 그림 · Flow 영상)
 
-전용 Edge 창을 원격 조종 포트(9444)로 띄워 두고, 로그인은 사람이 직접 함.
+전용 **크롬** 창을 원격 조종 포트(9444)로 띄워 두고, 로그인은 사람이 직접 함. (Edge는 안 씀)
 
 ```powershell
-& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9444 --user-data-dir="$env:USERPROFILE\.cinema-browser" https://gemini.google.com/app https://flow.google.com
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9444 --user-data-dir="$env:USERPROFILE\.cinema-chrome" --no-first-run --disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --disable-background-timer-throttling https://gemini.google.com/app https://flow.google.com
 ```
+스크립트는 포트 9444 에 붙기만 하므로 크롬이든 Edge든 그대로 동작함. 한 번에 하나만 띄울 것 (같은 포트).
 
 | 스크립트 | 하는 일 |
 |---|---|
@@ -14,7 +15,8 @@
 | `flow_dl.mjs <폴더> <개수> [720p\|1080p] [순번:이름,...]` | Flow 영상 보기 화면에서 '다음 미디어'로 넘기며 다운로드 |
 
 주의
-- 탭이 화면에 안 보이면(최소화·다른 탭) 브라우저가 그리기를 멈춰 메뉴·파일 선택창이 안 열림 → 스크립트가 앞으로 가져오지만 Edge 창을 최소화하지 말 것
+- 창이 다른 창에 완전히 가려지거나 최소화되면 브라우저가 그리기를 멈춰 메뉴·파일 선택창이 안 열림 → 위의 `--disable-...occlu...` 옵션으로 띄우면 가려져도 동작함 (최소화는 여전히 피할 것)
+- 다시 띄우면 제미나이는 '이미지 만들기' 도구·16:9·Pro 를 다시 골라야 함
 - Flow 영상에는 생성 표시(✦)가 들어감. 지우거나 가리지 않음 (약관). 표시 없는 영상은 상위 요금제 기능
 - 프롬프트 원본: `tools/cinema/prompts/` (p_* 제미나이 그림, fp_* Flow 움직임)
 - 비용(2026-11): Omni 1.2 Flash 8초 영상 1개 24크레딧, 1080p 업스케일은 크레딧 없이 됨. 피·죽음 장면은 가끔 정책으로 실패(환불)

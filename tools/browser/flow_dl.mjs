@@ -11,7 +11,7 @@ const N = +countArg || 20;
 const DL = path.join(process.env.USERPROFILE, 'Downloads');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const list = await (await fetch(`http://127.0.0.1:${PORT}/json`)).json();
-const tab = list.find(t => t.type === 'page' && t.url.includes('flow.google.com'));
+const tab = list.find(t => t.type === 'page' && t.url.startsWith('https://flow.google.com'));
 const ws = new WebSocket(tab.webSocketDebuggerUrl);
 await new Promise(r => ws.onopen = r);
 let id = 0; const pend = {};
@@ -38,7 +38,11 @@ for (let k = 0; k < N; k++) {
   const d = await btn('미디어 다운로드') || { x: 956, y: 38 };
   await mouse(d.x, d.y); await sleep(1200);
   const q = await leaf(quality, 900);
-  if (!q) { console.log(`[${k}] ${quality} 메뉴 없음`); if (HAS_PICK) { const nx1 = await btn('다음 미디어'); if (!nx1 || nx1.dis) break; await mouse(nx1.x, nx1.y); await sleep(2500); continue; } break; }
+  if (!q) { // 실패한 항목 등: 다운로드 메뉴 없음 → 건너뜀 (Esc 는 보기 화면을 닫아버리므로 빈 곳 클릭)
+    console.log(`[${k}] ${quality} 메뉴 없음 (건너뜀): ${title}`);
+    await mouse(30, 400); await sleep(400);
+    const nx1 = await btn('다음 미디어'); if (!nx1 || nx1.dis) break; await mouse(nx1.x, nx1.y); await sleep(2500); continue;
+  }
   await mouse(q.x, q.y);
   let got = null;
   for (let i = 0; i < (quality === '1080p' ? 400 : 90) && !got; i++) {

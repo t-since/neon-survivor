@@ -30,7 +30,19 @@ await mouse(plus.x, plus.y); await sleep(1500);
 // 왼쪽 분류에서 '이미지'만 보이게 (검색은 이름으로 안 찾아짐)
 const cat = await ev(`(()=>{const e=[...document.querySelectorAll('*')].filter(x=>x.children.length===0 && (x.textContent||'').trim()==='이미지' && x.getClientRects().length).map(x=>({r:x.getBoundingClientRect()})).filter(o=>o.r.x>480 && o.r.x<700)[0]; if(!e) return null; return {x:e.r.x+e.r.width/2,y:e.r.y+e.r.height/2}})()`);
 if (cat) { await mouse(cat.x, cat.y); await sleep(1500); }
-const it = await ev(`(()=>{const e=[...document.querySelectorAll('span, div')].filter(x=>x.children.length===0 && (x.textContent||'').trim()===${JSON.stringify(asset)}).map(x=>({x, r:x.getBoundingClientRect()})).filter(o=>o.r.width>0 && o.r.y>0 && o.r.y<innerHeight && o.r.x>400)[0]; if(!e) return null; return {x:e.r.x+e.r.width/2, y:e.r.y+e.r.height/2}})()`);
+// 선택 창 목록(오른쪽, x>400)에서 이름이 같은 항목 → 화면 밖이면 스크롤해서 보이게
+const findIt = `[...document.querySelectorAll('span, div')].filter(x=>x.children.length===0 && (x.textContent||'').trim()===${JSON.stringify(asset)}).map(x=>({x, r:x.getBoundingClientRect()})).filter(o=>o.r.width>0 && o.r.x>400)[0]`;
+// 목록은 스크롤해야 아래 항목을 더 불러옴 → 찾을 때까지 목록을 내림
+for (let tries = 0; tries < 15; tries++) {
+  const found = await ev(`(()=>{const o=${findIt}; if(o){ o.x.scrollIntoView({block:'center'}); return true }
+    const any=[...document.querySelectorAll('span, div')].filter(x=>x.children.length===0 && /\\.(jpg|png)$/.test((x.textContent||'').trim()) && x.getBoundingClientRect().x>700).pop();
+    let p=any; while(p && p!==document.body){ if(p.scrollHeight>p.clientHeight+10 && getComputedStyle(p).overflowY!=='visible') break; p=p.parentElement }
+    if(p && p!==document.body){ p.scrollTop += 600; } else if(any) any.scrollIntoView({block:'end'});
+    return false})()`);
+  await sleep(found ? 700 : 900);
+  if (found) break;
+}
+const it = await ev(`(()=>{const e=${findIt}; if(!e || e.r.y<0 || e.r.y>innerHeight) return null; return {x:e.r.x+e.r.width/2, y:e.r.y+e.r.height/2}})()`);
 if (!it) { console.log('에셋 못 찾음: ' + asset); process.exit(1); }
 await mouse(it.x, it.y); await sleep(800);
 const add = await rectByText('button', '프롬프트에 추가');
@@ -48,7 +60,7 @@ await sleep(600);
 for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: type === 'keyDown' ? '\r' : undefined });
 console.log('요청 보냄: ' + asset);
 // 3. 확인 창의 '승인' (항상 승인 아님). 48크레딧(2개)일 때만 승인, 다르면 멈춤
-const countSched = () => ev(`[...document.querySelectorAll('*')].filter(x=>x.children.length===0 && /scheduled|queue|생성 중|시작했/i.test(x.textContent||'')).length`);
+const countSched = () => ev(`[...document.querySelectorAll('*')].filter(x=>x.children.length===0 && /scheduled|queue|생성 중|시작했|시작되|대기열|처리 중/i.test(x.textContent||'')).length`);
 const sched0 = await countSched();
 let appeared = false;
 for (let i = 0; i < 90 && !appeared; i++) { await sleep(1000); appeared = (await countApprove()) > before; }
@@ -56,7 +68,8 @@ if (!appeared) { console.log('확인 창이 안 나옴'); process.exit(2); }
 await sleep(2500); // 대화창 자동 스크롤이 멈출 때까지
 const cost = await ev(`(()=>{const t=[...document.querySelectorAll('*')].filter(x=>x.children.length===0 && /크레딧을 사용하여/.test(x.textContent||'')).pop(); return t? t.textContent.trim():''})()`);
 console.log('확인 창: ' + cost);
-if (!/^48 크레딧/.test(cost)) { console.log('예상(48크레딧)과 달라서 승인하지 않고 멈춤'); process.exit(3); }
+const EXPECT = (process.argv.find(a => a.startsWith('--cost=')) || '--cost=48').slice(7);
+if (!cost.startsWith(EXPECT + ' 크레딧')) { console.log(`예상(${EXPECT}크레딧)과 달라서 승인하지 않고 멈춤`); process.exit(3); }
 let ok = false;
 for (let tries = 0; tries < 3 && !ok; tries++) {
   // '승인' 글자(선택지)는 왼쪽, 내가 보낸 '승인' 말풍선은 오른쪽 → 왼쪽에 있는 것 중 가장 아래

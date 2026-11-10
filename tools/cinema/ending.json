@@ -1,0 +1,158 @@
+{
+  "note": "ending 편집표. src 에 Flow 클립, node tools/cinema_edit.mjs ending",
+  "size": [
+    1920,
+    1080
+  ],
+  "fps": 30,
+  "crf": 26,
+  "fadeIn": 0.8,
+  "fadeOut": 1.4,
+  "grade": "eq=contrast=1.06:saturation=0.92:gamma=0.98,colorbalance=rs=-0.03:bs=0.04:rh=0.03:bh=-0.02,vignette=PI/5",
+  "music": {
+    "file": "assets/audio/bgm_title.mp3",
+    "from": 0,
+    "at": 0,
+    "vol": 0.55,
+    "fadeIn": 1.5,
+    "fadeOut": 2.5
+  },
+  "shots": [
+    {
+      "id": "ed_01",
+      "dur": 6,
+      "sub": {
+        "text": "혈마교주가 쓰러지자 혈마전이 무너져 내리고, 핏빛 하늘이 걷히기 시작했다."
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_boom.mp3",
+          "at": 0.3,
+          "vol": 0.7
+        }
+      ],
+      "src": "cinema_src/ending/ed_01.mp4",
+      "in": 0.3
+    },
+    {
+      "id": "ed_02",
+      "dur": 5.5,
+      "trans": "fade",
+      "transDur": 1,
+      "sub": {
+        "text": "혈독환에 물들었던 사람들이 하나둘, 제 얼굴을 되찾았다."
+      },
+      "src": "cinema_src/ending/ed_02.mp4",
+      "in": 0.3,
+      "fallback": {
+        "img": "assets_new/cinema_frames/ed_02.png",
+        "from": [
+          50,
+          55,
+          1.15
+        ],
+        "to": [
+          48,
+          50,
+          1
+        ]
+      }
+    },
+    {
+      "id": "ed_03",
+      "dur": 4.5,
+      "trans": "black",
+      "transDur": 1.2,
+      "sub": {
+        "text": "청운산. 사부님의 무덤 앞."
+      },
+      "src": "cinema_src/ending/ed_03.mp4",
+      "in": 0.3,
+      "fallback": {
+        "img": "assets_new/cinema_frames/ed_03.png",
+        "from": [
+          45,
+          50,
+          1
+        ],
+        "to": [
+          42,
+          52,
+          1.15
+        ]
+      }
+    },
+    {
+      "id": "ed_04",
+      "dur": 6,
+      "trans": "fade",
+      "transDur": 0.8,
+      "sub": {
+        "who": "서진",
+        "text": "사부님. 검을… 찾아왔습니다."
+      },
+      "src": "cinema_src/ending/ed_04.mp4",
+      "in": 0.3
+    },
+    {
+      "id": "ed_05",
+      "dur": 6.5,
+      "trans": "fade",
+      "transDur": 1,
+      "sub": {
+        "text": "바람이 불어오면 검을 뽑고, 바람이 잦아들면 길을 떠난다."
+      },
+      "src": "cinema_src/ending/ed_05.mp4",
+      "in": 0.3,
+      "fallback": {
+        "img": "assets_new/cinema_frames/ed_05.png",
+        "from": [
+          55,
+          55,
+          1.15
+        ],
+        "to": [
+          52,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "ed_06",
+      "dur": 5.5,
+      "trans": "fade",
+      "transDur": 1.2,
+      "title": {
+        "text": "江 湖 萬 劍 · 終",
+        "sub": "강 호 의  길 은  끝 이  없 는  법",
+        "at": 1,
+        "dur": 4.2,
+        "ink": true,
+        "y": 0.4
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_gong.mp3",
+          "at": 1,
+          "vol": 0.8
+        }
+      ],
+      "src": "cinema_src/ending/ed_06.mp4",
+      "in": 0.3,
+      "fallback": {
+        "img": "assets_new/cinema_frames/ed_06.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          46,
+          1
+        ]
+      }
+    }
+  ]
+}
