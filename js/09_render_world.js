@@ -600,7 +600,10 @@ function renderGround() {
     { stone_fortress: 'ground_new_bloodpalace', demon_sanctum: 'ground_new_bloodpalace' }
   ];
   const secKey = (GROUND_BY_SECTOR[secIdx] || {})[zoneCfg.theme];
-  const newKey = (secKey && SPRITES[secKey] && SPRITES[secKey].width > 0) ? secKey : (GROUND_BY_THEME[zoneCfg.theme] || 'ground_new_fortress');
+  let newKey = (secKey && SPRITES[secKey] && SPRITES[secKey].width > 0) ? secKey : (GROUND_BY_THEME[zoneCfg.theme] || 'ground_new_fortress');
+  // 2차 바닥 그림(ground_<이름>_v2)이 있으면 그것을 씀
+  const v2Key = newKey.replace('ground_new_', 'ground_') + '_v2';
+  if (SPRITES[v2Key] && SPRITES[v2Key].width > 0) newKey = v2Key;
   const newImg = SPRITES[newKey];
   let groundImg = (newImg && newImg.width > 0) ? newImg : (SPRITES['ground_seamless_stone'] || SPRITES.ground_stone_iso || SPRITES.ground);
 

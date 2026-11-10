@@ -120,7 +120,10 @@ const SPRITE_URLS = {
   ground_new_swamp: 'assets/ground/swamp.jpg',
   ground_new_snow: 'assets/ground/snow.jpg',
   ground_new_ice: 'assets/ground/ice.jpg',
-  ground_new_bloodpalace: 'assets/ground/bloodpalace.jpg'
+  ground_new_bloodpalace: 'assets/ground/bloodpalace.jpg',
+  // 2차 바닥 (구역마다 재질이 다른 새 그림, 2026-11-10~). 있으면 위 바닥 대신 씀 (09_render_world.js)
+  ground_ice_v2: 'assets/ground/ice_v2.jpg',
+  ground_snow_v2: 'assets/ground/snow_v2.jpg'
 };
 // 새 몬스터 그림 (제미나이 2x2 시트에서 자름, assets/mobs). 새로 만든 몬스터는 이 목록에 이름만 추가
 const MOB_ART_NAMES = ['mob_assassin', 'mob_archer', 'mob_dartman', 'mob_jiangshi',

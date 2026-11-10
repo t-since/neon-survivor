@@ -10,7 +10,7 @@
 //   nav <url>                    이동
 //   new <url>                    새 탭
 import fs from 'node:fs';
-const PORT = 9444;
+const PORT = +process.env.CDP_PORT || 9444; // 안티그래비티는 CDP_PORT=9666
 const [match, cmd, ...args] = process.argv.slice(2);
 const list = await (await fetch(`http://127.0.0.1:${PORT}/json`)).json();
 if (match === 'tabs') { list.filter(t => t.type === 'page').forEach(t => console.log(t.id, '|', t.title, '|', t.url)); process.exit(0); }
