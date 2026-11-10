@@ -374,6 +374,9 @@ function findClosestEnemy(x, y, maxDist = 500) {
 }
 
 function dealDamage(target, baseDmg, canCrit = true) {
+  // 이미 쓰러진 적(같은 프레임에 아직 목록에 남아 있음)은 다시 때리지 않음
+  // — 예전엔 은침·독 파편이 시체를 또 '처치'해서 독 폭발이 끝없이 이어지며 게임이 멈춘 듯 느려졌음
+  if (!target || target._dead || target.hp <= 0) return;
   if (player.activeBuffs && player.activeBuffs.blood_fury > 0) baseDmg *= 2; // 태을혈기신단: 공격력 2배
   sound.playSample('wx_cut', 0.16, 1.15, 0.12, 0.1); // 적이 맞는 소리 (작게, 0.1초에 한 번까지)
   let isCrit = false;
@@ -405,7 +408,10 @@ function dealDamage(target, baseDmg, canCrit = true) {
   }
 }
 
+const POISON_SHARD_MAX = 96; // 생사부 만천화우 독 파편 동시 최대 개수 (폭발 12번 분량)
 function onEnemyKilled(target) {
+  if (target._dead) return; // 한 적은 한 번만 처치 (구슬·상자·독 폭발 중복 방지)
+  target._dead = true;
   state.kills++;
   document.getElementById('killText').innerText = state.kills;
 
@@ -501,7 +507,14 @@ function onEnemyKilled(target) {
   }
 
   // Evolution: Poison Nova on death if poisoned
+  // 독 파편이 너무 많이 날아다니면(적이 빽빽할 때 연쇄) 새 폭발은 파편 없이 그림만
+  let shardCount = 0;
   if (player.evolutions.evo_dagger_rain && target.poisonTimer > 0) {
+    for (const p of projectiles) if (p.type === 'poison_shard') shardCount++;
+  }
+  if (player.evolutions.evo_dagger_rain && target.poisonTimer > 0 && shardCount >= POISON_SHARD_MAX) {
+    createShockwave(target.x, target.y, 48, 'rgba(192, 132, 252, 0.6)');
+  } else if (player.evolutions.evo_dagger_rain && target.poisonTimer > 0) {
     particles.push({ fxKey: 'fx_needles', x: target.x, y: target.y - 30, vx: 0, vy: 0, size: 170, rot: Math.random() * 6.28, life: 0.4, maxLife: 0.4 });
     for (let i = 0; i < 8; i++) {
       const pAng = (i / 8) * Math.PI * 2;

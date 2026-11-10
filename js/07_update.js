@@ -27,6 +27,9 @@ function gameLoop(time) {
   sound.setMusic(pickMusicKey());
   const dt = Math.min(0.1, (time - lastTime) / 1000);
   lastTime = time;
+  // 그리는 쪽에서 만드는 입자(흡성대법·답설무흔·흙먼지·중독·포탈)의 확률 배율:
+  // 게임이 멈춰 있으면 0 (일시정지·레벨업 창 동안 쌓이지 않게), 진행 중이면 60fps 기준 (120·144Hz 모니터에서 2배로 늘지 않게)
+  state.frameK = 0;
 
   if (state.hitStop > 0) {
     state.hitStop -= dt; // 타격 멈칫: 화면은 그리되 시간은 잠깐 멈춤
@@ -39,6 +42,7 @@ function gameLoop(time) {
 }
 
 function updateGame(dt) {
+  state.frameK = dt * 60;
   state.gameTime += dt;
   updateTimerDisplay();
   updateEnvironmentWeather(dt);
@@ -219,6 +223,7 @@ function updateGame(dt) {
       }
     } else if (p.type === 'poison_shard') {
       for (let e of enemies) {
+        if (e.hp <= 0) continue; // 이미 쓰러진 적은 통과
         if (Math.hypot(e.x - p.x, e.y - p.y) < e.radius + 12) {
           dealDamage(e, p.damage, true);
           applyPoison(e, 2.5, p.damage * 0.7);
@@ -229,6 +234,7 @@ function updateGame(dt) {
       }
     } else if (p.type === 'dagger') {
       for (let e of enemies) {
+        if (e.hp <= 0) continue;
         if (Math.hypot(e.x - p.x, e.y - p.y) < e.radius + 8) {
           dealDamage(e, p.damage, true);
           createHitSparks(p.x, p.y, p.color);
@@ -266,6 +272,7 @@ function updateGame(dt) {
       const activeProgress = (fn.time - fn.delay) / fn.duration;
       if (activeProgress >= 1.0) {
         for (let e of enemies) {
+          if (e.hp <= 0) continue; // 쓰러진 적은 건너뜀 (은침 36개가 시체를 또 때리던 문제)
           if (Math.hypot(e.x - fn.destX, e.y - fn.destY) <= fn.splashRadius) {
             dealDamage(e, fn.damage, true);
             applyPoison(e, 3.2, fn.damage * 0.65);
@@ -348,6 +355,7 @@ function updateGame(dt) {
     if (b.progress >= 1.0) {
       createExplosion(b.targetX, b.targetY, b.radius);
       for (let e of enemies) {
+        if (e.hp <= 0) continue;
         if (Math.hypot(e.x - b.targetX, e.y - b.targetY) <= b.radius) {
           dealDamage(e, b.damage, true);
         }

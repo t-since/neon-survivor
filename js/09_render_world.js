@@ -1097,7 +1097,7 @@ function renderVictoryPortal() {
     drawFxImage('fx_portal', p.x, p.y - 95, 190 * pulse, 0.8, t * 1.6);
     drawFxImage('fx_portal', p.x, p.y - 95, 110, 0.3, -t * 2.6);
     // 주변 빛 입자가 가운데로 빨려 들어감
-    if (Math.random() < 0.5) {
+    if (Math.random() < 0.5 * (state.frameK || 0)) {
       const a = Math.random() * Math.PI * 2, r = 120 + Math.random() * 40;
       particles.push({ x: p.x + Math.cos(a) * r, y: p.y - 95 + Math.sin(a) * r, vx: -Math.cos(a) * r * 1.6, vy: -Math.sin(a) * r * 1.6,
         color: Math.random() < 0.5 ? '#fde68a' : '#bae6fd', radius: 2 + Math.random() * 2, life: 0.55, maxLife: 0.55 });

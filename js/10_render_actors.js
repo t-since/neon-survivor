@@ -87,14 +87,14 @@ function renderPlayer() {
     ctx.strokeStyle = '#7dd3fc'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.ellipse(0, 0, player.magnetRadius, player.magnetRadius * 0.6, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
-    if (Math.random() < 0.05 * mlv) {
+    if (Math.random() < 0.05 * mlv * (state.frameK || 0)) {
       const a = Math.random() * Math.PI * 2, r = player.magnetRadius;
       particles.push({ x: player.x + Math.cos(a) * r, y: player.y + Math.sin(a) * r * 0.6, vx: -Math.cos(a) * r * 1.6, vy: -Math.sin(a) * r * 0.96, color: '#bae6fd', radius: 2, life: 0.6, maxLife: 0.6 });
     }
   }
   // 답설무흔: 걸을 때 발밑 바람 자국
   const qlv = player.skills.qinggong_dash || 0;
-  if (qlv > 0 && player.isMoving && Math.random() < 0.12 * qlv) {
+  if (qlv > 0 && player.isMoving && Math.random() < 0.12 * qlv * (state.frameK || 0)) {
     particles.push({ x: player.x + (Math.random() - 0.5) * 30, y: player.y + 2, vx: -player.facing * (40 + Math.random() * 40), vy: -10 - Math.random() * 15, color: 'rgba(226, 232, 240, 0.7)', radius: 3 + Math.random() * 3, life: 0.45, maxLife: 0.45 });
   }
 
@@ -131,7 +131,7 @@ function renderPlayer() {
     if (running) {
       forward = 3;
       sy = 1 - Math.abs(Math.sin(player.walkTimer * 0.62 * Math.PI / 2)) * 0.04; // 뛰는 반동
-      if (f % 2 === 0 && Math.random() < 0.5) {        // 발 디딜 때 흙먼지
+      if (f % 2 === 0 && Math.random() < 0.5 * (state.frameK || 0)) { // 발 디딜 때 흙먼지
         particles.push({ x: player.x - player.facing * 18, y: player.y + 2, vx: -player.facing * (60 + Math.random() * 50), vy: -20 - Math.random() * 25, color: 'rgba(168, 148, 120, 0.55)', radius: 4 + Math.random() * 4, life: 0.4, maxLife: 0.4 });
       }
       player._runGhostT = (player._runGhostT || 0) + 1;
@@ -164,10 +164,10 @@ function renderPlayer() {
     heroTint = 'brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(4)';
   } else if (player.debuffs && player.debuffs.poison > 0) {
     heroTint = 'sepia(0.6) hue-rotate(65deg) saturate(2.6)'; // 맹독: 초록
-    if (Math.random() < 0.15) particles.push({ x: player.x + (Math.random() - 0.5) * 40, y: player.y - 40 - Math.random() * 70, vx: 0, vy: -40, color: '#4ade80', radius: 3 + Math.random() * 2, life: 0.6, maxLife: 0.6 });
+    if (Math.random() < 0.15 * (state.frameK || 0)) particles.push({ x: player.x + (Math.random() - 0.5) * 40, y: player.y - 40 - Math.random() * 70, vx: 0, vy: -40, color: '#4ade80', radius: 3 + Math.random() * 2, life: 0.6, maxLife: 0.6 });
   } else if (player.debuffs && player.debuffs.slow > 0) {
     heroTint = 'grayscale(0.4) sepia(1) hue-rotate(165deg) saturate(2.6) brightness(1.12)'; // 둔화: 파랑
-    if (Math.random() < 0.12) particles.push({ x: player.x + (Math.random() - 0.5) * 50, y: player.y - 20 - Math.random() * 100, vx: 0, vy: 25, color: '#e0f2fe', radius: 2 + Math.random() * 2, life: 0.7, maxLife: 0.7 });
+    if (Math.random() < 0.12 * (state.frameK || 0)) particles.push({ x: player.x + (Math.random() - 0.5) * 50, y: player.y - 20 - Math.random() * 100, vx: 0, vy: 25, color: '#e0f2fe', radius: 2 + Math.random() * 2, life: 0.7, maxLife: 0.7 });
   }
 
   if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 18; }
