@@ -72,7 +72,6 @@ const SPRITE_URLS = {
 
   // 배경 소품 (제미나이로 서진과 같은 그림체로 생성, 2026-11)
   prop_bamboo: 'assets/props/bamboo.png',
-  prop_plum_tree: 'assets/props/plum_tree.png', // 매화만개(이십사수매화검법 초월) 매화나무
   prop_rock_big: 'assets/props/rock_big.png',
   prop_rock_small: 'assets/props/rock_small.png',
   prop_lantern: 'assets/props/lantern.png',
@@ -313,9 +312,9 @@ const EVO_SKILL_DEFS = {
     baseSkillId: 'flying_swords',
     name: '매화만개 (梅花滿開)',
     badge: '매화 검선',
-    icon: '🌸🌳',
+    icon: '🌸',
     color: '#f9a8d4',
-    desc: '8자루의 매화검이 선회하고, 3초마다 적이 가장 많이 몰린 곳에 매화나무가 솟아 꽃을 활짝 피웁니다. 흩날리는 꽃잎이 나무 아래의 적을 거듭 벱니다!'
+    desc: '매화검기 8송이가 선회하다 날아가 적을 베고 그 자리에 꽃을 피웁니다. 2.6초마다 적이 몰린 쪽으로 매화검우(梅花劍雨)가 부채꼴로 쏟아져 앞의 적을 모두 베고 밀어냅니다!'
   },
   palm_blast: {
     id: 'evo_palm_blast',

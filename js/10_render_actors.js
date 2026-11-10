@@ -887,76 +887,72 @@ function renderEnemiesInner() {
   });
 }
 
-// ---------- 매화만개: 매화나무 (한 번 그려 둔 그림을 키우며 씀) ----------
-let plumTreeSprite = null;
-function buildPlumTreeSprite() {
-  const W = 520, H = 500, c = document.createElement('canvas'); // 꽃이 위·옆으로 잘리지 않게 넉넉히
-  c.width = W; c.height = H;
-  const g = c.getContext('2d');
-  let seed = 7;
-  const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-  const tips = [];
-  g.lineCap = 'round';
-  const branch = (x, y, ang, len, w, depth) => {
-    const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
-    // 굽은 가지 (먹선 느낌)
-    g.strokeStyle = depth > 3 ? '#2b1a14' : '#3b2418';
-    g.lineWidth = w;
-    g.beginPath(); g.moveTo(x, y);
-    g.quadraticCurveTo((x + x2) / 2 + (rnd() - 0.5) * len * 0.4, (y + y2) / 2 + (rnd() - 0.5) * len * 0.3, x2, y2);
-    g.stroke();
-    if (depth <= 0 || len < 14) { tips.push([x2, y2]); return; }
-    const n = depth > 3 ? 2 : 2 + (rnd() < 0.5 ? 1 : 0);
-    for (let i = 0; i < n; i++) {
-      const na = ang + (i - (n - 1) / 2) * (0.55 + rnd() * 0.3) + (rnd() - 0.5) * 0.3;
-      branch(x2, y2, na, len * (0.68 + rnd() * 0.12), w * 0.66, depth - 1);
-    }
-    if (depth < 4) tips.push([(x + x2) / 2, (y + y2) / 2]);
-  };
-  branch(W / 2, H - 6, -Math.PI / 2 + 0.05, 92, 24, 6);
-  // 꽃송이: 가지 끝마다 연분홍·흰 매화
-  const flower = (x, y, r, col) => {
-    g.fillStyle = col;
-    for (let k = 0; k < 5; k++) { const a = k * 1.2566; g.beginPath(); g.ellipse(x + Math.cos(a) * r * 0.5, y + Math.sin(a) * r * 0.5, r * 0.55, r * 0.38, a, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = '#fde68a'; g.beginPath(); g.arc(x, y, r * 0.2, 0, Math.PI * 2); g.fill();
-  };
-  g.globalAlpha = 0.35; // 꽃구름 바탕
-  tips.forEach(([x, y]) => { g.fillStyle = '#fbcfe8'; g.beginPath(); g.arc(x, y, 22 + rnd() * 10, 0, Math.PI * 2); g.fill(); });
-  g.globalAlpha = 1;
-  tips.forEach(([x, y]) => {
-    for (let i = 0; i < 4; i++) flower(x + (rnd() - 0.5) * 34, y + (rnd() - 0.5) * 26, 6 + rnd() * 5, rnd() < 0.7 ? '#f9a8d4' : '#fff1f2');
-  });
-  plumTreeSprite = c;
-}
+// 매화검우: 부채꼴로 퍼져 나가는 꽃잎 물결 (앞머리가 밝고 뒤로 옅어짐). 꽃잎 입자는 renderParticles 에서
 function drawPlumTrees() {
   if (!plumTrees.length) return;
-  // 제미나이로 그린 매화나무 그림(소품과 같은 그림체). 못 불러왔으면 코드로 그린 나무
-  const art = SPRITES.prop_plum_tree && SPRITES.prop_plum_tree.width ? SPRITES.prop_plum_tree : null;
-  if (!art && !plumTreeSprite) buildPlumTreeSprite();
-  const img = art || plumTreeSprite;
-  const treeH = art ? 400 : img.height * 0.85; // 게임 속 나무 키
-  const L = PLUM_TREE.life, G = PLUM_TREE.grow;
-  plumTrees.forEach(tr => {
-    const grow = Math.min(1, tr.t / G), ease = 1 - Math.pow(1 - grow, 3);
-    const fade = Math.min(1, (L - tr.t) / 0.4);
+  plumTrees.forEach(w => {
+    const R = PLUM_WAVE.range, ha = PLUM_WAVE.halfArc;
+    const front = Math.min(w.r, R), back = Math.max(0, front - 220);
+    const fade = Math.max(0, Math.min(1, (R + 60 - w.r) / 120));
     ctx.save();
-    ctx.globalAlpha = Math.max(0, fade);
-    // 바닥: 꽃잎이 떨어지는 범위
-    ctx.fillStyle = 'rgba(249, 168, 212, 0.16)';
-    ctx.beginPath(); ctx.ellipse(tr.x, tr.y, PLUM_TREE.radius * ease, PLUM_TREE.radius * 0.6 * ease, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(244, 114, 182, 0.45)'; ctx.lineWidth = 2;
-    ctx.stroke();
-    // 나무: 아래(뿌리)를 기준으로 솟아남
-    const h = treeH * ease, w = h * img.width / img.height;
-    ctx.drawImage(img, tr.x - w / 2, tr.y - h + 8, w, h); // 뿌리가 범위 원 가운데에 오게
+    ctx.translate(w.x, w.y);
+    ctx.scale(1, 0.8); // 바닥에 깔린 느낌 (쿼터뷰)
+    ctx.globalAlpha = fade;
+    const g = ctx.createRadialGradient(0, 0, back, 0, 0, Math.max(back + 1, front));
+    g.addColorStop(0, 'rgba(249, 168, 212, 0)');
+    g.addColorStop(0.6, 'rgba(249, 168, 212, 0.38)');
+    g.addColorStop(1, 'rgba(255, 228, 236, 0.75)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, front, w.aim - ha, w.aim + ha);
+    ctx.arc(0, 0, back, w.aim + ha, w.aim - ha, true);
+    ctx.closePath();
+    ctx.fill();
+    // 앞머리 검기 선
+    ctx.strokeStyle = 'rgba(251, 113, 133, 0.85)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, front, w.aim - ha, w.aim + ha); ctx.stroke();
     ctx.restore();
   });
 }
 
+// 매화만개(초월) 어검술: 칼 대신 빙글빙글 도는 매화 꽃송이(매화검기)
+function drawPlumBlossom(x, y, r, spin, glow) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(spin);
+  if (glow) { ctx.shadowColor = '#fb7185'; ctx.shadowBlur = 10; }
+  for (let k = 0; k < 5; k++) {
+    const a = k * Math.PI * 2 / 5;
+    ctx.fillStyle = k % 2 ? '#fbcfe8' : '#f9a8d4';
+    ctx.beginPath();
+    ctx.ellipse(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.58, r * 0.42, a, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#be185d';
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fde68a'; // 꽃술
+  for (let k = 0; k < 5; k++) { const a = k * 1.2566 + 0.6; ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.3, Math.sin(a) * r * 0.3, r * 0.08, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
+
 function renderProjectiles() {
-  drawPlumTrees(); // 매화만개 매화나무 (검·투사체 아래)
+  drawPlumTrees(); // 매화만개 매화검우 (검·투사체 아래)
   // 1. Eastern Long Flying Swords (이십사수매화검법 매화검)
   flyingSwords.forEach(sw => {
+    if (sw.isEvo) { // 초월: 매화 꽃송이가 돌다가 날아감 (날 때는 꼬리 선)
+      if (sw.isLaunching) {
+        const sp = Math.hypot(sw.vx, sw.vy) || 1;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(251, 113, 133, 0.55)';
+        ctx.lineWidth = 6; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(sw.x, sw.y); ctx.lineTo(sw.x - sw.vx / sp * 46, sw.y - sw.vy / sp * 46); ctx.stroke();
+        ctx.restore();
+      }
+      drawPlumBlossom(sw.x, sw.y, sw.isLaunching ? 17 : 14, state.gameTime * (sw.isLaunching ? 14 : 5) + sw.angle, sw.isLaunching);
+      return;
+    }
     ctx.save();
     ctx.translate(sw.x, sw.y);
 

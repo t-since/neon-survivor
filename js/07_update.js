@@ -1283,8 +1283,8 @@ function updateGame(dt) {
   }
 
   // 7. Update Particles (with PixelFX Physics) - 60FPS Hard Cap
-  if (particles.length > 160) { // 매화 꽃잎 몫까지 조금 늘림 (예전 130)
-    particles.splice(0, particles.length - 160);
+  if (particles.length > 200) { // 매화 꽃잎·매화검우 몫까지 늘림 (예전 130 → 160 → 200)
+    particles.splice(0, particles.length - 200);
   }
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];

@@ -58,6 +58,7 @@ function updateSkills(dt) {
           if (Math.hypot(e.x - sw.x, e.y - sw.y) < e.radius + 16) {
             dealDamage(e, (isEvo ? 85 : 42) * player.atkMultiplier, true);
             createHitSparks(sw.x, sw.y, isEvo ? '#fb7185' : '#f9a8d4');
+            if (isEvo) createShockwave(e.x, e.y - 20, 56, 'rgba(251, 113, 133, 0.75)'); // 매화검기: 맞은 자리에서 꽃이 확 핌
             spawnPetals(e.x, e.y - 30, isEvo ? 8 : 4 + player.skills.flying_swords); // 벤 자리에 매화가 흩날림
             sw.isLaunching = false;
             sw.orbitDist = isEvo ? 75 : 60;
@@ -70,7 +71,7 @@ function updateSkills(dt) {
       }
     });
 
-    // 초월 '매화만개'의 매화나무는 updatePlumTrees() 에서
+    // 초월 '매화만개'의 매화검우(부채꼴 꽃잎 물결)는 updatePlumTrees() 에서
   }
 
   // 2. Dagger Rain (만천화우)
@@ -163,47 +164,74 @@ function spawnPetals(x, y, n, spread = 1, color = null) {
   }
 }
 
-// 매화만개(초월): 3초마다 적이 가장 많이 몰린 곳에 매화나무가 솟아 꽃잎으로 거듭 벰
-const PLUM_TREE = { every: 3.0, life: 2.6, grow: 0.45, tick: 0.3, radius: 190, dmg: 70, max: 3 };
-function spawnPlumTree() {
-  // 서진 주변 520 안의 적 중, 160 안에 이웃이 가장 많은 적 자리 (적이 많으면 40마리만 견줌)
-  const near = enemies.filter(e => e.hp > 0 && Math.hypot(e.x - player.x, e.y - player.y) < 520);
-  if (!near.length) return;
-  const sample = near.length > 40 ? near.sort(() => Math.random() - 0.5).slice(0, 40) : near;
-  let best = sample[0], bestN = -1;
-  for (const a of sample) {
-    let n = 0;
-    for (const b of near) if (Math.abs(a.x - b.x) < 160 && Math.abs(a.y - b.y) < 160) n++;
-    if (n > bestN) { bestN = n; best = a; }
+// 매화만개(초월) — 매화검우(梅花劍雨): 일정 시간마다 서진 앞에서 적이 몰린 쪽으로
+// 매화 꽃잎이 부채꼴로 쏟아져 나가며, 물결이 지나가는 자리의 적을 벰 (예전 매화나무 대신. 목록 이름은 plumTrees 그대로)
+const PLUM_WAVE = { every: 2.6, range: 440, speed: 620, halfArc: 0.55, dmg: 95, push: 260 };
+function spawnPlumWave() {
+  // 방향: 서진 주변 480 안의 적이 가장 많은 방향 (8방향 중), 없으면 바라보는 쪽
+  const bins = new Array(8).fill(0);
+  let any = false;
+  for (const e of enemies) {
+    if (e.hp <= 0) continue;
+    const dx = e.x - player.x, dy = e.y - player.y;
+    if (dx * dx + dy * dy > 480 * 480) continue;
+    any = true;
+    bins[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8]++;
   }
-  if (plumTrees.length >= PLUM_TREE.max) plumTrees.shift();
-  plumTrees.push({ x: best.x, y: best.y + 30, t: 0, nextTick: PLUM_TREE.grow, seed: Math.random() * 1000 });
+  let aim = player.facing < 0 ? Math.PI : 0;
+  if (any) {
+    let bi = 0;
+    for (let k = 1; k < 8; k++) if (bins[k] + (bins[(k + 7) % 8] + bins[(k + 1) % 8]) * 0.5 > bins[bi] + (bins[(bi + 7) % 8] + bins[(bi + 1) % 8]) * 0.5) bi = k;
+    aim = bi * Math.PI / 4;
+  }
+  if (Math.cos(aim) < -0.15) player.facing = -1; else if (Math.cos(aim) > 0.15) player.facing = 1;
+  plumTrees.push({ x: player.x, y: player.y - 20, aim, r: 0, hit: new Set() });
   triggerSkillMotion('sword', 0.4);
   sound.playSwordSlash();
-  createShockwave(best.x, best.y + 30, 70, 'rgba(249, 168, 212, 0.7)');
+  sound.playSample && sound.playSample('wx_slash_heavy', 0.5, 1.25, 0.05, 0.1);
 }
 function updatePlumTrees(dt) {
   if (player.evolutions.evo_flying_swords) {
     player.evoTimer.flying_swords = (player.evoTimer.flying_swords || 0) + dt;
-    if (player.evoTimer.flying_swords >= PLUM_TREE.every) { player.evoTimer.flying_swords = 0; spawnPlumTree(); }
+    if (player.evoTimer.flying_swords >= PLUM_WAVE.every) { player.evoTimer.flying_swords = 0; spawnPlumWave(); }
   }
   for (let i = plumTrees.length - 1; i >= 0; i--) {
-    const tr = plumTrees[i];
-    tr.t += dt;
-    // 꽃이 핀 뒤 0.3초마다: 나무 아래 적에게 피해 + 꽃잎이 흩날려 떨어짐
-    if (tr.t >= tr.nextTick && tr.t < PLUM_TREE.life - 0.3) {
-      tr.nextTick += PLUM_TREE.tick;
-      for (const e of enemies) {
-        if (e.hp <= 0) continue;
-        const dx = e.x - tr.x, dy = (e.y - tr.y) / 0.6;
-        if (dx * dx + dy * dy <= PLUM_TREE.radius * PLUM_TREE.radius) dealDamage(e, PLUM_TREE.dmg * player.atkMultiplier, true);
+    const w = plumTrees[i];
+    const prevR = w.r;
+    w.r += PLUM_WAVE.speed * dt;
+    // 물결 앞머리가 지나간 적을 한 번씩 벰 + 앞으로 밀어냄
+    for (const e of enemies) {
+      if (e.hp <= 0 || w.hit.has(e)) continue;
+      const dx = e.x - w.x, dy = e.y - w.y;
+      const d = Math.hypot(dx, dy);
+      if (d > w.r + e.radius || d < prevR - 60) continue;
+      let da = Math.atan2(dy, dx) - w.aim;
+      da = Math.atan2(Math.sin(da), Math.cos(da));
+      if (Math.abs(da) > PLUM_WAVE.halfArc + 0.08) continue;
+      w.hit.add(e);
+      dealDamage(e, PLUM_WAVE.dmg * player.atkMultiplier, true);
+      if (!e.isBoss) {
+        e.knockbackVx = Math.cos(w.aim) * PLUM_WAVE.push * (e.isMiniBoss ? 0.3 : 1);
+        e.knockbackVy = Math.sin(w.aim) * PLUM_WAVE.push * (e.isMiniBoss ? 0.3 : 1);
+        e.stunTimer = Math.max(e.stunTimer || 0, 0.12);
       }
-      for (let k = 0; k < 7; k++) {
-        const a = Math.random() * Math.PI * 2, r = Math.random() * PLUM_TREE.radius * 0.9;
-        spawnPetals(tr.x + Math.cos(a) * r * 0.8, tr.y - 250 + Math.sin(a) * r * 0.45, 1, 0.5); // 나무 꽃가지 높이에서
-      }
+      if (Math.random() < 0.5) spawnPetals(e.x, e.y - 30, 2, 0.6);
     }
-    if (tr.t >= PLUM_TREE.life) plumTrees.splice(i, 1);
+    // 앞으로 쏟아지는 꽃잎 (부채꼴 안에서 물결 앞머리 근처)
+    const k = state.frameK || 1;
+    for (let n = 0; n < Math.round(4 * k); n++) {
+      const a = w.aim + (Math.random() * 2 - 1) * PLUM_WAVE.halfArc;
+      const rr = Math.max(10, w.r - Math.random() * 140);
+      const sp = 300 + Math.random() * 300;
+      particles.push({
+        petal: true, x: w.x + Math.cos(a) * rr, y: w.y + Math.sin(a) * rr * 0.8,
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.8,
+        rot: Math.random() * Math.PI * 2, spin: (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8),
+        size: 6 + Math.random() * 5, color: Math.random() < 0.7 ? '#f9a8d4' : (Math.random() < 0.5 ? '#fff1f2' : '#fb7185'),
+        life: 0.3 + Math.random() * 0.3, maxLife: 0.6
+      });
+    }
+    if (w.r >= PLUM_WAVE.range + 60) plumTrees.splice(i, 1);
   }
 }
 
