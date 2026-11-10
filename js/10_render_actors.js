@@ -198,7 +198,8 @@ const ENEMY_ART = {
   skeleton: { key: 'mob_skeleton', h: 145 },      // 백골병
   barbarian: { key: 'mob_barbarian', h: 150 },    // 쌍도객
   butcher: { key: 'mob_butcher', h: 175 },        // 도살마인 (덩치 큼)
-  ghoul: { key: 'mob_ghoul', h: 125 }             // 부패시귀 (웅크림)
+  ghoul: { key: 'mob_ghoul', h: 125 },            // 부패시귀 (웅크림)
+  necromancer: { key: 'mob_necromancer', h: 150 } // 사령술사
 };
 function enemyHasArt(e) {
   const art = ENEMY_ART[e.type];
