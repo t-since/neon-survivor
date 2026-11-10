@@ -86,6 +86,15 @@ const SPRITE_URLS = {
   prop_snow_rock: 'assets/props/snow_rock.png',
   prop_ice_pillar: 'assets/props/ice_pillar.png',
   prop_icicle_rock: 'assets/props/icicle_rock.png',
+  // 2구역 하오문 뒷골목 / 5구역 마교
+  prop_wine_barrels: 'assets/props/wine_barrels.png',
+  prop_cargo_crates: 'assets/props/cargo_crates.png',
+  prop_broken_cart: 'assets/props/broken_cart.png',
+  prop_lantern_post: 'assets/props/lantern_post.png',
+  prop_blood_brazier: 'assets/props/blood_brazier.png',
+  prop_demon_statue: 'assets/props/demon_statue.png',
+  prop_skull_heap: 'assets/props/skull_heap.png',
+  prop_rune_stele: 'assets/props/rune_stele.png',
   prop_incense: 'assets/props/incense.png',
   prop_barricade: 'assets/props/barricade.png',
   shrine_blood_fury: 'assets/props/shrine_blood_fury.png',
@@ -133,7 +142,13 @@ const SPRITE_URLS = {
   // 2차 바닥 (구역마다 재질이 다른 새 그림, 2026-11-10~). 있으면 위 바닥 대신 씀 (09_render_world.js)
   ground_ice_v2: 'assets/ground/ice_v2.jpg',
   ground_snow_v2: 'assets/ground/snow_v2.jpg',
-  ground_swamp_v2: 'assets/ground/swamp_v2.jpg'
+  ground_swamp_v2: 'assets/ground/swamp_v2.jpg',
+  ground_bamboo_v2: 'assets/ground/bamboo_v2.jpg',
+  ground_alley_v2: 'assets/ground/alley_v2.jpg',
+  ground_fortress_v2: 'assets/ground/fortress_v2.jpg',
+  ground_jungle_v2: 'assets/ground/jungle_v2.jpg',
+  ground_cavern_v2: 'assets/ground/cavern_v2.jpg',
+  ground_bloodpalace_v2: 'assets/ground/bloodpalace_v2.jpg'
 };
 // 새 몬스터 그림 (제미나이 2x2 시트에서 자름, assets/mobs). 새로 만든 몬스터는 이 목록에 이름만 추가
 const MOB_ART_NAMES = ['mob_assassin', 'mob_archer', 'mob_dartman', 'mob_jiangshi',

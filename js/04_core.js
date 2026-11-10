@@ -607,6 +607,8 @@ function initObstacles() {
   }
   // 구역별 소품 (그림을 불러왔을 때만): 3구역 독 밀림·늪, 4구역 빙궁·설원
   const SECTOR_PROPS = {
+    1: [['wine_barrels', 3], ['cargo_crates', 3], ['broken_cart', 1], ['lantern_post', 2]],
+    4: [['blood_brazier', 2], ['demon_statue', 2], ['skull_heap', 2], ['rune_stele', 2]],
     2: [['swamp_reeds', 3], ['poison_mushroom', 3], ['vine_stump', 2], ['bone_pile', 1], ['bamboo', 1]],
     3: [['snow_rock', 3], ['ice_crystal', 3], ['icicle_rock', 2], ['ice_pillar', 1]]
   };
@@ -622,10 +624,12 @@ function initObstacles() {
 // 같은 칸은 늘 같은 모양(씨앗값 고정)이라 되돌아가도 소품이 바뀌지 않음.
 const OBSTACLE_CHUNK = 520;
 const OBSTACLE_RADIUS = { bamboo: 30, rock_big: 46, rock_small: 24, lantern: 20, fence: 26, boulder: 46,
-  poison_mushroom: 30, swamp_reeds: 22, vine_stump: 34, bone_pile: 28, ice_crystal: 30, snow_rock: 44, ice_pillar: 24, icicle_rock: 44 };
+  poison_mushroom: 30, swamp_reeds: 22, vine_stump: 34, bone_pile: 28, ice_crystal: 30, snow_rock: 44, ice_pillar: 24, icicle_rock: 44,
+  wine_barrels: 38, cargo_crates: 42, broken_cart: 46, lantern_post: 16, blood_brazier: 26, demon_statue: 32, skull_heap: 36, rune_stele: 28 };
 // 그림 크기 기준 간격 반경: 두 소품 사이는 (내 값 + 상대 값) 이상 떨어짐
 const PROP_GAP = { bamboo: 95, rock_big: 80, rock_small: 45, lantern: 40, fence: 60, boulder: 80,
-  poison_mushroom: 70, swamp_reeds: 60, vine_stump: 75, bone_pile: 60, ice_crystal: 70, snow_rock: 75, ice_pillar: 55, icicle_rock: 75 };
+  poison_mushroom: 70, swamp_reeds: 60, vine_stump: 75, bone_pile: 60, ice_crystal: 70, snow_rock: 75, ice_pillar: 55, icicle_rock: 75,
+  wine_barrels: 70, cargo_crates: 75, broken_cart: 85, lantern_post: 50, blood_brazier: 60, demon_statue: 65, skull_heap: 70, rune_stele: 60 };
 const obstacleChunks = new Set();
 let obstaclePropSet = null;
 let obstacleSafeCenter = { x: 0, y: 0 };

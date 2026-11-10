@@ -285,6 +285,8 @@ function renderEnvironmentProps() {
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][zoneIdx]) ? ZONE_CONFIGS[secIdx][zoneIdx] : ZONE_CONFIGS[0][0];
   // 구역별로 바꿔 끼우는 장식 (3구역 독 밀림, 4구역 빙궁) — 없으면 아래 기본
   const BY_SECTOR = {
+    1: { torch: { key: 'prop_lantern_post', h: 140, glow: [251, 113, 133] } },
+    4: { torch: { key: 'prop_blood_brazier', h: 110, glow: [239, 68, 68] }, crystal: { key: 'prop_rune_stele', h: 120, glow: [239, 68, 68] } },
     2: { crystal: { key: 'prop_poison_mushroom', h: 110, glow: [192, 132, 252] }, torch: { key: 'prop_vine_stump', h: 120, glow: [74, 222, 128] } },
     3: { crystal: { key: 'prop_ice_crystal', h: 125, glow: [125, 211, 252] }, torch: { key: 'prop_icicle_rock', h: 110, glow: [186, 230, 253] } }
   };
@@ -679,7 +681,17 @@ const PROP_SPRITE_DEFS = {
   ice_crystal:     { key: 'prop_ice_crystal',     h: 140, foot: 8, shadowW: 0.38 },
   snow_rock:       { key: 'prop_snow_rock',       w: 120, foot: 10, shadowW: 0.46 },
   ice_pillar:      { key: 'prop_ice_pillar',      h: 150, foot: 8, shadowW: 0.34 },
-  icicle_rock:     { key: 'prop_icicle_rock',     w: 125, foot: 10, shadowW: 0.46 }
+  icicle_rock:     { key: 'prop_icicle_rock',     w: 125, foot: 10, shadowW: 0.46 },
+  // 2구역 하오문 뒷골목
+  wine_barrels:    { key: 'prop_wine_barrels',    w: 105, foot: 8, shadowW: 0.44 },
+  cargo_crates:    { key: 'prop_cargo_crates',    w: 115, foot: 8, shadowW: 0.46 },
+  broken_cart:     { key: 'prop_broken_cart',     w: 130, foot: 8, shadowW: 0.46 },
+  lantern_post:    { key: 'prop_lantern_post',    h: 150, foot: 6, shadowW: 0.28, glow: true },
+  // 5구역 마교
+  blood_brazier:   { key: 'prop_blood_brazier',   h: 115, foot: 8, shadowW: 0.36, glow: true },
+  demon_statue:    { key: 'prop_demon_statue',    h: 135, foot: 8, shadowW: 0.40 },
+  skull_heap:      { key: 'prop_skull_heap',      w: 115, foot: 6, shadowW: 0.46 },
+  rune_stele:      { key: 'prop_rune_stele',      h: 130, foot: 8, shadowW: 0.36 }
 };
 
 // pass: 'back' = 주인공보다 뒤(위쪽)에 있는 소품, 'front' = 주인공보다 앞(아래쪽)에 있는 소품
