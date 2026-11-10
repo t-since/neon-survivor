@@ -60,6 +60,7 @@
       <div style="margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
         <button class="start-icon-btn" id="difficultyBtn" onclick="sound.init(); cycleDifficulty();" style="order: 2;">난이도 : 보통  ▸</button>
         <button class="start-icon-btn train-open-btn" id="trainingBtn" onclick="sound.init(); openTraining();" style="order: 3;">🏯 문파 수련 · 💰 <span class="silver-count">0</span></button>
+        <button class="start-icon-btn train-open-btn" id="goalsBtn" onclick="sound.init(); openGoals();" style="order: 3;">📜 과제 · 업적 <span class="goal-left">3</span></button>
         <button class="start-icon-btn" id="settingsBtnTitle" onclick="sound.init(); openSettings();" style="order: 4;">⚙ 설정</button>
         <button class="start-game-btn" id="quickEnterBtn" onclick="sound.init(); quickEnter();">
           <span class="btn-sword-icon">⚔️</span> <span id="quickEnterLabel">강호 입장</span> <span class="btn-kbd-pill kbd-only">ENTER / SPACE</span>
@@ -483,6 +484,16 @@
     </div>
   </div>
 
+  <!-- 오늘의 과제 · 업적 (js/18_goals.js) -->
+  <div class="modal-overlay" id="goalsModal" style="display: none;">
+    <div class="modal-box training-box">
+      <div class="modal-title" style="color: #fbbf24;">📜 과제 · 업적</div>
+      <div class="modal-subtitle">이루면 은자를 바로 받습니다. 보유 은자 💰 <b class="silver-count" style="color:#fbbf24">0</b></div>
+      <div class="training-list" id="goalsList"></div>
+      <button class="btn-action" onclick="closeGoals();">닫기</button>
+    </div>
+  </div>
+
   <!-- 설정 (js/16_settings.js) -->
   <div class="modal-overlay" id="settingsModal" style="display: none;">
     <div class="modal-box settings-box">
@@ -526,5 +537,6 @@
 <script src="js/15_tutorial.js"></script>
 <script src="js/16_settings.js"></script>
 <script src="js/17_mobile.js"></script>
+<script src="js/18_goals.js"></script>
 </body>
 </html>
