@@ -52,7 +52,7 @@
 Gangho Mangeom: Wuxia Survivor
 
 **Short description** (max 80)
-Slash through endless hordes in a wuxia survival action game. Master martial arts!
+Slash through endless hordes in wuxia survival action. Master martial arts!
 
 **Full description**
 
