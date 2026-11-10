@@ -194,7 +194,11 @@ const ENEMY_ART = {
   poison_assassin: { key: 'mob_assassin', h: 140, filter: 'hue-rotate(110deg) saturate(1.6)' },
   archer: { key: 'mob_archer', h: 145 },          // 죽림 암살궁수 (예전: 해골 궁수 그림)
   spearman: { key: 'mob_dartman', h: 140 },       // 청죽 암기살수 (표창)
-  jiangshi: { key: 'mob_jiangshi', h: 150, hop: true } // 혈강시: 걷기 대신 뛰기 4동작
+  jiangshi: { key: 'mob_jiangshi', h: 150, hop: true }, // 혈강시: 걷기 대신 뛰기 4동작
+  skeleton: { key: 'mob_skeleton', h: 145 },      // 백골병
+  barbarian: { key: 'mob_barbarian', h: 150 },    // 쌍도객
+  butcher: { key: 'mob_butcher', h: 175 },        // 도살마인 (덩치 큼)
+  ghoul: { key: 'mob_ghoul', h: 125 }             // 부패시귀 (웅크림)
 };
 function enemyHasArt(e) {
   const art = ENEMY_ART[e.type];
