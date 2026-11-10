@@ -87,7 +87,7 @@ function updateSkills(dt) {
   // 3. Palm Blast (벽공장 / 여래신장)
   if (player.skills.palm_blast > 0) {
     player.timers.palm_blast += dt;
-    const interval = Math.max(1.5, 3.8 - player.skills.palm_blast * 0.5);
+    const interval = Math.max(1.2, 3.0 - player.skills.palm_blast * 0.4); // 예전 3.8-0.5×레벨 (1레벨 3.3초 → 2.6초)
     if (player.timers.palm_blast >= interval) {
       player.timers.palm_blast = 0;
       castPalmBlast();
@@ -318,28 +318,47 @@ function castDaggerRain() {
 function castPalmBlast() {
   triggerSkillMotion('palm', 0.38);
 
-  const dir = player.facing;
-  const isBuddha = !!player.evolutions.evo_palm_blast;
-  const w = isBuddha ? 220 : (76 + player.skills.palm_blast * 20);
-  const h = isBuddha ? 280 : (100 + player.skills.palm_blast * 20);
-  const dmg = (isBuddha ? 320 : (80 + player.skills.palm_blast * 24)) * player.atkMultiplier;
+  // 방향: 주변 420 안에서 적이 가장 많이 몰린 쪽 (8방향). 예전엔 바라보는 좌우로만 쏴서 허공에 자주 나감
+  const bins = new Array(8).fill(0);
+  let any = false;
+  for (const e of enemies) {
+    if (e.hp <= 0) continue;
+    const dx = e.x - player.x, dy = e.y - player.y;
+    if (dx * dx + dy * dy > 420 * 420) continue;
+    any = true;
+    bins[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8]++;
+  }
+  let aim = player.facing < 0 ? Math.PI : 0;
+  if (any) { let bi = 0; for (let k = 1; k < 8; k++) if (bins[k] > bins[bi]) bi = k; aim = bi * Math.PI / 4; }
+  if (Math.cos(aim) < -0.15) player.facing = -1; else if (Math.cos(aim) > 0.15) player.facing = 1;
 
-  projectiles.push({
-    type: 'palm_wave',
-    isBuddhaPalm: isBuddha,
-    x: player.x + dir * 35,
-    y: player.y - 15,
-    vx: dir * (isBuddha ? 520 : 460),
-    vy: 0,
-    width: w,
-    height: h,
-    life: isBuddha ? 1.6 : 1.25,
-    damage: dmg,
-    penetrates: true,
-    hitList: new Set()
-  });
+  const isBuddha = !!player.evolutions.evo_palm_blast;
+  const lvl = player.skills.palm_blast;
+  const w = isBuddha ? 220 : (76 + lvl * 20);    // 진행 방향 두께
+  const h = isBuddha ? 280 : (100 + lvl * 20);   // 폭
+  const dmg = (isBuddha ? 320 : (80 + lvl * 24)) * player.atkMultiplier;
+  const speed = isBuddha ? 520 : 460;
+  // 3레벨부터(초월 포함) 반대쪽으로도 한 발
+  const dirs = (isBuddha || lvl >= 3) ? [aim, aim + Math.PI] : [aim];
+  for (const a of dirs) {
+    projectiles.push({
+      type: 'palm_wave',
+      isBuddhaPalm: isBuddha,
+      x: player.x + Math.cos(a) * 35,
+      y: player.y - 15 + Math.sin(a) * 25,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed,
+      aim: a,
+      width: w,
+      height: h,
+      life: isBuddha ? 1.6 : 1.25,
+      damage: dmg,
+      penetrates: true,
+      hitList: new Set()
+    });
+    createShockwave(player.x + Math.cos(a) * 25, player.y - 15 + Math.sin(a) * 18, isBuddha ? 70 : 42, isBuddha ? '#fbbf24' : '#38bdf8');
+  }
   sound.playPalmBlast();
-  createShockwave(player.x + dir * 25, player.y - 15, isBuddha ? 70 : 42, isBuddha ? '#fbbf24' : '#38bdf8');
 }
 
 function castThunderBomb() {

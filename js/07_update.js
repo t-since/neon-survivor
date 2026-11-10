@@ -339,15 +339,25 @@ function updateGame(dt) {
         }
       }
     } else if (p.type === 'palm_wave') {
+      // 진행 방향(aim)으로 돌린 상자 안에 든 적 (예전: 좌우로만 쏴서 축 맞춘 상자)
+      const pa = p.aim !== undefined ? p.aim : (p.vx >= 0 ? 0 : Math.PI);
+      const ca = Math.cos(pa), sa = Math.sin(pa);
       for (let e of enemies) {
-        if (!p.hitList.has(e) && Math.abs(e.x - p.x) < p.width / 2 && Math.abs(e.y - p.y) < p.height / 2) {
+        if (p.hitList.has(e) || e.hp <= 0) continue;
+        const rx = e.x - p.x, ry = e.y - p.y;
+        const along = rx * ca + ry * sa, across = -rx * sa + ry * ca;
+        if (Math.abs(along) < p.width / 2 + e.radius && Math.abs(across) < p.height / 2) {
           p.hitList.add(e);
           dealDamage(e, p.damage, true);
-          const knockbackDir = p.vx > 0 ? 1 : -1;
           const power = p.isBuddhaPalm ? 950 : (580 + player.skills.palm_blast * 95);
-          e.knockbackVx = knockbackDir * power;
-          e.knockbackVy = (Math.random() - 0.5) * (p.isBuddhaPalm ? 220 : 140);
+          const side = (Math.random() - 0.5) * (p.isBuddhaPalm ? 220 : 140);
+          e.knockbackVx = ca * power - sa * side;
+          e.knockbackVy = sa * power + ca * side;
           e.stunTimer = p.isBuddhaPalm ? 0.9 : (0.45 + player.skills.palm_blast * 0.08);
+          // 벽공 충돌: 날아가는 동안 다른 적과 부딪히면 둘 다 추가 피해 + 기절 (updatePalmImpacts)
+          e.palmImpact = 0.45;
+          e.palmImpactDmg = p.damage * (p.isBuddhaPalm ? 0.6 : 0.45);
+          e.palmBumped = null;
           createHitSparks(e.x, e.y, p.isBuddhaPalm ? '#fde047' : '#bae6fd');
           createShockwave(e.x, e.y, p.isBuddhaPalm ? 70 : 45, p.isBuddhaPalm ? 'rgba(251, 191, 36, 0.7)' : 'rgba(224, 242, 254, 0.65)');
         }
@@ -841,6 +851,36 @@ function updateGame(dt) {
     }
     e.x += (e.vx || 0) * gaitMul * dt;
     e.y += (e.vy || 0) * gaitMul * dt;
+
+    // 벽공 충돌: 무극벽공장에 날아가는 적이 다른 적과 부딪히면 둘 다 피해 + 부딪힌 적도 밀려 연쇄 (조금씩 약해짐)
+    if (e.palmImpact > 0) {
+      e.palmImpact -= dt;
+      const gcx = (e.x / ENEMY_CELL) | 0, gcy = (e.y / ENEMY_CELL) | 0;
+      let bumped = null;
+      for (let ox = -1; ox <= 1 && !bumped; ox++) for (let oy = -1; oy <= 1 && !bumped; oy++) {
+        const cell = ENEMY_GRID.get((gcx + ox) * 100003 + (gcy + oy));
+        if (!cell) continue;
+        for (const o of cell) {
+          if (o === e || o.hp <= 0 || o._dead || o.palmImpact > 0 || o.isBoss) continue;
+          if (o._palmBumpAt !== undefined && state.gameTime - o._palmBumpAt < 0.6) continue; // 같은 적은 0.6초에 한 번만
+          if (Math.hypot(o.x - e.x, o.y - e.y) < (e.radius + o.radius) * 1.1) { bumped = o; break; }
+        }
+      }
+      if (bumped) {
+        const dmgB = e.palmImpactDmg || 30;
+        e.palmImpact = 0;
+        bumped._palmBumpAt = state.gameTime;
+        dealDamage(bumped, dmgB, false);
+        dealDamage(e, dmgB * 0.5, false);
+        bumped.stunTimer = Math.max(bumped.stunTimer || 0, 0.5);
+        if (!bumped.isMiniBoss) { bumped.knockbackVx = (e.knockbackVx || 0) * 0.6; bumped.knockbackVy = (e.knockbackVy || 0) * 0.6; }
+        if (dmgB > 12) { bumped.palmImpact = 0.3; bumped.palmImpactDmg = dmgB * 0.7; } // 연쇄
+        const mx = (e.x + bumped.x) / 2, my = (e.y + bumped.y) / 2 - 20;
+        PixelFX.spawnHitSparks(mx, my, '#bae6fd', 8);
+        createShockwave(mx, my, 40, 'rgba(186, 230, 253, 0.8)');
+        state.screenShake = Math.max(state.screenShake || 0, 3);
+      }
+    }
 
     // 캐릭터 몸 안으로 파고들지 않게 밀어냄 (보스·뛰어오르는 강시 제외).
     // 멈추는 거리(bodyMin) < 몸통 피해 거리(bodyMin + 10) 라서 붙어 있으면 피해는 그대로 들어옴

@@ -1150,13 +1150,14 @@ function renderProjectiles() {
       ctx.save();
     } else if (p.type === 'palm_wave' && p.isBuddhaPalm && SPRITES.fx_buddha_palm && SPRITES.fx_buddha_palm.width) {
       const dir = p.vx >= 0 ? 1 : -1;
+      const sp = Math.hypot(p.vx, p.vy) || 1, ux = p.vx / sp, uy = p.vy / sp; // 날아가는 방향 (8방향)
       const size = Math.max(230, (p.width || 220) * 1.25);
       const lifeK = Math.min(1, p.life / 0.35);
       const pulse = 1 + Math.sin(state.gameTime * 14) * 0.04;
       ctx.restore();
       // 잔상 2개 (뒤쪽으로 흐려지며)
-      drawFxImage('fx_buddha_palm', p.x - dir * 150, p.y - 40, size * 0.8, 0.12 * lifeK, dir * 0.12);
-      drawFxImage('fx_buddha_palm', p.x - dir * 80, p.y - 40, size * 0.9, 0.2 * lifeK, dir * 0.12);
+      drawFxImage('fx_buddha_palm', p.x - ux * 150, p.y - 40 - uy * 150, size * 0.8, 0.12 * lifeK, dir * 0.12);
+      drawFxImage('fx_buddha_palm', p.x - ux * 80, p.y - 40 - uy * 80, size * 0.9, 0.2 * lifeK, dir * 0.12);
       drawFxImage('fx_buddha_palm', p.x, p.y - 40, size * pulse, 0.78 * lifeK, dir * 0.12);
       ctx.save();
     } else if (p.type === 'palm_wave') {
