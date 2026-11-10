@@ -31,8 +31,11 @@ if (modeBtn && !(await ev(`[...document.querySelectorAll('button')].some(b=>/현
 // 이미지 도구
 const plus = await waitRect(`[...document.querySelectorAll('button[aria-label="업로드 및 도구"]')].filter(x=>x.getBoundingClientRect().width>0).pop()`);
 await mouse(plus.x, plus.y);
-let it = await waitRect(`[...document.querySelectorAll('button,[role=menuitem],[role=menuitemcheckbox]')].filter(x=>x.getClientRects().length && /이미지 만들기/.test(x.innerText||''))[0]`);
-await sleep(500); it = await rect(`[...document.querySelectorAll('button,[role=menuitem],[role=menuitemcheckbox]')].filter(x=>x.getClientRects().length && /이미지 만들기/.test(x.innerText||''))[0]`);
+// 메뉴 항목 모양이 바뀔 수 있어(2026-11-11: 버튼이 아닌 목록 항목) 글자가 '이미지 만들기'인 가장 작은 요소를 찾음
+const findImgTool = `(()=>{const c=[...document.querySelectorAll('button,[role=menuitem],[role=menuitemcheckbox],[role=option],li,mat-list-item,div,span')].filter(x=>x.getClientRects().length && (x.innerText||'').trim()==='이미지 만들기'); return c.sort((a,b)=>a.getBoundingClientRect().width*a.getBoundingClientRect().height-b.getBoundingClientRect().width*b.getBoundingClientRect().height)[0]})()`;
+let it = await waitRect(findImgTool);
+await sleep(500); it = await rect(findImgTool);
+if (!it) { console.log('이미지 도구를 못 찾음 (화면이 바뀌었을 수 있음)'); process.exit(4); }
 await mouse(it.x, it.y); await sleep(1500);
 // 비율
 const ar = await waitRect(`[...document.querySelectorAll('button')].filter(b=>/가로세로/.test((b.getAttribute('aria-label')||'') + (b.innerText||'')) && b.getClientRects().length)[0]`);

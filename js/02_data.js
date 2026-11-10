@@ -77,6 +77,15 @@ const SPRITE_URLS = {
   prop_lantern: 'assets/props/lantern.png',
   prop_brazier: 'assets/props/brazier.png',
   prop_stalagmite: 'assets/props/stalagmite.png',
+  // 구역별 소품 (2026-11-11, 2x2 시트를 tools/split_props.mjs 로 자름): 3구역 독 밀림·늪 / 4구역 빙궁
+  prop_poison_mushroom: 'assets/props/poison_mushroom.png',
+  prop_swamp_reeds: 'assets/props/swamp_reeds.png',
+  prop_vine_stump: 'assets/props/vine_stump.png',
+  prop_bone_pile: 'assets/props/bone_pile.png',
+  prop_ice_crystal: 'assets/props/ice_crystal.png',
+  prop_snow_rock: 'assets/props/snow_rock.png',
+  prop_ice_pillar: 'assets/props/ice_pillar.png',
+  prop_icicle_rock: 'assets/props/icicle_rock.png',
   prop_incense: 'assets/props/incense.png',
   prop_barricade: 'assets/props/barricade.png',
   shrine_blood_fury: 'assets/props/shrine_blood_fury.png',
@@ -123,7 +132,8 @@ const SPRITE_URLS = {
   ground_new_bloodpalace: 'assets/ground/bloodpalace.jpg',
   // 2차 바닥 (구역마다 재질이 다른 새 그림, 2026-11-10~). 있으면 위 바닥 대신 씀 (09_render_world.js)
   ground_ice_v2: 'assets/ground/ice_v2.jpg',
-  ground_snow_v2: 'assets/ground/snow_v2.jpg'
+  ground_snow_v2: 'assets/ground/snow_v2.jpg',
+  ground_swamp_v2: 'assets/ground/swamp_v2.jpg'
 };
 // 새 몬스터 그림 (제미나이 2x2 시트에서 자름, assets/mobs). 새로 만든 몬스터는 이 목록에 이름만 추가
 const MOB_ART_NAMES = ['mob_assassin', 'mob_archer', 'mob_dartman', 'mob_jiangshi',

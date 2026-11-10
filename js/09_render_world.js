@@ -283,7 +283,13 @@ function renderEnvironmentProps() {
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
   const zoneIdx = Math.max(0, Math.min(3, (state.currentZone || 1) - 1));
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][zoneIdx]) ? ZONE_CONFIGS[secIdx][zoneIdx] : ZONE_CONFIGS[0][0];
-  const ART = {
+  // 구역별로 바꿔 끼우는 장식 (3구역 독 밀림, 4구역 빙궁) — 없으면 아래 기본
+  const BY_SECTOR = {
+    2: { crystal: { key: 'prop_poison_mushroom', h: 110, glow: [192, 132, 252] }, torch: { key: 'prop_vine_stump', h: 120, glow: [74, 222, 128] } },
+    3: { crystal: { key: 'prop_ice_crystal', h: 125, glow: [125, 211, 252] }, torch: { key: 'prop_icicle_rock', h: 110, glow: [186, 230, 253] } }
+  };
+  const secArt = BY_SECTOR[secIdx] && BY_SECTOR[secIdx][zoneCfg.propType];
+  const ART = (secArt && SPRITES[secArt.key] && SPRITES[secArt.key].width) ? secArt : {
     torch:   { key: 'prop_brazier',    h: 105, glow: [251, 146, 60] },
     crystal: { key: 'prop_stalagmite', h: 125, glow: [45, 212, 191] },
     altar:   { key: 'prop_incense',    h: 95,  glow: null }
@@ -663,7 +669,17 @@ const PROP_SPRITE_DEFS = {
   boulder:    { key: 'prop_rock_big',   w: 128, foot: 10, shadowW: 0.46 },
   rock_small: { key: 'prop_rock_small', w: 70,  foot: 6,  shadowW: 0.46 },
   lantern:    { key: 'prop_lantern',    h: 112, foot: 8,  shadowW: 0.40, glow: true },
-  fence:      { key: 'prop_barricade',  w: 120, foot: 8,  shadowW: 0.42 }
+  fence:      { key: 'prop_barricade',  w: 120, foot: 8,  shadowW: 0.42 },
+  // 3구역 독 밀림·늪
+  poison_mushroom: { key: 'prop_poison_mushroom', h: 120, foot: 8, shadowW: 0.40 },
+  swamp_reeds:     { key: 'prop_swamp_reeds',     h: 140, foot: 6, shadowW: 0.34, sway: true },
+  vine_stump:      { key: 'prop_vine_stump',      h: 130, foot: 8, shadowW: 0.44 },
+  bone_pile:       { key: 'prop_bone_pile',       w: 110, foot: 6, shadowW: 0.46 },
+  // 4구역 빙궁·설원
+  ice_crystal:     { key: 'prop_ice_crystal',     h: 140, foot: 8, shadowW: 0.38 },
+  snow_rock:       { key: 'prop_snow_rock',       w: 120, foot: 10, shadowW: 0.46 },
+  ice_pillar:      { key: 'prop_ice_pillar',      h: 150, foot: 8, shadowW: 0.34 },
+  icicle_rock:     { key: 'prop_icicle_rock',     w: 125, foot: 10, shadowW: 0.46 }
 };
 
 // pass: 'back' = 주인공보다 뒤(위쪽)에 있는 소품, 'front' = 주인공보다 앞(아래쪽)에 있는 소품

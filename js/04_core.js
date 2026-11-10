@@ -605,6 +605,13 @@ function initObstacles() {
   } else { // stone_fortress 등
     obstaclePropSet = [['lantern', 3], ['rock_big', 2], ['rock_small', 2], ['fence', 1]];
   }
+  // 구역별 소품 (그림을 불러왔을 때만): 3구역 독 밀림·늪, 4구역 빙궁·설원
+  const SECTOR_PROPS = {
+    2: [['swamp_reeds', 3], ['poison_mushroom', 3], ['vine_stump', 2], ['bone_pile', 1], ['bamboo', 1]],
+    3: [['snow_rock', 3], ['ice_crystal', 3], ['icicle_rock', 2], ['ice_pillar', 1]]
+  };
+  const sp = SECTOR_PROPS[secIdx];
+  if (sp && SPRITES['prop_' + sp[0][0]] && SPRITES['prop_' + sp[0][0]].width) obstaclePropSet = sp;
   obstacleSafeCenter = { x: player.x, y: player.y };
   obstacleSeed = (Math.random() * 1e9) | 0;
   ensureObstacleChunks();
@@ -614,9 +621,11 @@ function initObstacles() {
 // 맵을 OBSTACLE_CHUNK 크기의 칸으로 나누고, 화면 근처 칸에 처음 들어갈 때 그 칸의 소품을 만듦.
 // 같은 칸은 늘 같은 모양(씨앗값 고정)이라 되돌아가도 소품이 바뀌지 않음.
 const OBSTACLE_CHUNK = 520;
-const OBSTACLE_RADIUS = { bamboo: 30, rock_big: 46, rock_small: 24, lantern: 20, fence: 26, boulder: 46 };
+const OBSTACLE_RADIUS = { bamboo: 30, rock_big: 46, rock_small: 24, lantern: 20, fence: 26, boulder: 46,
+  poison_mushroom: 30, swamp_reeds: 22, vine_stump: 34, bone_pile: 28, ice_crystal: 30, snow_rock: 44, ice_pillar: 24, icicle_rock: 44 };
 // 그림 크기 기준 간격 반경: 두 소품 사이는 (내 값 + 상대 값) 이상 떨어짐
-const PROP_GAP = { bamboo: 95, rock_big: 80, rock_small: 45, lantern: 40, fence: 60, boulder: 80 };
+const PROP_GAP = { bamboo: 95, rock_big: 80, rock_small: 45, lantern: 40, fence: 60, boulder: 80,
+  poison_mushroom: 70, swamp_reeds: 60, vine_stump: 75, bone_pile: 60, ice_crystal: 70, snow_rock: 75, ice_pillar: 55, icicle_rock: 75 };
 const obstacleChunks = new Set();
 let obstaclePropSet = null;
 let obstacleSafeCenter = { x: 0, y: 0 };
