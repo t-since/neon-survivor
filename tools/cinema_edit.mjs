@@ -71,11 +71,18 @@ shots.forEach((s, i) => {
   if (s.title) {
     const t = s.title, a = t.at || 0.5, d = t.dur || (s.dur - a - 0.5), fi = 0.8, fo = 0.8;
     const alpha = `if(lt(t,${a}),0,if(lt(t,${a + fi}),(t-${a})/${fi},if(lt(t,${a + d - fo}),1,max(0,(${a + d}-t)/${fo}))))`;
+    // y: 제목 중심 높이(화면 비율, 기본 0.47). ink: 밝은 배경용 먹색 글씨
+    const cy = Math.round(H * (t.y ?? 0.47));
+    const cx = Math.round(W * (t.x ?? 0.5)); // x: 제목 중심 가로 위치(화면 비율)
+    const ink = !!t.ink;
+    const main = ink ? 'fontcolor=0x14161C:borderw=3:bordercolor=0xF5F1E6@0.55:shadowcolor=0xFFFFFF@0.35:shadowx=0:shadowy=0'
+      : 'fontcolor=0xF8F1E0:shadowcolor=0x000000@0.7:shadowx=0:shadowy=4:borderw=2:bordercolor=0x000000@0.35';
+    const subc = ink ? 'fontcolor=0x7A1F14:borderw=2:bordercolor=0xF5F1E6@0.6' : 'fontcolor=0xFBBF24:shadowcolor=0x000000@0.8:shadowx=0:shadowy=2:borderw=1:bordercolor=0x000000@0.5';
     fs.writeFileSync(path.join(tmp, `t${i}.txt`), t.text || '', 'utf8');
-    vf.push(`drawtext=fontfile=title.ttf:textfile=t${i}.txt:fontsize=${Math.round(H * 0.105)}:fontcolor=0xF8F1E0:alpha='${alpha}':x=(w-text_w)/2:y=(h-text_h)/2-${Math.round(H * 0.03)}:shadowcolor=0x000000@0.7:shadowx=0:shadowy=4:borderw=2:bordercolor=0x000000@0.35`);
+    vf.push(`drawtext=fontfile=title.ttf:textfile=t${i}.txt:fontsize=${Math.round(H * 0.105)}:${main}:alpha='${alpha}':x=${cx}-text_w/2:y=${cy}-text_h/2`);
     if (t.sub) {
       fs.writeFileSync(path.join(tmp, `s${i}.txt`), t.sub, 'utf8');
-      vf.push(`drawtext=fontfile=sub.ttf:textfile=s${i}.txt:fontsize=${Math.round(H * 0.034)}:fontcolor=0xFBBF24:alpha='${alpha}':x=(w-text_w)/2:y=(h/2)+${Math.round(H * 0.075)}:shadowcolor=0x000000@0.8:shadowx=0:shadowy=2`);
+      vf.push(`drawtext=fontfile=sub.ttf:textfile=s${i}.txt:fontsize=${Math.round(H * 0.036)}:${subc}:alpha='${alpha}':x=${cx}-text_w/2:y=${cy + Math.round(H * 0.085)}`);
     }
   }
   ff([...input, '-vf', vf.join(','), '-t', String(s.dur), '-an', '-c:v', 'libx264', '-preset', presetSeg, '-crf', String(crfSeg), '-pix_fmt', 'yuv420p', out], s.id);
