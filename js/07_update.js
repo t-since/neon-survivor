@@ -47,6 +47,7 @@ function updateGame(dt) {
   updateTimerDisplay();
   updateEnvironmentWeather(dt);
   updateCorpses(dt);
+  if (typeof updateTutorial === 'function') updateTutorial(dt); // 첫 판 안내 (js/15_tutorial.js)
 
   // 1. Player Movement & Walk Animation
   let mx = 0;

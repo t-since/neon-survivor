@@ -1807,6 +1807,23 @@
     .silver-gain span { font-size: 11px; color: #cbd5e1; margin-left: 4px; }
     .silver-total { font-size: 11px; color: #94a3b8; margin-top: 3px; }
     #trainingModal { z-index: 180; }
+
+    /* ===== 첫 판 안내 (js/15_tutorial.js) — 화면 위쪽 가운데, 게임은 멈추지 않음. 창(100)보다 아래 ===== */
+    #tutorialHint { position: fixed; left: 50%; top: 92px; transform: translate(-50%, -8px); z-index: 95; display: flex; align-items: center; gap: 10px;
+      max-width: min(620px, calc(100vw - 32px)); padding: 10px 12px 10px 14px; border-radius: 12px; background: rgba(12, 16, 28, 0.86);
+      border: 1px solid rgba(251, 191, 36, 0.55); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), 0 0 14px rgba(251, 191, 36, 0.18);
+      color: #e2e8f0; font-size: 14px; line-height: 1.45; text-align: left; opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; }
+    #tutorialHint.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+    #tutorialHint b { color: #fbbf24; }
+    #tutorialHint .tut-icon { font-size: 22px; flex: none; }
+    #tutorialHint .tut-text { flex: 1; min-width: 0; }
+    #tutorialHint .tut-step { flex: none; font-size: 11px; color: #94a3b8; }
+    #tutorialHint .tut-skip { flex: none; background: none; border: none; color: #94a3b8; font-size: 15px; cursor: pointer; padding: 2px 4px; }
+    #tutorialHint .tut-skip:hover { color: #f1f5f9; }
+    #tutorialLevelTip { margin: 4px auto 10px; max-width: 640px; padding: 8px 12px; border-radius: 8px; background: rgba(251, 191, 36, 0.1);
+      border: 1px dashed rgba(251, 191, 36, 0.5); color: #e2e8f0; font-size: 13px; }
+    #tutorialLevelTip b { color: #fbbf24; }
+    @media (max-height: 520px) { #tutorialHint { top: 58px; font-size: 12px; padding: 7px 10px; } #tutorialHint .tut-icon { font-size: 18px; } }
     .training-box { max-width: 560px; width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; }
     .training-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
     .train-card { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; text-align: left; }

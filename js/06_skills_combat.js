@@ -810,6 +810,7 @@ function showNextLevelUp() {
     };
   }
 
+  if (typeof Tutorial !== 'undefined') Tutorial.decorateLevelUp(); // 첫 판: 고르는 법 한 줄 (js/15_tutorial.js)
   document.getElementById('levelUpModal').style.display = 'flex';
 }
 

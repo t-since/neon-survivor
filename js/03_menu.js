@@ -324,6 +324,7 @@ function confirmStartGame() {
   player.isDashing = false;
   player.afterImages = [];
   applyTrainings(player); // 문파 수련(영구 강화) 적용 + 이번 판 은자 기록 초기화 (js/14_progress.js)
+  if (typeof startTutorial === 'function') startTutorial(); // 첫 판 안내 (js/15_tutorial.js)
 
   // Reset skills and assign starting skill!
   for (let k in player.skills) {
