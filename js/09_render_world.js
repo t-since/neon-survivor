@@ -501,6 +501,84 @@ function renderGroundDecals() {
   });
 }
 
+// ---------- 바닥 위 움직이는 효과 (같은 바닥 그림이라도 구역 재질이 느껴지게) ----------
+// 월드를 칸으로 나눠 칸마다 정해진 자리에 효과 하나 (칸 번호로 만든 난수라 화면이 움직여도 제자리)
+function groundCellRand(cx, cy, k) {
+  let s = (Math.imul(cx, 374761393) ^ Math.imul(cy, 668265263) ^ Math.imul(k, 2246822519)) >>> 0;
+  s = Math.imul(s ^ (s >>> 13), 1274126177) >>> 0;
+  return ((s ^ (s >>> 16)) >>> 0) / 4294967296;
+}
+const GROUND_FX = {
+  ground_new_ice:  { cell: 150, kind: 'glint', sheen: true },
+  ground_ice_v2:   { cell: 150, kind: 'glint', sheen: true },
+  ground_new_snow: { cell: 110, kind: 'glint', small: true },
+  ground_snow_v2:  { cell: 110, kind: 'glint', small: true },
+  ground_new_swamp: { cell: 210, kind: 'bubble' },
+  ground_swamp_v2:  { cell: 210, kind: 'bubble' },
+  ground_new_cavern: { cell: 260, kind: 'glow', color: [167, 139, 250] },
+  ground_cavern_v2:  { cell: 260, kind: 'glow', color: [167, 139, 250] },
+  ground_new_bloodpalace: { cell: 280, kind: 'glow', color: [239, 68, 68] },
+  ground_bloodpalace_v2:  { cell: 280, kind: 'glow', color: [239, 68, 68] }
+};
+function drawGroundFx(key) {
+  const fx = GROUND_FX[key];
+  if (!fx) return;
+  const t = state.gameTime || 0;
+  const L = state.camera.x - gameWidth / 2, T = state.camera.y - gameHeight / 2;
+  const C = fx.cell;
+  ctx.save();
+  // 빙판: 넓은 광택 띠가 천천히 대각선으로 흘러감
+  if (fx.sheen) {
+    // 8초마다 화면을 왼쪽 위 → 오른쪽 아래로 한 번 쓸고 지나감
+    const u = ((t / 8) % 1) * 1.8 - 0.4;
+    const cxs = L + u * (gameWidth + gameHeight), w = 260;
+    const g = ctx.createLinearGradient(cxs - w, T, cxs + w, T + w * 2);
+    g.addColorStop(0, 'rgba(224, 242, 254, 0)');
+    g.addColorStop(0.5, 'rgba(224, 242, 254, 0.13)');
+    g.addColorStop(1, 'rgba(224, 242, 254, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(L, T, gameWidth, gameHeight);
+  }
+  ctx.globalCompositeOperation = fx.kind === 'bubble' ? 'source-over' : 'lighter';
+  const x0 = Math.floor(L / C), x1 = Math.floor((L + gameWidth) / C), y0 = Math.floor(T / C), y1 = Math.floor((T + gameHeight) / C);
+  for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) {
+    const px = (cx + 0.15 + groundCellRand(cx, cy, 1) * 0.7) * C;
+    const py = (cy + 0.15 + groundCellRand(cx, cy, 2) * 0.7) * C;
+    const ph = groundCellRand(cx, cy, 3) * 6.28, sp = 0.6 + groundCellRand(cx, cy, 4) * 0.9;
+    if (fx.kind === 'glint') {
+      // 반짝: 대부분 꺼져 있다가 잠깐 별처럼 빛남
+      const a = Math.pow(Math.max(0, Math.sin(t * sp * 1.6 + ph)), 14);
+      if (a < 0.03) continue;
+      const r = (fx.small ? 5 : 8) * (0.6 + a * 0.6);
+      ctx.fillStyle = `rgba(255, 255, 255, ${a * 0.9})`;
+      ctx.beginPath();
+      ctx.moveTo(px - r, py); ctx.lineTo(px - r * 0.15, py - r * 0.15); ctx.lineTo(px, py - r); ctx.lineTo(px + r * 0.15, py - r * 0.15);
+      ctx.lineTo(px + r, py); ctx.lineTo(px + r * 0.15, py + r * 0.15); ctx.lineTo(px, py + r); ctx.lineTo(px - r * 0.15, py + r * 0.15);
+      ctx.closePath(); ctx.fill();
+    } else if (fx.kind === 'bubble') {
+      // 늪 거품: 부풀었다가 톡 터짐 (3초 주기)
+      const cyc = ((t * sp * 0.35 + ph / 6.28) % 1);
+      if (cyc > 0.85) continue;
+      const r = 3 + cyc * 9;
+      ctx.strokeStyle = `rgba(190, 242, 100, ${0.55 * (1 - cyc)})`;
+      ctx.fillStyle = `rgba(101, 163, 13, ${0.22 * (1 - cyc)})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    } else if (fx.kind === 'glow') {
+      // 수정·핏빛 불씨: 은은하게 숨 쉬듯 밝아졌다 어두워짐
+      const a = 0.10 + 0.12 * (0.5 + 0.5 * Math.sin(t * sp + ph));
+      const r = 50 + groundCellRand(cx, cy, 5) * 40;
+      const [cr, cg, cb] = fx.color;
+      const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+      g.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${a})`);
+      g.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(px - r, py - r, r * 2, r * 2);
+    }
+  }
+  ctx.restore();
+}
+
 function renderGround() {
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
   const zoneIdx = Math.max(0, Math.min(3, (state.currentZone || 1) - 1));
@@ -545,6 +623,9 @@ function renderGround() {
     ctx.fillStyle = '#0a0d14';
     ctx.fillRect(startX, startY, endX - startX + tileSize, endY - startY + tileSize);
   }
+
+  state.groundKey = (groundImg === newImg) ? newKey : null; // 빙판 미끄러짐 등에서 씀 (07_update)
+  drawGroundFx(state.groundKey);
 
   // 2. 매크로 라이팅 & 대기감 (타일 격자감을 완전히 지우는 자연스러운 조명/그늘 비네트)
   // (화면 가장자리 어둡게 하기는 index.html 의 #vignette 고정 층으로 옮김 — 매번 그리면 PC에서 느림)

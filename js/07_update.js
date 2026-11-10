@@ -83,17 +83,35 @@ function updateGame(dt) {
   }
 
   const inputLen = Math.hypot(mx, my);
+  // 빙판(4구역 얼음 바닥): 천천히 붙고 천천히 멈춤 — 살짝 미끄러지는 느낌 (renderGround 가 state.groundKey 기록)
+  const onIce = state.groundKey === 'ground_new_ice' || state.groundKey === 'ground_ice_v2';
   if (inputLen > 0.1) {
     const normX = mx / (inputLen > 1 ? inputLen : 1);
     const normY = my / (inputLen > 1 ? inputLen : 1);
-    player.vx = normX * player.speed;
-    player.vy = normY * player.speed;
+    if (onIce) {
+      const k = Math.min(1, 4.0 * dt);
+      player.vx += (normX * player.speed - player.vx) * k;
+      player.vy += (normY * player.speed - player.vy) * k;
+    } else {
+      player.vx = normX * player.speed;
+      player.vy = normY * player.speed;
+    }
     player.isMoving = true;
     if (normX < -0.15) player.facing = -1;
     if (normX > 0.15) player.facing = 1;
 
     // Walk animation timer advances based on actual speed traveled!
     player.walkTimer += dt * (player.speed / 28);
+  } else if (onIce && Math.hypot(player.vx, player.vy) > 12) {
+    // 손을 떼도 얼음 위에서 조금 더 미끄러짐 (걷는 동작은 멈춤) + 얼음 가루
+    const decay = Math.pow(0.12, dt);
+    player.vx *= decay;
+    player.vy *= decay;
+    player.isMoving = false;
+    player.walkTimer = 0;
+    if (Math.random() < 0.25 * (state.frameK || 1)) {
+      particles.push({ x: player.x + (Math.random() - 0.5) * 20, y: player.y + 4, vx: -player.vx * 0.2 + (Math.random() - 0.5) * 30, vy: -20 - Math.random() * 20, life: 0.35, maxLife: 0.35, color: '#e0f2fe', size: 2 + Math.random() * 2 });
+    }
   } else {
     player.vx = 0;
     player.vy = 0;
