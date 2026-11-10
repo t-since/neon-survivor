@@ -211,8 +211,16 @@ function enemyHasArt(e) {
 // 프레임 크기 440x340, 발 기준점 (220,320), 인물 키 300px
 function drawEnemyArt(e, art, facing, isMoving, runTimer) {
   ctx.scale(facing, 1);
-  let key;
-  if (e.animAtk > 0 && SPRITES[art.key + '_attack_0']) {
+  let key, tremble = 0;
+  const heavyProf = (typeof ENEMY_MELEE !== 'undefined' && ENEMY_MELEE[e.type] && ENEMY_MELEE[e.type].heavy) ? ENEMY_MELEE[e.type] : null;
+  if (heavyProf && e.swingT > 0 && SPRITES[art.key + '_attack_1']) {
+    // 묵직한 공격: 잠깐 준비(0번) → 칼을 높이 든 장면(1번)에서 멈춰 힘을 모음 → 내려칠 때 2·3번
+    const k = 1 - e.swingT / heavyProf.windup;
+    key = art.key + '_attack_' + (k < 0.18 ? 0 : 1);
+    if (k > 0.55) tremble = (Math.random() - 0.5) * 3 * k; // 힘 모으며 부르르
+  } else if (heavyProf && e.animAtk > 0 && SPRITES[art.key + '_attack_2']) {
+    key = art.key + '_attack_' + (e.animAtk > 0.15 ? 2 : 3); // 내려친 장면 0.2초 → 거두기
+  } else if (e.animAtk > 0 && SPRITES[art.key + '_attack_0']) {
     const prog = 1 - e.animAtk / (e.animAtkMax || 0.5);
     key = art.key + '_attack_' + Math.max(0, Math.min(3, Math.floor(prog * 4)));
   } else if (art.hop) {
@@ -228,7 +236,7 @@ function drawEnemyArt(e, art, facing, isMoving, runTimer) {
   const k = art.h / 300;
   const hop = e.type === 'jiangshi' ? -(e.hopHeight || 0) : 0;
   const look = (e.hitCooldown > 0.06) ? 'brightness(2.4) saturate(0.3)' : (e.elite ? ((art.filter ? art.filter + ' ' : '') + 'sepia(0.35) saturate(1.8) hue-rotate(-25deg) brightness(0.95)') : art.filter); // 맞은 순간 하얗게 / 정예 붉게 / 종류별 색
-  ctx.drawImage(tinted(img, look), -220 * k, -320 * k + 4 + hop, 440 * k, 340 * k);
+  ctx.drawImage(tinted(img, look), -220 * k + tremble, -320 * k + 4 + hop, 440 * k, 340 * k);
 }
 
 // 적이 많을 때(25마리 넘게)는 그림자 번짐(shadowBlur)을 끔 — 큰 PC 화면에서 매우 느려서 렉의 원인

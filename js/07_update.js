@@ -27,7 +27,8 @@ function updateEnemySwing(e, prof, dist, dt) {
   }
   if (e.swingCd <= 0 && dist < reach && !(e.stunTimer > 0)) {
     e.swingT = prof.windup;
-    e.animAtk = e.animAtkMax = prof.windup / 0.55; // 공격 그림 4장 중 3번째 장에서 내려침
+    // 공격 그림 4장 중 3번째 장에서 내려침. 묵직한 공격은 준비 동안 1번 장을 붙잡고(10_render), 내려친 뒤 2·3번을 0.35초에 빠르게
+    e.animAtk = e.animAtkMax = prof.heavy ? prof.windup + 0.35 : prof.windup / 0.55;
     if (prof.heavy) { // 내려칠 자리를 미리 정함 (서진 쪽 앞)
       const a = Math.atan2(player.y - e.y, player.x - e.x);
       e.swingX = e.x + Math.cos(a) * (e.radius + 34);
