@@ -318,10 +318,36 @@ function castThunderBomb() {
   triggerSkillMotion('bomb', 0.35);
   const isEvo = !!player.evolutions.evo_thunder_bomb; // 구천뇌정
   const bombCount = isEvo ? 4 : 1 + Math.floor(player.skills.thunder_bomb / 3);
+  // 던지는 거리: 화면 안쪽(BOMB_MIN~BOMB_MAX)의 적 중에서 가장 많이 몰린 곳을 노림
+  // (예전: 맵 전체 아무 적 → 화면 밖 멀리 날아가 안 보이거나 헛터짐)
+  const BOMB_MIN = 120, BOMB_MAX = 450;
+  const inRange = [];
+  for (const e of enemies) {
+    if (e.hp <= 0) continue;
+    const d = Math.hypot(e.x - player.x, e.y - player.y);
+    if (d >= BOMB_MIN && d <= BOMB_MAX) inRange.push(e);
+  }
+  if (inRange.length === 0) { // 범위 안에 없으면 가장 가까운 적 (너무 멀면 제외)
+    let best = null, bd = 700;
+    for (const e of enemies) { if (e.hp <= 0) continue; const d = Math.hypot(e.x - player.x, e.y - player.y); if (d < bd) { bd = d; best = e; } }
+    if (best) inRange.push(best);
+  }
+  const picked = [];
   for (let i = 0; i < bombCount; i++) {
-    const target = enemies.length > 0 ? enemies[Math.floor(Math.random() * enemies.length)] : null;
-    const tx = target ? target.x + (Math.random() - 0.5) * 40 : player.x + (Math.random() - 0.5) * 300;
-    const ty = target ? target.y + (Math.random() - 0.5) * 40 : player.y + (Math.random() - 0.5) * 300;
+    let target = null, bestScore = -1;
+    // 후보 몇 명만 뽑아 주변 적 수로 점수 (이미 고른 곳 근처는 감점 → 여러 발이 흩어지게)
+    for (let k = 0; k < Math.min(12, inRange.length); k++) {
+      const c = inRange[Math.floor(Math.random() * inRange.length)];
+      let score = 0;
+      for (const o of inRange) if (Math.abs(o.x - c.x) < 110 && Math.abs(o.y - c.y) < 110) score++;
+      for (const p of picked) if (Math.hypot(p.x - c.x, p.y - c.y) < 140) score -= 4;
+      if (score > bestScore) { bestScore = score; target = c; }
+    }
+    if (target) picked.push(target);
+    const ang = Math.random() * Math.PI * 2, rr = 200 + Math.random() * 100;
+    const tx = target ? target.x + (Math.random() - 0.5) * 40 : player.x + Math.cos(ang) * rr;
+    const ty = target ? target.y + (Math.random() - 0.5) * 40 : player.y + Math.sin(ang) * rr;
+    const dist = Math.hypot(tx - player.x, ty - player.y);
     groundBombs.push({
       startX: player.x,
       startY: player.y - 20,
@@ -332,7 +358,8 @@ function castThunderBomb() {
       radius: (100 + player.skills.thunder_bomb * 18) * (isEvo ? 1.7 : 1),
       damage: 80 * player.atkMultiplier * (isEvo ? 2 : 1),
       evo: isEvo,
-      duration: isEvo ? 0.5 + i * 0.12 : 0.65
+      // 가까우면 빨리, 멀면 조금 더 오래 날아감 (0.45~0.75초)
+      duration: (isEvo ? i * 0.12 : 0) + 0.45 + Math.min(1, dist / BOMB_MAX) * 0.3
     });
   }
 }
@@ -536,12 +563,13 @@ function onEnemyKilled(target) {
     const bossBar = document.getElementById('bossBarContainer');
     if (bossBar) bossBar.style.display = 'none';
     chests.push({
-      x: target.x - 35,
+      x: target.x - 50,
       y: target.y,
       isBossChest: true
     });
-    spawnItemDrop(target.x + 35, target.y, 'legendary');
-    spawnVictoryPortal(target.x, target.y);
+    spawnItemDrop(target.x + 50, target.y, 'legendary');
+    // 포탈은 보상(상자·아이템)과 겹치지 않게 보스 자리 위쪽으로 떨어뜨려 생김 (겹치면 아이템을 줍기 전에 포탈에 빨려 들어감)
+    spawnVictoryPortal(target.x, target.y - 230);
     showPhaseBanner('🏆 군주 토벌!', '포탈로 다음 관문 진격', 'stage');
     sound.playLevelUp();
   }
@@ -916,6 +944,13 @@ function spawnVictoryPortal(x, y) {
     rot: 0,
     pulse: 0
   };
+  // 포탈 자리를 막는 대나무·바위는 치움 (포탈이 소품에 가려 들어가기 어렵지 않게)
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    if (Math.hypot(obstacles[i].x - x, obstacles[i].y - y) < 150) {
+      PixelFX.spawnHitSparks(obstacles[i].x, obstacles[i].y, '#94a3b8', 8);
+      obstacles.splice(i, 1);
+    }
+  }
   createShockwave(x, y, 140, '#fbbf24');
   createShockwave(x, y, 90, '#38bdf8');
   PixelFX.spawnHitSparks(x, y, '#fbbf24', 20);

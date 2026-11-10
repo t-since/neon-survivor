@@ -615,6 +615,8 @@ function initObstacles() {
 // 같은 칸은 늘 같은 모양(씨앗값 고정)이라 되돌아가도 소품이 바뀌지 않음.
 const OBSTACLE_CHUNK = 520;
 const OBSTACLE_RADIUS = { bamboo: 30, rock_big: 46, rock_small: 24, lantern: 20, fence: 26, boulder: 46 };
+// 그림 크기 기준 간격 반경: 두 소품 사이는 (내 값 + 상대 값) 이상 떨어짐
+const PROP_GAP = { bamboo: 95, rock_big: 80, rock_small: 45, lantern: 40, fence: 60, boulder: 80 };
 const obstacleChunks = new Set();
 let obstaclePropSet = null;
 let obstacleSafeCenter = { x: 0, y: 0 };
@@ -650,10 +652,13 @@ function ensureObstacleChunks() {
         const half = OBSTACLE_CHUNK / 2;
         const x = cx * OBSTACLE_CHUNK + gx * half + half * (0.2 + rand() * 0.6);
         const y = cy * OBSTACLE_CHUNK + gy * half + half * (0.2 + rand() * 0.6);
-        // 시작 지점·신단 주변은 비워 둠
+        // 시작 지점·신단 주변은 비워 둠 (신단 그림이 커서 넉넉히)
         if (Math.hypot(x - obstacleSafeCenter.x, y - obstacleSafeCenter.y) < 300) continue;
-        if (shrines.some(s => Math.hypot(x - s.x, y - s.y) < 190)) continue;
+        if (shrines.some(s => Math.hypot(x - s.x, y - s.y) < 300)) continue;
         const type = pickPropType(rand);
+        // 소품끼리 그림이 겹치지 않게 최소 간격 (옆 칸 소품과 붙는 문제)
+        const gap = PROP_GAP[type] || 60;
+        if (obstacles.some(o => Math.abs(o.x - x) < 260 && Math.abs(o.y - y) < 260 && Math.hypot(o.x - x, o.y - y) < gap + (PROP_GAP[o.type] || 60))) continue;
         obstacles.push({ x, y, type, radius: OBSTACLE_RADIUS[type] || 26, flip: rand() < 0.5, scale: 0.85 + rand() * 0.3 });
       }
     }
