@@ -50,8 +50,8 @@ function updateSkills(dt) {
         sw.x += sw.vx * dt;
         sw.y += sw.vy * dt;
         sw.life -= dt;
-        // 날아가는 매화검 뒤로 꽃잎이 흩어짐
-        if (Math.random() < 0.35 * (state.frameK || 1)) spawnPetals(sw.x, sw.y, 1, 0.3);
+        // 날아가는 매화검 뒤로 꽃잎이 흩날림 (초월은 더 많이)
+        if (Math.random() < (isEvo ? 0.9 : 0.5) * (state.frameK || 1)) spawnPetals(sw.x - sw.vx * 0.03, sw.y - sw.vy * 0.03, isEvo ? 2 : 1, 0.35);
 
         for (let e of enemies) {
           if (e.hp <= 0) continue;
@@ -417,6 +417,7 @@ function triggerMeleeAttack(target) {
   const range = isFinisher ? 205 : 180;
   const halfArc = isFinisher ? Math.PI * 0.75 : Math.PI * 0.39; // 보통 140°, 큰 베기 270°
   let hits = 0;
+  const hitList = [];
   for (const e of enemies) {
     const dx = e.x - player.x;
     const dy = e.y - player.y;
@@ -426,16 +427,17 @@ function triggerMeleeAttack(target) {
     da = Math.atan2(Math.sin(da), Math.cos(da));
     if (Math.abs(da) > halfArc && d > 45) continue; // 몸에 붙은 적은 방향 상관없이 맞음
     hits++;
+    hitList.push(e);
     const dmg = (48 + player.level * 6) * player.atkMultiplier * (isFinisher ? 1.6 : 1);
     dealDamage(e, dmg, true);
-    e.hitCooldown = 0.14;
+    e.hitCooldown = 0.22; // 하얗게 번쩍이는 시간 (0.06 넘는 동안) — 예전 0.14
     // 맞은 방향으로 밀려남 (보스는 밀리지 않음, 중간보스는 큰 베기에만 조금)
     if (!e.isBoss && !(e.isMiniBoss && !isFinisher)) {
-      const kb = (isFinisher ? 560 : 320) * (e.isMiniBoss ? 0.35 : 1);
+      const kb = (isFinisher ? 760 : 440) * (e.isMiniBoss ? 0.35 : 1); // 예전 560 / 320
       const nx = dx / (d || 1), ny = dy / (d || 1);
       e.knockbackVx = nx * kb;
       e.knockbackVy = ny * kb;
-      e.stunTimer = Math.max(e.stunTimer || 0, isFinisher ? 0.28 : 0.14);
+      e.stunTimer = Math.max(e.stunTimer || 0, isFinisher ? 0.38 : 0.22); // 예전 0.28 / 0.14
     }
   }
 
@@ -448,12 +450,9 @@ function triggerMeleeAttack(target) {
   }
 
   if (hits > 0) {
-    // 큰 베기(3타): 맞은 적마다 불꽃이 튐
-    if (isFinisher) {
-      for (const e of enemies) {
-        if (e.hitCooldown >= 0.13 && Math.hypot(e.x - player.x, e.y - player.y) < range + 40) PixelFX.spawnHitSparks(e.x, e.y - 20, '#fde68a', 6);
-      }
-    }
+    // 맞은 적마다 불꽃 (큰 베기는 더 많이), 가장 먼저 맞은 적 자리에 흰 타격 고리
+    for (const e of hitList) PixelFX.spawnHitSparks(e.x, e.y - 24, isFinisher ? '#fde68a' : '#f1f5f9', isFinisher ? 10 : 5);
+    createShockwave(hitList[0].x, hitList[0].y - 24, isFinisher ? 70 : 42, 'rgba(255, 255, 255, 0.85)');
     sound.playSample(isFinisher ? 'wx_slash_heavy' : 'wx_slash_hit', isFinisher ? 0.8 : 0.6, 1, 0.08, 0.08); // 묵직한 베기 타격
     // 검기 흡혈: 근거리로 싸우면 맞는 만큼 조금씩 회복 (근거리가 맞기만 한다는 의견 반영)
     const heal = Math.min(4, hits) * (isFinisher ? 2 : 1);
@@ -461,10 +460,12 @@ function triggerMeleeAttack(target) {
       player.hp = Math.min(player.maxHp, player.hp + heal);
       updateHud();
     }
-    state.hitStop = isFinisher ? 0.07 : 0.04;          // 맞는 순간 아주 잠깐 멈칫 (손맛)
-    state.screenShake = Math.max(state.screenShake || 0, isFinisher ? 7 : 3);
+    // 맞는 순간 멈칫 (손맛). 많이 맞을수록 조금 더 — 예전 0.04 / 0.07 고정
+    state.hitStop = (isFinisher ? 0.11 : 0.065) + Math.min(3, hits - 1) * 0.008;
+    state.screenShake = Math.max(state.screenShake || 0, isFinisher ? 11 : 5); // 예전 7 / 3
   }
-  PixelFX.spawnSwordSlash(player.x + Math.cos(aim) * 50, player.y - 30 + Math.sin(aim) * 40, aim, isFinisher ? 120 : 88);
+  // 칼 빛: 예전 88 / 120 → 크게
+  PixelFX.spawnSwordSlash(player.x + Math.cos(aim) * 55, player.y - 30 + Math.sin(aim) * 44, aim, isFinisher ? 155 : 112);
 }
 
 function findClosestEnemy(x, y, maxDist = 500) {

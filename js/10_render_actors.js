@@ -945,18 +945,7 @@ function renderProjectiles() {
   drawPlumTrees(); // 매화만개 매화검우 (검·투사체 아래)
   // 1. Eastern Long Flying Swords (이십사수매화검법 매화검)
   flyingSwords.forEach(sw => {
-    if (sw.isEvo) { // 초월: 매화 꽃송이가 돌다가 날아감 (날 때는 꼬리 선)
-      if (sw.isLaunching) {
-        const sp = Math.hypot(sw.vx, sw.vy) || 1;
-        ctx.save();
-        ctx.strokeStyle = 'rgba(251, 113, 133, 0.55)';
-        ctx.lineWidth = 6; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(sw.x, sw.y); ctx.lineTo(sw.x - sw.vx / sp * 46, sw.y - sw.vy / sp * 46); ctx.stroke();
-        ctx.restore();
-      }
-      drawPlumBlossom(sw.x, sw.y, sw.isLaunching ? 17 : 14, state.gameTime * (sw.isLaunching ? 14 : 5) + sw.angle, sw.isLaunching);
-      return;
-    }
+    // 매화검: 검이 날아가고 그 뒤로 꽃잎이 흩날림 (꽃잎은 06 의 spawnPetals). 초월(매화만개)은 손잡이에 매화 한 송이
     ctx.save();
     ctx.translate(sw.x, sw.y);
 
@@ -1076,6 +1065,9 @@ function renderProjectiles() {
     ctx.stroke();
 
     ctx.restore();
+    if (sw.isEvo) { // 초월: 손잡이 끝에 매화 한 송이
+      drawPlumBlossom(sw.x + Math.cos(angle) * -22, sw.y + Math.sin(angle) * -22, 8, state.gameTime * 4 + sw.angle, false);
+    }
   });
 
   // 2. Projectiles (Formless Gale, Buddha Palm, Golden Ki, Blood Bullets, Poison Shards)
