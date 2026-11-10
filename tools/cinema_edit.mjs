@@ -47,7 +47,12 @@ shots.forEach((s, i) => {
   const out = `seg${i}.mp4`;
   const vf = [];
   let input;
-  if (exists(s.src)) {
+  if (s.blank) {
+    // 검은 화면 (글자만 올리는 컷)
+    input = ['-f', 'lavfi', '-t', String(s.dur), '-i', `color=c=${s.blank === true ? 'black' : s.blank}:s=${W}x${H}:r=${FPS}`];
+    vf.push('setsar=1');
+    console.log(`[${s.id}] 검은 화면`);
+  } else if (exists(s.src)) {
     const sp = s.speed || 1;
     input = ['-ss', String(s.in || 0), '-t', String(s.dur * sp + 0.1), '-i', abs(s.src)];
     vf.push(`setpts=PTS/${sp}`, `scale=${W}:${H}:force_original_aspect_ratio=increase`, `crop=${W}:${H}`, `fps=${FPS}`, 'setsar=1');
@@ -85,6 +90,13 @@ shots.forEach((s, i) => {
       vf.push(`drawtext=fontfile=sub.ttf:textfile=s${i}.txt:fontsize=${Math.round(H * 0.036)}:${subc}:alpha='${alpha}':x=${cx}-text_w/2:y=${cy + Math.round(H * 0.085)}`);
     }
   }
+  // 자막 굽기 (트레일러처럼 게임 밖에서 쓰는 영상): edl.burnSubs 가 true 면 sub 를 화면 아래에 그림
+  if (edl.burnSubs && s.sub && s.sub.text) {
+    const a = s.sub.at ?? 0.4, e = s.sub.end ?? (s.dur - 0.3), fi = 0.35;
+    const alpha = `if(lt(t,${a}),0,if(lt(t,${a + fi}),(t-${a})/${fi},if(lt(t,${e - fi}),1,max(0,(${e}-t)/${fi}))))`;
+    fs.writeFileSync(path.join(tmp, `c${i}.txt`), s.sub.text, 'utf8');
+    vf.push(`drawtext=fontfile=sub.ttf:textfile=c${i}.txt:fontsize=${Math.round(H * 0.042)}:fontcolor=0xF3EEE2:alpha='${alpha}':x=(w-text_w)/2:y=h-${Math.round(H * 0.14)}:shadowcolor=0x000000@0.85:shadowx=0:shadowy=3:borderw=2:bordercolor=0x000000@0.4`);
+  }
   ff([...input, '-vf', vf.join(','), '-t', String(s.dur), '-an', '-c:v', 'libx264', '-preset', presetSeg, '-crf', String(crfSeg), '-pix_fmt', 'yuv420p', out], s.id);
 });
 
@@ -94,13 +106,14 @@ const transOf = (s, k) => k === 0 ? 0 : (s.trans === 'cut' ? 0 : (s.transDur ?? 
 const starts = []; let acc = 0;
 shots.forEach((s, k) => { acc -= transOf(s, k); starts.push(acc); acc += s.dur; });
 const total = +(acc).toFixed(3);
-let fc = '', last = '[0:v]';
+// 모든 조각을 같은 시간 단위로 (cut(concat)과 fade(xfade)를 섞으면 시간 단위가 달라져 실패하던 것)
+let fc = shots.map((s, k) => `[${k}:v]settb=AVTB,setpts=PTS-STARTPTS,fps=${FPS}[n${k}];`).join(''), last = '[n0]';
 shots.forEach((s, k) => {
   if (k === 0) return;
   const td = transOf(s, k);
   const label = `[v${k}]`;
-  if (td === 0) { fc += `${last}[${k}:v]concat=n=2:v=1:a=0${label};`; }
-  else fc += `${last}[${k}:v]xfade=transition=${s.trans === 'black' ? 'fadeblack' : 'fade'}:duration=${td}:offset=${starts[k].toFixed(3)}${label};`;
+  if (td === 0) { fc += `${last}[n${k}]concat=n=2:v=1:a=0,settb=AVTB,fps=${FPS}${label};`; }
+  else fc += `${last}[n${k}]xfade=transition=${s.trans === 'black' ? 'fadeblack' : 'fade'}:duration=${td}:offset=${starts[k].toFixed(3)},settb=AVTB,fps=${FPS}${label};`;
   last = label;
 });
 const fadeIn = edl.fadeIn ?? 1.0, fadeOut = edl.fadeOut ?? 1.5;
@@ -131,7 +144,7 @@ if (haveAudio) {
 }
 
 // ---------- 4. 최종 출력 ----------
-const outDir = path.join(ROOT, 'assets/cinema');
+const outDir = edl.outDir ? abs(edl.outDir) : path.join(ROOT, 'assets/cinema'); // 트레일러 등은 게임 밖 폴더로
 fs.mkdirSync(outDir, { recursive: true });
 const outMp4 = path.join(outDir, name + '.mp4');
 ff(['-i', 'video.mp4', ...(haveAudio ? ['-i', 'audio.wav'] : []), '-map', '0:v', ...(haveAudio ? ['-map', '1:a', '-c:a', 'aac', '-b:a', '160k'] : []),
@@ -149,5 +162,5 @@ shots.forEach((s, k) => {
 fs.writeFileSync(path.join(outDir, name + '.json'), JSON.stringify({ duration: total, cues }, null, 2), 'utf8');
 
 const mb = (fs.statSync(outMp4).size / 1048576).toFixed(1);
-console.log(`\n완성: assets/cinema/${name}.mp4 (${total.toFixed(1)}초, ${mb}MB${FAST ? ', 빠른 확인용 화질' : ''}) + ${name}.json (자막 ${cues.length}개)`);
+console.log(`\n완성: ${path.relative(ROOT, outMp4).replace(/\\/g, '/')} (${total.toFixed(1)}초, ${mb}MB${FAST ? ', 빠른 확인용 화질' : ''}) + ${name}.json (자막 ${cues.length}개)`);
 fs.rmSync(tmp, { recursive: true, force: true });

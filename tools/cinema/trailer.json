@@ -1,0 +1,492 @@
+{
+  "note": "홍보 트레일러 편집표 (약 60초). 실사 클립 cinema_src/trailer/t01~t11.mp4, 게임 화면 cinema_src/gameplay/*.mp4. node tools/cinema_edit.mjs trailer → promo/trailer.mp4",
+  "outDir": "promo",
+  "size": [
+    1920,
+    1080
+  ],
+  "fps": 30,
+  "crf": 20,
+  "fadeIn": 0.6,
+  "fadeOut": 1.2,
+  "burnSubs": true,
+  "grade": "eq=contrast=1.05:saturation=0.95,vignette=PI/6",
+  "music": {
+    "file": "assets/audio/bgm_boss.mp3",
+    "from": 0,
+    "at": 0,
+    "vol": 0.7,
+    "fadeIn": 3,
+    "fadeOut": 2.5
+  },
+  "shots": [
+    {
+      "id": "t01",
+      "src": "cinema_src/trailer/t01.mp4",
+      "in": 0.5,
+      "dur": 3.4,
+      "sfx": [
+        {
+          "file": "assets/audio/wx_gong.mp3",
+          "at": 0.6,
+          "vol": 0.8
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t01.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t02",
+      "src": "cinema_src/trailer/t02.mp4",
+      "in": 0.8,
+      "dur": 4.6,
+      "trans": "fade",
+      "transDur": 0.6,
+      "sub": {
+        "text": "그날, 사부는 부러진 검 한 자루만 남겼다",
+        "at": 0.5
+      },
+      "fallback": {
+        "img": "assets_new/trailer_frames/t02.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t03",
+      "src": "cinema_src/trailer/t03.mp4",
+      "in": 0.5,
+      "dur": 3.4,
+      "trans": "black",
+      "transDur": 0.8,
+      "sub": {
+        "text": "그리고 강호에, 붉은 단약이 퍼졌다",
+        "at": 0.6
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_heavy.mp3",
+          "at": 0.5,
+          "vol": 0.7
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t03.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t04",
+      "src": "cinema_src/trailer/t04.mp4",
+      "in": 1,
+      "dur": 4,
+      "trans": "fade",
+      "transDur": 0.5,
+      "sfx": [
+        {
+          "file": "assets/audio/wx_slash_heavy.mp3",
+          "at": 2.2,
+          "vol": 0.9
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t04.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t05",
+      "src": "cinema_src/trailer/t05.mp4",
+      "in": 2,
+      "dur": 2,
+      "trans": "cut",
+      "title": {
+        "text": "第 一 區 域",
+        "at": 0.2,
+        "dur": 1.7,
+        "y": 0.18
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_palm.mp3",
+          "at": 0,
+          "vol": 0.7
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t05.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t06",
+      "src": "cinema_src/trailer/t06.mp4",
+      "in": 2,
+      "dur": 2,
+      "trans": "cut",
+      "title": {
+        "text": "第 二 區 域",
+        "at": 0.2,
+        "dur": 1.7,
+        "y": 0.18
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_palm.mp3",
+          "at": 0,
+          "vol": 0.7
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t06.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t07",
+      "src": "cinema_src/trailer/t07.mp4",
+      "in": 2,
+      "dur": 2,
+      "trans": "cut",
+      "title": {
+        "text": "第 三 區 域",
+        "at": 0.2,
+        "dur": 1.7,
+        "y": 0.18
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_palm.mp3",
+          "at": 0,
+          "vol": 0.7
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t07.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t08",
+      "src": "cinema_src/trailer/t08.mp4",
+      "in": 2,
+      "dur": 2,
+      "trans": "cut",
+      "title": {
+        "text": "第 四 區 域",
+        "at": 0.2,
+        "dur": 1.7,
+        "y": 0.18
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_palm.mp3",
+          "at": 0,
+          "vol": 0.7
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t08.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t09",
+      "src": "cinema_src/trailer/t09.mp4",
+      "in": 2,
+      "dur": 3,
+      "trans": "cut",
+      "title": {
+        "text": "第 五 區 域",
+        "at": 0.2,
+        "dur": 2.6,
+        "y": 0.18
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_boom.mp3",
+          "at": 0,
+          "vol": 0.8
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t09.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "card1",
+      "blank": true,
+      "dur": 1.6,
+      "trans": "cut",
+      "title": {
+        "text": "다 섯  구 역",
+        "at": 0.1,
+        "dur": 1.4
+      }
+    },
+    {
+      "id": "g1",
+      "src": "cinema_src/gameplay/combat.mp4",
+      "in": 2,
+      "dur": 2.4,
+      "trans": "cut",
+      "sfx": [
+        {
+          "file": "assets/audio/wx_slash_heavy.mp3",
+          "at": 0.2,
+          "vol": 0.7
+        }
+      ]
+    },
+    {
+      "id": "g2",
+      "src": "cinema_src/gameplay/combat.mp4",
+      "in": 9,
+      "dur": 2.4,
+      "trans": "cut",
+      "sfx": [
+        {
+          "file": "assets/audio/wx_boom.mp3",
+          "at": 0.3,
+          "vol": 0.7
+        }
+      ]
+    },
+    {
+      "id": "card2",
+      "blank": true,
+      "dur": 1.6,
+      "trans": "cut",
+      "title": {
+        "text": "수 백 의  적",
+        "at": 0.1,
+        "dur": 1.4
+      }
+    },
+    {
+      "id": "g3",
+      "src": "cinema_src/gameplay/combat.mp4",
+      "in": 16,
+      "dur": 2.4,
+      "trans": "cut",
+      "sfx": [
+        {
+          "file": "assets/audio/wx_palm.mp3",
+          "at": 0.3,
+          "vol": 0.7
+        }
+      ]
+    },
+    {
+      "id": "g4",
+      "src": "cinema_src/gameplay/boss.mp4",
+      "in": 4,
+      "dur": 2.4,
+      "trans": "cut",
+      "sfx": [
+        {
+          "file": "assets/audio/wx_boom.mp3",
+          "at": 0.2,
+          "vol": 0.8
+        }
+      ]
+    },
+    {
+      "id": "card3",
+      "blank": true,
+      "dur": 1.6,
+      "trans": "cut",
+      "title": {
+        "text": "나 만 의  무 공",
+        "at": 0.1,
+        "dur": 1.4
+      }
+    },
+    {
+      "id": "g5",
+      "src": "cinema_src/gameplay/levelup.mp4",
+      "in": 2.5,
+      "dur": 1.8,
+      "trans": "cut",
+      "sfx": [
+        {
+          "file": "assets/audio/wx_gong.mp3",
+          "at": 0.2,
+          "vol": 0.6
+        }
+      ]
+    },
+    {
+      "id": "g6",
+      "src": "cinema_src/gameplay/boss.mp4",
+      "in": 14,
+      "dur": 2.6,
+      "trans": "cut",
+      "sfx": [
+        {
+          "file": "assets/audio/wx_slash_heavy.mp3",
+          "at": 0.3,
+          "vol": 0.8
+        }
+      ]
+    },
+    {
+      "id": "t10",
+      "src": "cinema_src/trailer/t10.mp4",
+      "in": 1,
+      "dur": 4,
+      "trans": "black",
+      "transDur": 0.6,
+      "sfx": [
+        {
+          "file": "assets/audio/wx_palm.mp3",
+          "at": 1.6,
+          "vol": 0.9
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t10.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "t11",
+      "src": "cinema_src/trailer/t11.mp4",
+      "in": 0.5,
+      "dur": 4,
+      "trans": "fade",
+      "transDur": 0.4,
+      "sfx": [
+        {
+          "file": "assets/audio/wx_boom.mp3",
+          "at": 3.5,
+          "vol": 1
+        }
+      ],
+      "fallback": {
+        "img": "assets_new/trailer_frames/t11.png",
+        "from": [
+          50,
+          50,
+          1.12
+        ],
+        "to": [
+          50,
+          48,
+          1
+        ]
+      }
+    },
+    {
+      "id": "logo",
+      "blank": true,
+      "dur": 5.5,
+      "trans": "cut",
+      "title": {
+        "text": "江 湖 萬 劍",
+        "sub": "강 호 만 검  ·  Google Play 출시 예정",
+        "at": 0.6,
+        "dur": 4.6
+      },
+      "sfx": [
+        {
+          "file": "assets/audio/wx_gong.mp3",
+          "at": 0.5,
+          "vol": 1
+        }
+      ]
+    }
+  ]
+}
