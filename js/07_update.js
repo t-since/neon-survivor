@@ -15,6 +15,7 @@ function applyPlayerDebuff(kind, seconds) {
 }
 
 function pickMusicKey() {
+  if (typeof Cinema !== 'undefined' && Cinema.active && Cinema.music) return Cinema.music;
   if (!state.isGameStarted) return 'title';
   if (state.boss) return 'boss';
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));

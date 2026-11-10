@@ -223,8 +223,10 @@ document.getElementById('closeTreasureBtn').onclick = () => {
 };
 document.getElementById('btnVictoryNextSector').onclick = () => {
   // 마지막(5)구역을 깼으면 같은 구역을 다시 돌지 않고 엔딩 크레딧으로
-  if (currentSelectedSector >= 5) { openEndingCredits(); return; }
-  continueToNextSector();
+  if (currentSelectedSector >= 5) { playCinematic('ending', openEndingCredits); return; }
+  // 다음 구역 진입 컷신을 본 뒤 출발
+  document.getElementById('victoryModal').style.display = 'none';
+  playCinematic('sector' + (currentSelectedSector + 1), continueToNextSector);
 };
 // 엔딩 뒤: 처음 화면으로 / 1구역부터 다시
 function endingReturnToTitle() {

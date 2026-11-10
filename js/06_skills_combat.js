@@ -876,7 +876,7 @@ function onSectorVictory() {
   // 마지막(5)구역까지 모두 깨면 승리 창 대신 엔딩 크레딧이 바로 나옴 (끝에 '다시 시작' / '처음으로')
   if (currentSelectedSector >= 5) {
     sound.playLevelUp();
-    openEndingCredits();
+    playCinematic('ending', openEndingCredits); // 엔딩 컷신 → 엔딩 크레딧
     return;
   }
 

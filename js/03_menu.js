@@ -270,7 +270,8 @@ function launchExpedition() {
     alert('해당 작전 구역은 아직 잠겨 있습니다! 이전 구역을 먼저 돌파하십시오.');
     return;
   }
-  confirmStartGame();
+  // 시네마틱 (js/13_cinematics.js): 1구역은 오프닝, 구역 선택으로 2~5구역에 바로 들어가면 그 구역 진입 컷신
+  playCinematic(currentSelectedSector === 1 ? 'opening' : 'sector' + currentSelectedSector, confirmStartGame);
 }
 
 function markCurrentSectorCleared() {

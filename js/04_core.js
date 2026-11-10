@@ -233,6 +233,9 @@ const keys = {};
 window.addEventListener('keydown', (e) => {
   keys[e.key] = true;
 
+  // 시네마틱 중이면 다른 키 처리 막음 (js/13_cinematics.js)
+  if (typeof Cinema !== 'undefined' && Cinema.handleKey(e)) return;
+
   // Three.js Cutscene active: Skip with Escape, Space, or Enter
   if (typeof ThreeCutsceneEngine !== 'undefined' && ThreeCutsceneEngine.active) {
     if (e.key === 'Escape' || e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
