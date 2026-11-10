@@ -55,9 +55,16 @@ function enemyStrike(e, prof, second) {
   }
   const d = Math.hypot(player.x - e.x, player.y - e.y);
   if (d > player.radius + e.radius * 1.2 + prof.reach + 18) return; // 휘두르는 사이 빠져나감
-  playerTakeDamage(e.damage * prof.mul);
+  // 피해 상한: 여러 마리에 둘러싸여도 가벼운 공격 합이 초당 MELEE_BUDGET.rate 를 크게 넘지 않게
+  // (예전 몸통 피해에도 '가장 센 적 × 2.5' 상한이 있었음. 없으면 10마리에 둘러싸일 때 초당 100 넘게 들어와 금방 죽음)
+  const want = e.damage * prof.mul;
+  const got = Math.min(want, Math.max(want * 0.25, meleeBudget));
+  meleeBudget = Math.max(0, meleeBudget - want);
+  playerTakeDamage(got);
   if (prof.poison) applyPlayerDebuff('poison', prof.poison);
 }
+const MELEE_BUDGET = { rate: 30, cap: 60 }; // 초당 30씩 차오르고 최대 60까지 모임
+let meleeBudget = MELEE_BUDGET.cap;
 // 묵직한 공격 경고: 내려칠 자리에 붉은 원이 차오름 (renderGround 끝에서 그림)
 function drawEnemyTelegraphs() {
   for (const e of enemies) {
@@ -489,6 +496,7 @@ function updateGame(dt) {
   if (contactDmgSum > 0) playerTakeDamage(Math.min(contactDmgSum, contactDmgMax * 2.5) * dt);
   contactDmgSum = 0;
   contactDmgMax = 0;
+  meleeBudget = Math.min(MELEE_BUDGET.cap, meleeBudget + MELEE_BUDGET.rate * dt); // 가벼운 공격 피해 상한 (enemyStrike)
   // 몬스터 겹침 방지용 칸 나누기 (가까운 몬스터끼리만 검사 — 예전엔 목록 앞뒤 14마리라 실제로 붙은 적을 못 봄)
   ENEMY_GRID.clear();
   for (const o of enemies) {
