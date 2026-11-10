@@ -411,7 +411,21 @@ function triggerMeleeAttack(target) {
     }
   }
 
+  // 베면서 대상 쪽으로 반걸음 내딛음 (칼에 몸무게가 실린 느낌). 적이 몸에 붙어 있으면 거의 안 움직임
+  if (!player.isDashing) {
+    const near = target ? Math.hypot(target.x - player.x, target.y - player.y) : 999;
+    const step = Math.max(0, Math.min(isFinisher ? 30 : 16, near - 60));
+    player.x += Math.cos(aim) * step;
+    player.y += Math.sin(aim) * step;
+  }
+
   if (hits > 0) {
+    // 큰 베기(3타): 맞은 적마다 불꽃이 튐
+    if (isFinisher) {
+      for (const e of enemies) {
+        if (e.hitCooldown >= 0.13 && Math.hypot(e.x - player.x, e.y - player.y) < range + 40) PixelFX.spawnHitSparks(e.x, e.y - 20, '#fde68a', 6);
+      }
+    }
     sound.playSample(isFinisher ? 'wx_slash_heavy' : 'wx_slash_hit', isFinisher ? 0.8 : 0.6, 1, 0.08, 0.08); // 묵직한 베기 타격
     // 검기 흡혈: 근거리로 싸우면 맞는 만큼 조금씩 회복 (근거리가 맞기만 한다는 의견 반영)
     const heal = Math.min(4, hits) * (isFinisher ? 2 : 1);

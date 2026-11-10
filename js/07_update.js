@@ -1,6 +1,8 @@
 // 게임 루프와 매 순간 계산
 let lastTime = performance.now();
 let contactDmgSum = 0, contactDmgMax = 0; // 몸통 피해 합산용
+const ENEMY_CELL = 80;           // 몬스터 겹침 검사 칸 크기
+const ENEMY_GRID = new Map();    // 칸 번호 → 그 칸의 몬스터들 (매 프레임 새로 채움)
 
 // 서진에게 디버프 걸기 (poison: 맹독 초당 피해 / slow: 둔화). 이미 걸려 있으면 남은 시간만 늘림
 function applyPlayerDebuff(kind, seconds) {
@@ -383,6 +385,14 @@ function updateGame(dt) {
   if (contactDmgSum > 0) playerTakeDamage(Math.min(contactDmgSum, contactDmgMax * 2.5) * dt);
   contactDmgSum = 0;
   contactDmgMax = 0;
+  // 몬스터 겹침 방지용 칸 나누기 (가까운 몬스터끼리만 검사 — 예전엔 목록 앞뒤 14마리라 실제로 붙은 적을 못 봄)
+  ENEMY_GRID.clear();
+  for (const o of enemies) {
+    const k = ((o.x / ENEMY_CELL) | 0) * 100003 + ((o.y / ENEMY_CELL) | 0);
+    let cell = ENEMY_GRID.get(k);
+    if (!cell) ENEMY_GRID.set(k, cell = []);
+    cell.push(o);
+  }
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     if (!e._diffApplied) {
@@ -694,19 +704,25 @@ function updateGame(dt) {
 
       // 군집 분산 힘 (Soft crowd separation: 적들이 겹치지 않고 자연스럽게 부드러운 진형을 형성)
       let sepX = 0, sepY = 0;
-      const scanLimit = Math.min(enemies.length, i + 14);
-      for (let j = Math.max(0, i - 14); j < scanLimit; j++) {
-        if (i === j) continue;
-        const o = enemies[j];
-        const odx = e.x - o.x;
-        const ody = e.y - o.y;
-        const d2 = odx * odx + ody * ody;
-        const minD = (e.radius + o.radius) * 1.15;
-        if (d2 < minD * minD && d2 > 0.04) {
-          const d = Math.sqrt(d2);
-          const push = (minD - d) / minD;
-          sepX += (odx / d) * push * 90;
-          sepY += (ody / d) * push * 90;
+      const gcx = (e.x / ENEMY_CELL) | 0, gcy = (e.y / ENEMY_CELL) | 0;
+      let seen = 0;
+      for (let ox = -1; ox <= 1 && seen < 24; ox++) for (let oy = -1; oy <= 1 && seen < 24; oy++) {
+        const cell = ENEMY_GRID.get((gcx + ox) * 100003 + (gcy + oy));
+        if (!cell) continue;
+        for (const o of cell) {
+          if (o === e) continue;
+          const odx = e.x - o.x;
+          const ody = e.y - o.y;
+          const d2 = odx * odx + ody * ody;
+          const minD = (e.radius + o.radius) * 1.45; // 그림이 몸통 반지름보다 훨씬 커서 넉넉히 띄움
+          if (d2 < minD * minD) {
+            seen++;
+            const d = Math.sqrt(d2) || 0.5;
+            const nx = d2 > 0.04 ? odx / d : Math.cos(i), ny = d2 > 0.04 ? ody / d : Math.sin(i); // 완전히 같은 자리면 아무 방향으로
+            const push = (minD - d) / minD;
+            sepX += nx * push * 260;
+            sepY += ny * push * 260;
+          }
         }
       }
 
@@ -730,6 +746,19 @@ function updateGame(dt) {
     }
     e.x += (e.vx || 0) * gaitMul * dt;
     e.y += (e.vy || 0) * gaitMul * dt;
+
+    // 캐릭터 몸 안으로 파고들지 않게 밀어냄 (보스·뛰어오르는 강시 제외).
+    // 멈추는 거리(bodyMin) < 몸통 피해 거리(bodyMin + 10) 라서 붙어 있으면 피해는 그대로 들어옴
+    if (!e.isBoss && !(e.hopHeight > 4)) {
+      const bdx = e.x - player.x, bdy = e.y - player.y;
+      const bd = Math.hypot(bdx, bdy);
+      const bodyMin = player.radius + e.radius * 1.2;
+      if (bd < bodyMin) {
+        const nx = bd > 0.5 ? bdx / bd : (e.facing || 1), ny = bd > 0.5 ? bdy / bd : 0;
+        e.x = player.x + nx * bodyMin;
+        e.y = player.y + ny * bodyMin;
+      }
+    }
 
     // 자연스러운 보행 애니메이션 진행 타이머
     const actualSpeed = Math.hypot(e.vx || 0, e.vy || 0);
@@ -935,7 +964,8 @@ function updateGame(dt) {
       }
     }
 
-    if (dist < player.radius + e.radius && !player.isDashing) {
+    // 몸통 피해 거리: 몬스터는 bodyMin(player.radius + e.radius*1.2)에서 멈추므로 그보다 조금 넓게
+    if (dist < player.radius + (e.isBoss ? e.radius : e.radius * 1.2 + 10) && !player.isDashing) {
       // 바로 깎지 않고 모아 두었다가 다음 계산 때 한 번에 (아래 '몸통 피해 합산' 참고)
       contactDmgSum += e.damage;
       contactDmgMax = Math.max(contactDmgMax, e.damage);
