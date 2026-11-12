@@ -179,6 +179,8 @@ const I18N_EN = {
 
   // ── 무공 ──
   '화산 이십사수매화검법 (二十四手梅花劍法)': 'Plum Blossom Swords (梅花劍法)',
+  '매화검법 (梅花劍法)': 'Plum Blossom Swords (梅花劍法)',
+  '청운문 서진 - [매화검법 기본 장착]': 'Seo Jin of Cheongun Sect - [Starts with Plum Blossom Swords]',
   '매화검이 주위를 맴돌다 적을 향해 쏘아져 베고, 벤 자리마다 매화 꽃잎이 흩날립니다. 연마할수록 검이 늘고 빨라집니다.': 'Plum blossom swords circle you, then shoot out to slash enemies, scattering petals wherever they cut. More and faster swords as it levels.',
   '매화검 1자루 전개': 'Summon 1 plum blossom sword',
   '매화검 +1자루, 검의 속도·꽃잎 증가 (Lv.{0})': '+1 sword, faster swords and more petals (Lv.{0})',
@@ -209,7 +211,7 @@ const I18N_EN = {
   '벽력탄 4발이 한꺼번에 떨어지고, 터질 때마다 하늘에서 번개가 내리꽂혀 주변 적 3명에게 연쇄 번개가 튑니다!': 'Four bombs drop at once, and each blast calls lightning from the sky that chains to 3 nearby enemies!',
   '매화만개 (梅花滿開)': 'Plum Blossoms in Full Bloom (梅花滿開)',
   '매화 검선': 'Plum Blossom Sword Saint',
-  '매화검기 8송이가 선회하다 날아가 적을 베고 그 자리에 꽃을 피웁니다. 2.6초마다 적이 몰린 쪽으로 매화검우(梅花劍雨)가 부채꼴로 쏟아져 앞의 적을 모두 베고 밀어냅니다!': 'Eight plum blossom swords circle, fly out and bloom where they cut. Every 2.6s a fan of Plum Sword Rain (梅花劍雨) sweeps toward the crowd, cutting down and pushing back everything in front!',
+  '매화검기 8송이가 선회하다 날아가 적을 베고 그 자리에 꽃을 피웁니다. 4초마다 매화검우(梅花劍雨)가 서진을 중심으로 사방으로 퍼져 닿는 적을 모두 베고 밀어냅니다!': 'Eight plum blossom swords circle, fly out and bloom where they cut. Every 4s Plum Sword Rain (梅花劍雨) bursts out in all directions around Seo Jin, cutting down and pushing back everything it touches!',
   '여래신장 (如來神掌)': 'Buddha Palm (如來神掌)',
   '불문 진경': 'Buddhist Scripture',
   '무형의 풍압이 화면을 휩쓰는 거대한 황금색 여래신장으로 각성! 적들을 화면 밖으로 날려버리며 묵직한 지진파 기절을 일으킵니다!': 'The invisible gust awakens into a giant golden Buddha Palm that sweeps the screen! Blasts enemies away and stuns them with a heavy quake!',

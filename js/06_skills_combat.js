@@ -180,7 +180,8 @@ function spawnPetals(x, y, n, spread = 1, color = null) {
 
 // 매화만개(초월) — 매화검우(梅花劍雨): 일정 시간마다 서진 앞에서 적이 몰린 쪽으로
 // 매화 꽃잎이 부채꼴로 쏟아져 나가며, 물결이 지나가는 자리의 적을 벰 (예전 매화나무 대신. 목록 이름은 plumTrees 그대로)
-const PLUM_WAVE = { every: 2.6, range: 440, speed: 620, halfArc: 0.55, dmg: 95, push: 260 };
+// 11-12 사용자: 한 방향 부채꼴 → 사방(360°), 대신 대기 시간 2.6 → 4.2초
+const PLUM_WAVE = { every: 4.2, range: 440, speed: 620, halfArc: Math.PI, dmg: 95, push: 260 };
 function spawnPlumWave() {
   // 방향: 서진 주변 480 안의 적이 가장 많은 방향 (8방향 중), 없으면 바라보는 쪽
   const bins = new Array(8).fill(0);
@@ -219,21 +220,22 @@ function updatePlumTrees(dt) {
       const dx = e.x - w.x, dy = e.y - w.y;
       const d = Math.hypot(dx, dy);
       if (d > w.r + e.radius || d < prevR - 60) continue;
-      let da = Math.atan2(dy, dx) - w.aim;
+      const ea = Math.atan2(dy, dx);
+      let da = ea - w.aim;
       da = Math.atan2(Math.sin(da), Math.cos(da));
       if (Math.abs(da) > PLUM_WAVE.halfArc + 0.08) continue;
       w.hit.add(e);
       dealDamage(e, PLUM_WAVE.dmg * player.atkMultiplier, true);
-      if (!e.isBoss) {
-        e.knockbackVx = Math.cos(w.aim) * PLUM_WAVE.push * (e.isMiniBoss ? 0.3 : 1);
-        e.knockbackVy = Math.sin(w.aim) * PLUM_WAVE.push * (e.isMiniBoss ? 0.3 : 1);
+      if (!e.isBoss) { // 가운데에서 바깥쪽으로 밀어냄
+        e.knockbackVx = Math.cos(ea) * PLUM_WAVE.push * (e.isMiniBoss ? 0.3 : 1);
+        e.knockbackVy = Math.sin(ea) * PLUM_WAVE.push * (e.isMiniBoss ? 0.3 : 1);
         e.stunTimer = Math.max(e.stunTimer || 0, 0.12);
       }
       if (Math.random() < 0.5) spawnPetals(e.x, e.y - 30, 2, 0.6);
     }
     // 앞으로 쏟아지는 꽃잎 (부채꼴 안에서 물결 앞머리 근처)
     const k = state.frameK || 1;
-    for (let n = 0; n < Math.round(4 * k); n++) {
+    for (let n = 0; n < Math.round(9 * k); n++) { // 사방이라 꽃잎을 더 많이
       const a = w.aim + (Math.random() * 2 - 1) * PLUM_WAVE.halfArc;
       const rr = Math.max(10, w.r - Math.random() * 140);
       const sp = 300 + Math.random() * 300;
