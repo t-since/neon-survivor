@@ -35,7 +35,7 @@ if (attach.length) {
   const rectOf = code => ev(`(()=>{const e=${code}; if(!e) return null; const r=e.getBoundingClientRect(); return {x:r.x+r.width/2, y:r.y+r.height/2}})()`);
   const plus = await rectOf(`[...document.querySelectorAll('button[aria-label="업로드 및 도구"]')].filter(e=>{const r=e.getBoundingClientRect(); return r.width>0 && r.height>0}).pop()`);
   if (!plus) { console.log('+ 버튼 없음'); process.exit(1); }
-  const findItem = () => rectOf(`[...document.querySelectorAll('button, [role=menuitem], .mat-mdc-menu-item')].filter(e=>e.getClientRects().length).find(x=>(x.innerText||'').replace(/\\s+/g,'').includes('파일업로드'))`);
+  const findItem = () => rectOf(`[...document.querySelectorAll('button, [role=menuitem], .mat-mdc-menu-item')].filter(e=>e.getClientRects().length).find(x=>(x.innerText||'').replace(/\\s+/g,'').includes('파일업로드')||(x.innerText||'').trim()==='파일')`);
   // + 를 누르면 바로 위에 메뉴가 뜸 → 첫 항목 '파일 업로드' 위치(+ 기준)를 누름
   for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
   await sleep(500);
