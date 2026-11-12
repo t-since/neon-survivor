@@ -437,9 +437,9 @@ function triggerMeleeAttack(target) {
   player.skillPose = null; // 무공 시전 자세가 아니라 칼 베기
   const isFinisher = player.attackCombo === 2;
   player.isAttacking = true;
-  player.attackDuration = isFinisher ? 0.5 : 0.4; // 베기 한 번 걸리는 시간 (사용자: 조금 빠름 → 늘림)
+  player.attackDuration = isFinisher ? 0.38 : 0.3; // 베기 한 번 걸리는 시간 (11-12 사용자: 0.4초는 답답 → 약 25% 빠르게)
   player.attackTimer = player.attackDuration;
-  player.attackCooldownTimer = Math.max(0.42, 0.68 - (player.level * 0.01)) * (isFinisher ? 1.3 : 1) / ((player.activeBuffs && player.activeBuffs.blood_fury > 0) ? 1.5 : 1);
+  player.attackCooldownTimer = Math.max(0.36, 0.56 - (player.level * 0.01)) * (isFinisher ? 1.3 : 1) / ((player.activeBuffs && player.activeBuffs.blood_fury > 0) ? 1.5 : 1);
   player.attackAim = aim;
 
   // 대상 쪽으로 몸 돌리기 (거의 위/아래면 그대로)
