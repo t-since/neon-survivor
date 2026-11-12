@@ -653,6 +653,8 @@ function spawnMiniBoss(name) {
   if (sound && sound.playHit) sound.playHit();
 }
 
+// 구역 보스 체력 배율 (2026-11-12 사용자: "너무 빨리 잡힘" → 2.5배). 중간보스는 그대로
+const BOSS_HP_MULT = 2.5;
 function spawnSectorBoss(bossName) {
   const angle = Math.random() * Math.PI * 2;
   const dist = 380;
@@ -662,8 +664,8 @@ function spawnSectorBoss(bossName) {
     name: bossName || '혈교 마두 (Blood Cult Grandmaster)',
     x: player.x + Math.cos(angle) * dist,
     y: player.y + Math.sin(angle) * dist,
-    hp: 1800 + state.gameTime * 25,
-    maxHp: 1800 + state.gameTime * 25,
+    hp: (1800 + state.gameTime * 25) * BOSS_HP_MULT,
+    maxHp: (1800 + state.gameTime * 25) * BOSS_HP_MULT,
     speed: 110,
     radius: 48,
     damage: 26,

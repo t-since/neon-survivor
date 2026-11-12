@@ -1,15 +1,16 @@
 // ============================================================
 // 무공 버튼 (설정 '🎯 무공 사용' : 자동 / 버튼)
 // - 자동: 예전처럼 때가 되면 저절로 나감
-// - 버튼: 벽공장·벽력탄·만천화우·금강불괴 4개는 버튼(PC는 1·2·3·4 키)을 누를 때만 나감
+// - 버튼: 벽공장·벽력탄·만천화우·금강불괴 4개는 버튼(PC는 Q·E·R·F 또는 1·2·3·4 키)을 누를 때만 나감
+//   (W·A·S·D 는 이동이라 W 대신 F. 왼손은 WASD 위에 그대로)
 //         대신 직접 쓰는 보상으로 위력 +20%. 매화검법·칼 베기·늘 켜진 무공은 그대로 자동
 // - 대기 시간은 자동일 때와 같음 (06_skills_combat.js 의 interval)
 // ============================================================
 const ACTIVE_SLOTS = [
-  { id: 'palm_blast', key: '1' },
-  { id: 'thunder_bomb', key: '2' },
-  { id: 'dagger_rain', key: '3' },
-  { id: 'vajra_shield', key: '4' }
+  { id: 'palm_blast', key: 'Q', keys: ['q', '1'] },
+  { id: 'thunder_bomb', key: 'E', keys: ['e', '2'] },
+  { id: 'dagger_rain', key: 'R', keys: ['r', '3'] },
+  { id: 'vajra_shield', key: 'F', keys: ['f', '4'] }
 ];
 const MANUAL_POWER = 1.2;
 
@@ -123,14 +124,15 @@ function refreshSkillButtons() {
   if (anyLearned && !skillHintShown && typeof showMiniToast === 'function') {
     skillHintShown = true;
     const touch = document.body.classList.contains('is-touch');
-    showMiniToast('🎯', '무공 버튼', touch ? '오른쪽 아래 버튼을 눌러 무공을 펼치세요' : '1·2·3·4 키나 버튼을 눌러 무공을 펼치세요', '#38bdf8');
+    showMiniToast('🎯', '무공 버튼', touch ? '오른쪽 아래 버튼을 눌러 무공을 펼치세요' : 'Q·E·R·F 키(또는 1·2·3·4)로 무공을 펼치세요', '#38bdf8');
   }
 }
 
-// PC: 1·2·3·4 키
+// PC: Q·E·R·F 또는 1·2·3·4 키 (한글 자판 상태여도 e.code 로 잡음)
 window.addEventListener('keydown', e => {
   if (!skillManual() || e.repeat) return;
-  const i = ACTIVE_SLOTS.findIndex(s => s.key === e.key);
+  const k = (e.code && /^Key[A-Z]$/.test(e.code)) ? e.code.slice(3).toLowerCase() : (e.code && /^Digit[0-9]$/.test(e.code)) ? e.code.slice(5) : (e.key || '').toLowerCase();
+  const i = ACTIVE_SLOTS.findIndex(s => s.keys.includes(k));
   if (i >= 0 && state.isGameStarted) useActiveSkill(i);
 });
 
