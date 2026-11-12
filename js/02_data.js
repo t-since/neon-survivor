@@ -369,6 +369,12 @@ const EVO_SKILL_DEFS = {
   }
 };
 
+// 무공 그림 아이콘 (assets/icons, 제미나이 2026-11-12) — 없으면 이모지 icon 을 씀
+for (const k in SKILL_DEFS) SKILL_DEFS[k].img = 'assets/icons/' + k + '.png';
+for (const k in EVO_SKILL_DEFS) EVO_SKILL_DEFS[k].img = 'assets/icons/evo_' + k + '.png';
+// 화면에 넣을 아이콘: 그림이 있으면 <img>, 없으면 이모지
+function skillIconHTML(def) { return def && def.img ? `<img class="skill-img" src="${def.img}" alt="" draggable="false">` : ((def && def.icon) || ''); }
+
 // --- Playable Heroes (3인 협객 정의) ---
 const HERO_DEFS = {
   seojin: {

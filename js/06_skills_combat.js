@@ -760,6 +760,7 @@ function showNextLevelUp() {
         def: {
           name: `★ [초월 각성] ${evo.name}`,
           icon: evo.icon,
+          img: evo.img,
           getUpgradeDesc: () => evo.desc
         },
         nextLvl: 'MAX 각성'
@@ -865,7 +866,7 @@ function showNextLevelUp() {
     const card = document.createElement('div');
     card.className = c.isEvo ? 'skill-card evo-card' : (c.isBonus ? 'skill-card bonus-card' : 'skill-card');
     card.innerHTML = `
-      <div class="skill-icon">${c.def.icon}</div>
+      <div class="skill-icon${c.def.img ? ' has-img' : ''}">${skillIconHTML(c.def)}</div>
       <div class="skill-info">
         <div class="skill-name-row">
           <span class="skill-name" style="${c.isEvo || c.isBonus ? 'color:#fbbf24;font-weight:800;' : ''}">${c.def.name}</span>
@@ -973,7 +974,7 @@ function openTreasureModal(isBossChest = false) {
     sub.innerText = "천하제일 무학의 정점에 도달하여 궁극의 초월 비급을 각성했습니다!";
     content.innerHTML = `
       <div class="evo-showcase-card">
-        <div style="font-size: 38px;">${candidateEvo.icon}</div>
+        <div class="evo-show-icon">${skillIconHTML(candidateEvo)}</div>
         <div style="flex: 1;">
           <div class="evo-badge-pill">★ ${candidateEvo.badge} 각성 ★</div>
           <div style="font-size: 18px; font-weight: 800; color: ${candidateEvo.color}; margin-bottom: 4px;">
@@ -1066,7 +1067,7 @@ function onSectorVictory() {
         item.className = 'owned-skill-item';
         if (isEvo) item.style.borderColor = '#fbbf24';
         item.innerHTML = `
-          <div class="owned-skill-icon">${isEvo ? evo.icon : s.icon}</div>
+          <div class="owned-skill-icon">${skillIconHTML(isEvo ? evo : s)}</div>
           <div class="owned-skill-info">
             <div class="owned-skill-name" style="${isEvo ? 'color:#fbbf24;font-weight:800;' : ''}">
               ${isEvo ? evo.name : s.name}

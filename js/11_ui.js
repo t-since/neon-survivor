@@ -276,7 +276,7 @@ function updatePauseModalStats() {
       const badge = document.createElement('div');
       badge.className = 'owned-badge';
       if (isEvo) badge.style.borderColor = '#fbbf24';
-      badge.innerHTML = `${isEvo ? evo.icon : def.icon} ${isEvo ? evo.name : def.name} <span>${isEvo ? '★각성' : 'Lv.' + lvl}</span>`;
+      badge.innerHTML = `${skillIconHTML(isEvo ? evo : def)} ${isEvo ? evo.name : def.name} <span>${isEvo ? '★각성' : 'Lv.' + lvl}</span>`;
       pauseSkillList.appendChild(badge);
     }
   }

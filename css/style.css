@@ -1904,3 +1904,13 @@
     body.is-touch .sk-btn[data-slot="1"] { left: -102px; top: -59px; }
     body.is-touch .sk-btn[data-slot="2"] { left: -59px; top: -102px; }
     body.is-touch .sk-btn[data-slot="3"] { left: 0; top: -118px; }
+
+    /* 무공 그림 아이콘 (assets/icons) */
+    .skill-img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; pointer-events: none; }
+    .skill-icon.has-img { padding: 0; overflow: hidden; }
+    .evo-card .skill-icon.has-img { border-color: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.55); }
+    .evo-show-icon { width: 64px; height: 64px; font-size: 38px; flex-shrink: 0; border-radius: 10px; overflow: hidden; border: 1.5px solid #fbbf24; display: flex; align-items: center; justify-content: center; }
+    .owned-skill-icon .skill-img { width: 34px; height: 34px; border-radius: 6px; }
+    .owned-badge .skill-img { display: inline-block; width: 18px; height: 18px; border-radius: 4px; vertical-align: -4px; margin-right: 2px; }
+    .sk-img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; pointer-events: none; }
+    .sk-img:not([src]) { display: none; }

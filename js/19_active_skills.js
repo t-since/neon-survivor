@@ -62,11 +62,11 @@ function buildSkillButtons() {
     b.type = 'button';
     b.className = 'sk-btn';
     b.dataset.slot = i;
-    b.innerHTML = '<span class="sk-ico"></span><span class="sk-cd"></span><span class="sk-key">' + s.key + '</span>';
+    b.innerHTML = '<img class="sk-img" alt="" draggable="false"><span class="sk-ico"></span><span class="sk-cd"></span><span class="sk-key">' + s.key + '</span>';
     b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (typeof sound !== 'undefined') sound.init(); useActiveSkill(i); });
     b.addEventListener('click', e => e.preventDefault());
     skillBox.appendChild(b);
-    skillBtnEls.push({ el: b, ico: b.querySelector('.sk-ico'), cd: b.querySelector('.sk-cd'), last: '' });
+    skillBtnEls.push({ el: b, img: b.querySelector('.sk-img'), ico: b.querySelector('.sk-ico'), cd: b.querySelector('.sk-cd'), last: '' });
   });
   document.body.appendChild(skillBox);
 }
@@ -101,6 +101,7 @@ function refreshSkillButtons() {
     if (lv <= 0) {
       b.el.className = 'sk-btn sk-empty';
       b.ico.textContent = '';
+      b.img.removeAttribute('src');
       b.cd.textContent = '';
       b.el.style.setProperty('--cd', 0);
       b.el.removeAttribute('title');
@@ -109,7 +110,8 @@ function refreshSkillButtons() {
     const def = evo ? EVO_SKILL_DEFS[s.id] : SKILL_DEFS[s.id];
     // 그림 글자 하나만 (초월은 '⚡💣'처럼 둘이라 앞의 것, 🛡️ 의 꾸밈 글자 FE0F 는 살림)
     const ic = (def.icon || '').match(/\p{Extended_Pictographic}️?/u);
-    b.ico.textContent = ic ? ic[0] : '';
+    if (def.img) { if (b.img.getAttribute('src') !== def.img) b.img.src = def.img; b.ico.textContent = ''; }
+    else { b.img.removeAttribute('src'); b.ico.textContent = ic ? ic[0] : ''; }
     b.el.title = def.name;
     b.el.classList.remove('sk-empty');
     b.el.classList.toggle('sk-ready', ready);
@@ -134,3 +136,5 @@ window.addEventListener('keydown', e => {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { buildSkillButtons(); refreshSkillButtons(); });
 else { buildSkillButtons(); refreshSkillButtons(); }
+// 무공 그림 아이콘 미리 불러 두기 (레벨업 창이 처음 뜰 때 빈칸 없이)
+for (const d of [...Object.values(SKILL_DEFS), ...Object.values(EVO_SKILL_DEFS)]) if (d.img) { const im = new Image(); im.src = d.img; }
