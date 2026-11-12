@@ -210,6 +210,7 @@ const Cinema = {
       </div>
       <button class="cn-skip" type="button">건너뛰기 <kbd>Esc</kbd></button>
       <div class="cn-hint">클릭 · Space 다음</div>
+      <div class="cn-tap">한 번 더 누르면 건너뜁니다</div>
       <div class="cn-dots"></div>`;
     document.body.appendChild(r);
     this.root = r;
@@ -219,7 +220,8 @@ const Cinema = {
     this.dotsEl = r.querySelector('.cn-dots');
     this.skipBtn = r.querySelector('.cn-skip');
     this.skipBtn.addEventListener('click', e => { e.stopPropagation(); this.skipAll(); });
-    r.addEventListener('click', () => this.next());
+    r.addEventListener('click', () => this.tap());
+    this.tapEl = r.querySelector('.cn-tap');
   },
 
   play(key, onDone) {
@@ -289,6 +291,17 @@ const Cinema = {
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+  },
+
+  tap() {
+    if (!this.active) return;
+    if (!this.film) { this.next(); return; }
+    const now = performance.now();
+    if (this.tapAt && now - this.tapAt < 2500) { this.tapAt = 0; this.root.classList.remove('tap1'); this.skipAll(); return; }
+    this.tapAt = now;
+    this.root.classList.add('tap1');
+    clearTimeout(this.tapTimer);
+    this.tapTimer = setTimeout(() => { this.tapAt = 0; if (this.root) this.root.classList.remove('tap1'); }, 2500);
   },
 
   next() {
@@ -415,6 +428,7 @@ const Cinema = {
 
   end() {
     clearTimeout(this.advTimer);
+    clearTimeout(this.tapTimer); this.tapAt = 0; if (this.root) this.root.classList.remove('tap1');
     this.finishTyping();
     this.fullText = null;
     this.active = false;

@@ -1780,6 +1780,10 @@
     @keyframes cnCard { from { opacity: 0; letter-spacing: .3em; filter: blur(6px); } to { opacity: 1; filter: blur(0); } }
     #cinema .cn-skip { position: absolute; top: calc(11vh + 12px); right: 16px; z-index: 4; font-size: 12px; color: #cbd5e1; background: rgba(15,23,42,.75); border: 1px solid #475569; border-radius: 14px; padding: 6px 14px; cursor: pointer; }
     #cinema .cn-skip kbd { font-size: 10px; opacity: .7; margin-left: 4px; }
+    #cinema .cn-tap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; padding: 10px 20px; border-radius: 22px; background: rgba(15,23,42,.85); border: 1px solid #fbbf24; color: #fde68a; font-size: 15px; font-weight: 700; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    #cinema.tap1 .cn-tap { opacity: 1; }
+    #cinema.tap1 .cn-skip { color: #1c1306; background: #fbbf24; border-color: #fde68a; }
+    @media (pointer: coarse) { #cinema .cn-skip { font-size: 15px; padding: 10px 18px; } #cinema .cn-skip kbd { display: none; } }
     #cinema .cn-skip.hot { color: #1c1306; background: #fbbf24; border-color: #fde68a; font-weight: 800; box-shadow: 0 0 14px rgba(251,191,36,.6); }
     #cinema .cn-hint { position: absolute; bottom: calc(11vh + 10px); right: 16px; z-index: 4; font-size: 11px; color: rgba(203,213,225,.55); }
     #cinema .cn-dots { position: absolute; top: calc(11vh + 18px); left: 16px; z-index: 4; display: flex; gap: 6px; }

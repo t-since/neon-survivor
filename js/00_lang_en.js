@@ -674,6 +674,7 @@ const I18N_EN = {
   '오늘의 과제:': 'Daily Quests:',
   '업적:': 'Achievements:',
   '완료': 'Done',
+  '한 번 더 누르면 건너뜁니다': 'Tap again to skip',
   '받기 💰 {0}': 'Claim 💰 {0}',
   '모두 받기 💰 {0}': 'Claim all 💰 {0}',
   '첫 화면 📜 과제 · 업적에서 받으세요': 'Claim it in 📜 Quests · Achievements on the title screen',
