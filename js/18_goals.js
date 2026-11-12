@@ -39,6 +39,12 @@ let goals = (() => {
   g = g || {};
   g.stats = Object.assign({ kills: 0, mini: 0, boss: 0, evo: 0, bestLevel: 0, hardClears: 0, clears: {} }, g.stats || {});
   g.ach = g.ach || {};
+  // 2026-11-12 사용자: 이루면 알림만, 창에서 직접 [받기]. 예전 저장(바로 지급)은 모두 받은 것으로
+  if (!g.got) {
+    g.got = {};
+    for (const k of Object.keys(g.ach)) g.got[k] = true;
+    if (Array.isArray(g.daily)) for (const d of g.daily) if (d.done) d.claimed = true;
+  }
   return g;
 })();
 function saveGoals() { try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); } catch (e) {} }
@@ -46,6 +52,10 @@ function saveGoals() { try { localStorage.setItem(GOALS_KEY, JSON.stringify(goal
 function ensureDaily() {
   const day = todayKey();
   if (goals.day === day && Array.isArray(goals.daily)) return;
+  if (Array.isArray(goals.daily)) {
+    const left = goals.daily.filter(d => d.done && !d.claimed).reduce((t, d) => t + d.reward, 0);
+    if (left && typeof progress !== 'undefined') { progress.silver += left; progress.total += left; saveProgress(); }
+  }
   let seed = 0; for (const c of day) seed = (seed * 31 + c.charCodeAt(0)) >>> 0;
   const rnd = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed >>> 8; };
   const pool = DAILY_POOL.slice();
@@ -83,14 +93,10 @@ function goalsOnRunEnd(victory, targetId) {
     if (goals.ach[a.id]) continue;
     if (a.prog(s) >= a.goal) { goals.ach[a.id] = true; got.push({ icon: a.icon, text: '업적: ' + a.name, reward: a.reward }); }
   }
-  const sum = got.reduce((t, x) => t + x.reward, 0);
-  if (sum) { progress.silver += sum; progress.total += sum; saveProgress(); refreshSilverLabels(); }
   saveGoals();
   const el = targetId && document.getElementById(targetId);
   if (el && got.length) {
-    el.insertAdjacentHTML('beforeend', `<div class="goal-gain">${got.map(g => `<div>${g.icon} ${g.text} 달성! <b>+${g.reward}</b></div>`).join('')}</div>`);
-    const tot = el.querySelector('.silver-total');
-    if (tot) tot.innerHTML = `보유 은자 ${progress.silver} — 첫 화면 <b>문파 수련</b>에서 영구 강화`;
+    el.insertAdjacentHTML('beforeend', `<div class="goal-gain">${got.map(g => `<div>${g.icon} ${g.text} 달성! <b>💰 ${g.reward}</b></div>`).join('')}<div class="goal-gain-hint">첫 화면 📜 과제 · 업적에서 받으세요</div></div>`);
   }
   refreshGoalBadge();
   return got;
@@ -104,25 +110,53 @@ awardSilver = function (victory, targetId) {
 };
 
 // ---------- 과제·업적 창 ----------
-function refreshGoalBadge() {
+// 받을 수 있는 것: 이뤘는데 아직 [받기]를 안 누른 것
+function claimableGoals() {
   ensureDaily();
-  const left = goals.daily.filter(d => !d.done).length;
-  document.querySelectorAll('.goal-left').forEach(e => e.textContent = left ? `${left}` : '✓');
+  const list = [];
+  goals.daily.forEach((d, i) => { if (d.done && !d.claimed) list.push({ kind: 'd', i, reward: d.reward }); });
+  for (const a of ACHIEVEMENTS) if (goals.ach[a.id] && !goals.got[a.id]) list.push({ kind: 'a', id: a.id, reward: a.reward });
+  return list;
+}
+function claimGoal(kind, key) {
+  let reward = 0;
+  if (kind === 'd') { const d = goals.daily[key]; if (!d || !d.done || d.claimed) return; d.claimed = true; reward = d.reward; }
+  else { const a = ACHIEVEMENTS.find(x => x.id === key); if (!a || !goals.ach[key] || goals.got[key]) return; goals.got[key] = true; reward = a.reward; }
+  progress.silver += reward; progress.total += reward; saveProgress(); saveGoals();
+  if (typeof refreshSilverLabels === 'function') refreshSilverLabels();
+  if (typeof sound !== 'undefined') { sound.init(); sound.playPickup(); }
+  renderGoals(); refreshGoalBadge();
+}
+function claimAllGoals() {
+  const list = claimableGoals();
+  for (const c of list) { if (c.kind === 'd') goals.daily[c.i].claimed = true; else goals.got[c.id] = true; progress.silver += c.reward; progress.total += c.reward; }
+  if (!list.length) return;
+  saveProgress(); saveGoals();
+  if (typeof refreshSilverLabels === 'function') refreshSilverLabels();
+  if (typeof sound !== 'undefined') { sound.init(); sound.playLevelUp(); }
+  renderGoals(); refreshGoalBadge();
+}
+// 알림 숫자 = 받을 수 있는 것 개수 (없으면 숨김)
+function refreshGoalBadge() {
+  const n = claimableGoals().length;
+  document.querySelectorAll('.goal-left').forEach(e => { e.textContent = n ? `${n}` : ''; e.style.display = n ? '' : 'none'; });
 }
 function openGoals() { renderGoals(); document.getElementById('goalsModal').style.display = 'flex'; }
 function closeGoals() { document.getElementById('goalsModal').style.display = 'none'; }
 function renderGoals() {
   ensureDaily();
   const bar = (v, g) => `<div class="goal-bar"><i style="width:${Math.min(100, Math.round(v / g * 100))}%"></i></div>`;
-  const daily = goals.daily.map(d => `<div class="goal-card ${d.done ? 'done' : ''}">
+  const daily = goals.daily.map((d, i) => `<div class="goal-card ${d.claimed ? 'done' : d.done ? 'ready' : ''}">
       <div class="goal-icon">📜</div>
       <div class="goal-info"><div class="goal-name">${d.text}</div>${bar(d.prog, d.goal)}<div class="goal-num">${Math.min(d.prog, d.goal)} / ${d.goal}</div></div>
-      <div class="goal-reward">${d.done ? '완료' : `💰 ${d.reward}`}</div></div>`).join('');
-  const ach = ACHIEVEMENTS.map(a => { const v = a.prog(goals.stats), done = !!goals.ach[a.id]; return `<div class="goal-card ${done ? 'done' : ''}">
+      <div class="goal-reward">${d.claimed ? '완료' : d.done ? `<button class="goal-claim" onclick="claimGoal('d', ${i})">받기 💰 ${d.reward}</button>` : `💰 ${d.reward}`}</div></div>`).join('');
+  const ach = ACHIEVEMENTS.map(a => { const v = a.prog(goals.stats), done = !!goals.ach[a.id], got = !!goals.got[a.id]; return `<div class="goal-card ${got ? 'done' : done ? 'ready' : ''}">
       <div class="goal-icon">${a.icon}</div>
       <div class="goal-info"><div class="goal-name">${a.name} <span>${a.desc}</span></div>${a.goal > 1 ? bar(v, a.goal) + `<div class="goal-num">${Math.min(v, a.goal).toLocaleString()} / ${a.goal.toLocaleString()}</div>` : ''}</div>
-      <div class="goal-reward">${done ? '완료' : `💰 ${a.reward}`}</div></div>`; }).join('');
-  document.getElementById('goalsList').innerHTML =
+      <div class="goal-reward">${got ? '완료' : done ? `<button class="goal-claim" onclick="claimGoal('a', '${a.id}')">받기 💰 ${a.reward}</button>` : `💰 ${a.reward}`}</div></div>`; }).join('');
+  const cl = claimableGoals();
+  const all = cl.length > 1 ? `<button class="goal-claim goal-claim-all" onclick="claimAllGoals()">모두 받기 💰 ${cl.reduce((t, c) => t + c.reward, 0)}</button>` : '';
+  document.getElementById('goalsList').innerHTML = all +
     `<div class="goal-head">오늘의 과제 <span>(매일 0시에 바뀜 · 판이 끝날 때 반영)</span></div>${daily}
      <div class="goal-head">업적 <span>${Object.keys(goals.ach).length} / ${ACHIEVEMENTS.length}</span></div>${ach}`;
 }
