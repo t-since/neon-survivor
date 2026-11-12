@@ -40,7 +40,9 @@ function renderSettings() {
   if (!box) return;
   const s = gameSettings;
   const seg = (key, opts) => `<div class="set-seg">${opts.map(([v, label]) => `<button type="button" data-set="${key}" data-val="${v}" class="${String(s[key]) === String(v) ? 'on' : ''}">${label}</button>`).join('')}</div>`;
+  const L = (typeof I18N !== 'undefined') ? I18N.lang : 'ko';
   box.innerHTML = `
+    <div class="set-row"><span>🌐 언어 · Language</span><div class="set-seg"><button type="button" data-lang="ko" class="${L === 'ko' ? 'on' : ''}">한국어</button><button type="button" data-lang="en" class="${L === 'en' ? 'on' : ''}">English</button></div></div>
     <div class="set-row"><span>🎵 배경음악</span><input type="range" min="0" max="1" step="0.05" value="${s.music}" data-range="music"><b>${Math.round(s.music * 100)}</b></div>
     <div class="set-row"><span>🔔 효과음</span><input type="range" min="0" max="1" step="0.05" value="${s.sfx}" data-range="sfx"><b>${Math.round(s.sfx * 100)}</b></div>
     <div class="set-row"><span>📳 화면 흔들림</span>${seg('shake', [[0, '끄기'], [0.5, '약하게'], [1, '보통']])}</div>
@@ -58,6 +60,8 @@ document.addEventListener('input', (e) => {
   saveSettings();
 });
 document.addEventListener('click', (e) => {
+  const lb = e.target && e.target.closest && e.target.closest('[data-lang]');
+  if (lb && typeof I18N !== 'undefined') { if (lb.dataset.lang !== I18N.lang) I18N.setLang(lb.dataset.lang); return; } // 언어 바꾸면 새로 불러옴
   const btn = e.target && e.target.closest && e.target.closest('[data-set]');
   if (btn) {
     const k = btn.dataset.set, raw = btn.dataset.val;
