@@ -149,7 +149,11 @@ function renderSectorList() {
 
     const card = document.createElement('div');
     card.className = `sector-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
-    card.onclick = () => selectSector(s.id);
+    // 2026-11-12 사용자: 카드를 누르면 바로 출진 (아래 출진 버튼도 그대로). PC는 마우스만 올려도 오른쪽 설명이 바뀜
+    card.dataset.sector = s.id;
+    card.onclick = () => { selectSector(s.id); if (isUnlocked) launchExpedition(); };
+    card.onmouseenter = () => { if (window.matchMedia && matchMedia('(hover: hover)').matches && currentSelectedSector !== s.id) selectSector(s.id, true); };
+    if (isUnlocked) card.title = '눌러서 바로 출진';
 
     let badgeHtml = '';
     if (isCleared) {
@@ -171,10 +175,12 @@ function renderSectorList() {
   });
 }
 
-function selectSector(sectorId) {
+function selectSector(sectorId, quiet) {
   const isUnlocked = unlockedSectors.includes(sectorId);
   currentSelectedSector = sectorId;
-  renderSectorList();
+  if (quiet) { // 마우스를 올렸을 때: 목록은 다시 만들지 않고 표시만 옮김
+    document.querySelectorAll('#sectorList .sector-card').forEach(c => c.classList.toggle('selected', +c.dataset.sector === sectorId));
+  } else renderSectorList();
   updateSectorDetails();
 
   const launchBtn = document.getElementById('btnLaunchExpedition');
@@ -187,7 +193,7 @@ function selectSector(sectorId) {
       launchBtn.innerHTML = `<span class="btn-sword-icon">⚔️</span> 제${sectorId}구역 출진 (작전 개시) <span class="btn-kbd-pill">ENTER / SPACE</span>`;
     }
   }
-  sound.playPickup();
+  if (!quiet) sound.playPickup();
 }
 
 function updateSectorDetails() {

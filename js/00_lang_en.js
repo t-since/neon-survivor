@@ -4,6 +4,7 @@
 // - I18N_HTML: 굵은 글씨가 섞인 문장은 문장 통째로 (단어 조각으로 옮기면 어순이 깨짐)
 // 이름 표기: 사람·문파·장소는 소리대로(Seo Jin, Haomun), 무공은 뜻을 풀어서 (2026-11-12 사용자 결정)
 const I18N_EN = {
+  '눌러서 바로 출진': 'Click to deploy now',
   // ── 제목·첫 화면 ──
   '강호만검 : 무림생존록 (江湖萬劍 : 武林生存錄)': 'Ten Thousand Swords: Murim Survival (江湖萬劍)',
   '강호만검 : 무림생존록': 'Ten Thousand Swords: Murim Survival',
