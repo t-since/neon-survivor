@@ -300,6 +300,7 @@ window.addEventListener('keydown', (e) => {
   }
   // Debug / Test Hotkeys (주소 끝에 ?debug=1 을 붙였을 때만 작동)
   if (!DEBUG_MODE) return;
+  if (typeof skillManual === 'function' && skillManual() && '1234'.includes(e.key)) return; // 버튼 모드에선 1~4가 무공 키 (19_active_skills)
   if (e.key === '1') {
     cheatLevelUp(1);
   } else if (e.key === '5') {

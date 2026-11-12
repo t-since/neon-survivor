@@ -693,6 +693,12 @@ const I18N_EN = {
   '보기': 'Show',
   '숨기기': 'Hide',
   '켜기': 'On',
+  '🎯 무공 사용': '🎯 Skills',
+  '자동': 'Auto',
+  '버튼': 'Buttons',
+  '무공 버튼': 'Skill Buttons',
+  '오른쪽 아래 버튼을 눌러 무공을 펼치세요': 'Tap the buttons at bottom right to use skills',
+  '1·2·3·4 키나 버튼을 눌러 무공을 펼치세요': 'Press 1·2·3·4 or click the buttons to use skills',
   '많이': 'High',
   '적게 (가벼움)': 'Low (lighter)',
 };

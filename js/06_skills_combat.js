@@ -76,31 +76,37 @@ function updateSkills(dt) {
 
   // 2. Dagger Rain (만천화우)
   if (player.skills.dagger_rain > 0) {
-    player.timers.dagger_rain += dt;
     const interval = Math.max(1.0, 3.0 - player.skills.dagger_rain * 0.4);
+    if (activeSkillTick('dagger_rain', interval, dt)) { /* 버튼 모드: 19_active_skills.js 에서 누를 때 씀 */ } else {
+    player.timers.dagger_rain += dt;
     if (player.timers.dagger_rain >= interval) {
       player.timers.dagger_rain = 0;
       castDaggerRain();
+    }
     }
   }
 
   // 3. Palm Blast (벽공장 / 여래신장)
   if (player.skills.palm_blast > 0) {
-    player.timers.palm_blast += dt;
     const interval = Math.max(1.2, 3.0 - player.skills.palm_blast * 0.4); // 예전 3.8-0.5×레벨 (1레벨 3.3초 → 2.6초)
+    if (activeSkillTick('palm_blast', interval, dt)) { /* 버튼 모드: 19_active_skills.js 에서 누를 때 씀 */ } else {
+    player.timers.palm_blast += dt;
     if (player.timers.palm_blast >= interval) {
       player.timers.palm_blast = 0;
       castPalmBlast();
+    }
     }
   }
 
   // 4. Thunder Bomb (벽력탄)
   if (player.skills.thunder_bomb > 0) {
-    player.timers.thunder_bomb += dt;
     const interval = Math.max(1.2, 3.5 - player.skills.thunder_bomb * 0.4);
+    if (activeSkillTick('thunder_bomb', interval, dt)) { /* 버튼 모드: 19_active_skills.js 에서 누를 때 씀 */ } else {
+    player.timers.thunder_bomb += dt;
     if (player.timers.thunder_bomb >= interval) {
       player.timers.thunder_bomb = 0;
       castThunderBomb();
+    }
     }
   }
 
@@ -108,24 +114,10 @@ function updateSkills(dt) {
 
   // 5. Vajra Shield pulse (금강불괴 / 무적신공)
   if (player.skills.vajra_shield > 0) {
-    player.timers.vajra_shield += dt;
-    if (player.timers.vajra_shield >= 3.0) {
-      player.timers.vajra_shield = 0;
-      const radius = 135 + player.skills.vajra_shield * 18;
-      for (let e of enemies) {
-        if (Math.hypot(e.x - player.x, e.y - player.y) <= radius) {
-          dealDamage(e, 35 * player.atkMultiplier, false);
-          const dx = e.x - player.x;
-          const dy = e.y - player.y;
-          const d = Math.hypot(dx, dy) || 1;
-          e.x += (dx / d) * 70;
-          e.y += (dy / d) * 70;
-        }
-      }
-      createShockwave(player.x, player.y, radius, '#fbbf24');
-      particles.push({ fxKey: 'fx_shield', x: player.x, y: player.y, vx: 0, vy: 0, size: radius * 1.9, sy: 0.45, rot: 0, life: 0.45, maxLife: 0.45 }); // 바닥 금빛 문양
-      player._vajraFlash = 0.35;
-      sound.playPalmBlast();
+    if (activeSkillTick('vajra_shield', VAJRA_INTERVAL, dt)) { /* 버튼 모드 */ }
+    else {
+      player.timers.vajra_shield += dt;
+      if (player.timers.vajra_shield >= VAJRA_INTERVAL) { player.timers.vajra_shield = 0; castVajraPulse(); }
     }
 
     // 천지무적신공 초월: 1.5초마다 주위 번개 연쇄 방출
@@ -150,6 +142,26 @@ function updateSkills(dt) {
   }
 }
 
+
+// 금강불괴 방어 충격파 (자동이면 3초마다, 버튼 모드면 누를 때)
+const VAJRA_INTERVAL = 3.0;
+function castVajraPulse() {
+  const radius = 135 + player.skills.vajra_shield * 18;
+  for (let e of enemies) {
+    if (Math.hypot(e.x - player.x, e.y - player.y) <= radius) {
+      dealDamage(e, 35 * player.atkMultiplier, false);
+      const dx = e.x - player.x;
+      const dy = e.y - player.y;
+      const d = Math.hypot(dx, dy) || 1;
+      e.x += (dx / d) * 70;
+      e.y += (dy / d) * 70;
+    }
+  }
+  createShockwave(player.x, player.y, radius, '#fbbf24');
+  particles.push({ fxKey: 'fx_shield', x: player.x, y: player.y, vx: 0, vy: 0, size: radius * 1.9, sy: 0.45, rot: 0, life: 0.45, maxLife: 0.45 }); // 바닥 금빛 문양
+  player._vajraFlash = 0.35;
+  sound.playPalmBlast();
+}
 
 // ---------- 이십사수매화검법 (어검술 자리) ----------
 // 매화 꽃잎 입자: 벤 자리·날아가는 검 뒤에 흩날림 (particles 에 petal 표시, 그리기는 renderParticles)
@@ -317,7 +329,7 @@ function castDaggerRain() {
   sound.playDaggerRain();
 }
 
-function castPalmBlast() {
+function castPalmBlast(aimOverride) {
   triggerSkillMotion('palm', 0.38);
 
   // 방향: 주변 420 안에서 적이 가장 많이 몰린 쪽 (8방향). 예전엔 바라보는 좌우로만 쏴서 허공에 자주 나감
@@ -332,6 +344,7 @@ function castPalmBlast() {
   }
   let aim = player.facing < 0 ? Math.PI : 0;
   if (any) { let bi = 0; for (let k = 1; k < 8; k++) if (bins[k] > bins[bi]) bi = k; aim = bi * Math.PI / 4; }
+  if (typeof aimOverride === 'number') aim = aimOverride; // 버튼 모드: 움직이는 방향으로
   if (Math.cos(aim) < -0.15) player.facing = -1; else if (Math.cos(aim) > 0.15) player.facing = 1;
 
   const isBuddha = !!player.evolutions.evo_palm_blast;
