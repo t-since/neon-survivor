@@ -468,9 +468,9 @@ const SECTOR_DEFS = [
     difficulty: '보통 (강호초출)',
     bgPreview: 'assets/ground_bamboo.jpg',
     enemies: [
-      { name: '흑도 그림자 살수', hanja: '黑道 殺手', stars: '★★★☆☆', desc: '칠흑 복면과 쌍단검. 빠른 쇄도와 기습 비도 투척.', img: 'assets/portrait_enemy_assassin.jpg' },
-      { name: '사파 주술 강시', hanja: '邪派 殭屍', stars: '★★★★☆', desc: '황색 주사 부적이 붙은 시귀. 변칙적인 도약과 맷집.', img: 'assets/portrait_enemy_jiangshi.jpg' },
-      { name: '혈교 마두 [보스]', hanja: '血敎 魔頭', stars: '★★★★★', desc: '불타는 혈도를 휘두르는 제1막의 지배자. 광역 혈기 참격.', img: 'assets/portrait_enemy_boss.jpg', isBoss: true }
+      { name: '흑도 그림자 살수', hanja: '黑道 殺手', stars: '★★★☆☆', desc: '칠흑 복면과 쌍단검. 빠른 쇄도와 기습 비도 투척.', img: 'assets/thumbs/t_assassin.png' },
+      { name: '사파 주술 강시', hanja: '邪派 殭屍', stars: '★★★★☆', desc: '황색 주사 부적이 붙은 시귀. 변칙적인 도약과 맷집.', img: 'assets/thumbs/t_jiangshi.png' },
+      { name: '혈교 마두 [보스]', hanja: '血敎 魔頭', stars: '★★★★★', desc: '불타는 혈도를 휘두르는 제1막의 지배자. 광역 혈기 참격.', img: 'assets/thumbs/t_boss1.png', isBoss: true }
     ]
   },
   {
@@ -486,9 +486,9 @@ const SECTOR_DEFS = [
     difficulty: '어려움 (일류 고수)',
     bgPreview: 'assets/ground_tile.jpg',
     enemies: [
-      { name: '하오문 척후', hanja: '下門 斥候', stars: '★★★☆☆', desc: '빠른 독단검 찌르기와 연막탄 교란.', img: 'assets/portrait_enemy_assassin.jpg' },
-      { name: '사파 독술사', hanja: '邪派 毒術士', stars: '★★★★☆', desc: '녹색 부식 독안개 방출 및 원거리 침투.', img: 'assets/portrait_enemy_jiangshi.jpg' },
-      { name: '독룡 마군 [보스]', hanja: '毒龍 魔君', stars: '★★★★★', desc: '맹독 비검과 독룡 파동포를 뿜어내는 암흑가 수장.', img: 'assets/portrait_enemy_boss.jpg', isBoss: true }
+      { name: '하오문 척후', hanja: '下門 斥候', stars: '★★★☆☆', desc: '빠른 독단검 찌르기와 연막탄 교란.', img: 'assets/thumbs/t_dartman.png' },
+      { name: '사파 독술사', hanja: '邪派 毒術士', stars: '★★★★☆', desc: '녹색 부식 독안개 방출 및 원거리 침투.', img: 'assets/thumbs/t_curse_mage.png' },
+      { name: '독룡 마군 [보스]', hanja: '毒龍 魔君', stars: '★★★★★', desc: '맹독 비검과 독룡 파동포를 뿜어내는 암흑가 수장.', img: 'assets/thumbs/t_boss2.png', isBoss: true }
     ]
   },
   {
@@ -504,9 +504,9 @@ const SECTOR_DEFS = [
     difficulty: '극난 (절정 고수)',
     bgPreview: 'assets/ground_bamboo.jpg',
     enemies: [
-      { name: '만독 괴인', hanja: '萬毒 怪人', stars: '★★★★☆', desc: '상처 입을 때마다 독액을 흩뿌리는 변이체.', img: 'assets/portrait_enemy_assassin.jpg' },
-      { name: '주술 망령', hanja: '呪術 亡靈', stars: '★★★★☆', desc: '장벽을 통과해 다가오는 영체 강시.', img: 'assets/portrait_enemy_jiangshi.jpg' },
-      { name: '천독마후 [보스]', hanja: '千毒魔后', stars: '★★★★★', desc: '만독 만천화우와 핏빛 독사를 조종하는 밀림의 여왕.', img: 'assets/portrait_enemy_boss.jpg', isBoss: true }
+      { name: '만독 괴인', hanja: '萬毒 怪人', stars: '★★★★☆', desc: '상처 입을 때마다 독액을 흩뿌리는 변이체.', img: 'assets/thumbs/t_ghoul.png' },
+      { name: '주술 망령', hanja: '呪術 亡靈', stars: '★★★★☆', desc: '장벽을 통과해 다가오는 영체 강시.', img: 'assets/thumbs/t_necromancer.png' },
+      { name: '천독마후 [보스]', hanja: '千毒魔后', stars: '★★★★★', desc: '만독 만천화우와 핏빛 독사를 조종하는 밀림의 여왕.', img: 'assets/thumbs/t_boss3.png', isBoss: true }
     ]
   },
   {
@@ -522,9 +522,9 @@ const SECTOR_DEFS = [
     difficulty: '악몽 (초절정 고수)',
     bgPreview: 'assets/ground_tile.jpg',
     enemies: [
-      { name: '빙궁 검수', hanja: '氷宮 劍手', stars: '★★★★☆', desc: '서리 검기로 빠르게 베어 들어오는 빙궁의 검객.', img: 'assets/portrait_enemy_assassin.jpg' },
-      { name: '빙결 강시', hanja: '氷結 殭屍', stars: '★★★★☆', desc: '얼음에 갇힌 채 뛰어오는 강시. 서리 술사·설산 거괴도 함께 나옴.', img: 'assets/portrait_enemy_jiangshi.jpg' },
-      { name: '빙백신군 [보스]', hanja: '氷魄神君', stars: '★★★★★', desc: '서리 폭풍과 빙백신검을 내리꽂는 북해의 군주.', img: 'assets/portrait_enemy_boss.jpg', isBoss: true }
+      { name: '빙궁 검수', hanja: '氷宮 劍手', stars: '★★★★☆', desc: '서리 검기로 빠르게 베어 들어오는 빙궁의 검객.', img: 'assets/thumbs/t_ice_sword.png' },
+      { name: '빙결 강시', hanja: '氷結 殭屍', stars: '★★★★☆', desc: '얼음에 갇힌 채 뛰어오는 강시. 서리 술사·설산 거괴도 함께 나옴.', img: 'assets/thumbs/t_ice_jiangshi.png' },
+      { name: '빙백신군 [보스]', hanja: '氷魄神君', stars: '★★★★★', desc: '서리 폭풍과 빙백신검을 내리꽂는 북해의 군주.', img: 'assets/thumbs/t_boss4.png', isBoss: true }
     ]
   },
   {
@@ -540,9 +540,9 @@ const SECTOR_DEFS = [
     difficulty: '생사경 (生死境)',
     bgPreview: 'assets/ground_tile.jpg',
     enemies: [
-      { name: '마교 정예 혈기사', hanja: '血騎士', stars: '★★★★★', desc: '공격 시 체력을 흡수하는 마교 최고 살수단.', img: 'assets/portrait_enemy_assassin.jpg' },
-      { name: '혈시귀', hanja: '血屍鬼', stars: '★★★★★', desc: '죽을 때 광범위 혈폭을 일으키는 자폭 시귀.', img: 'assets/portrait_enemy_jiangshi.jpg' },
-      { name: '혈마교주 [보스]', hanja: '血魔敎主', stars: '★★★★★+', desc: '천마군림보와 삼천혈해를 부르는 마교 최강의 절대자.', img: 'assets/portrait_enemy_boss.jpg', isBoss: true }
+      { name: '마교 정예 혈기사', hanja: '血騎士', stars: '★★★★★', desc: '공격 시 체력을 흡수하는 마교 최고 살수단.', img: 'assets/thumbs/t_skeleton.png' },
+      { name: '혈시귀', hanja: '血屍鬼', stars: '★★★★★', desc: '죽을 때 광범위 혈폭을 일으키는 자폭 시귀.', img: 'assets/thumbs/t_blood_ghoul.png' },
+      { name: '혈마교주 [보스]', hanja: '血魔敎主', stars: '★★★★★+', desc: '천마군림보와 삼천혈해를 부르는 마교 최강의 절대자.', img: 'assets/thumbs/t_boss5.png', isBoss: true }
     ]
   }
 ];
