@@ -1933,3 +1933,30 @@
       .hud-top { width: calc(100% - 136px); }
       body.debug .hud-top { width: calc(100% - 216px); }
     }
+
+    /* ===== 폰 가로(높이 520 이하): 스크롤 없이 한 화면에 (2026-11-12 사용자: 글씨·설명이 많아 스크롤) =====
+       - 첫 화면: 영어 부제·인용문 숨기고, 작은 단추 4개를 한 줄로
+       - 수련·과제·설정 창: 넓게 쓰고 두 칸으로, 설명 줄 숨김 */
+    @media (max-height: 520px) {
+      #titleScreen .title-english, #titleScreen .title-epic-lore, #titleScreen .hanja-watermark { display: none; }
+      #titleScreen .main-wuxia-title { margin: 0 0 4px; }
+      #titleScreen .title-main-stage > div[style] { flex-direction: row !important; flex-wrap: wrap; justify-content: center; margin-top: 14px !important; gap: 10px !important; max-width: 760px; }
+      #titleScreen .start-game-btn { flex-basis: 100%; order: 0; }
+
+      .training-box, .settings-box { max-width: none; width: calc(100vw / 0.72 - 40px); max-height: calc((100vh - 12px) / 0.72); padding-top: 14px; padding-bottom: 14px; }
+      .modal-box .modal-subtitle { margin-bottom: 6px; }
+      #trainingList, #goalsList, #settingsList { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+      #goalsList > .goal-head, #goalsList > .goal-claim-all { grid-column: 1 / -1; margin: 4px 0 0; }
+      #goalsList .goal-card { padding: 5px 10px; gap: 8px; }
+      #goalsList .goal-name span { display: none; }       /* 업적 설명은 이름만 */
+      #goalsList .goal-num { display: none; }              /* 막대만으로 진행 표시 */
+      #goalsList { grid-template-columns: 1fr 1fr 1fr; gap: 5px 8px; }
+      #goalsList .goal-card { grid-template-columns: 24px minmax(0, 1fr) auto; }
+      #goalsList .goal-icon { font-size: 18px; }
+      #goalsList .goal-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #goalsList .goal-bar { margin-top: 3px; }
+      #goalsList .goal-reward { font-size: 12px; }
+      #goalsList .goal-claim { padding: 4px 7px; font-size: 12px; }
+      #trainingList .train-card { padding: 6px 10px; }
+      .set-row { padding: 5px 8px; }
+    }
