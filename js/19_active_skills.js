@@ -3,8 +3,9 @@
 // - 자동: 예전처럼 때가 되면 저절로 나감
 // - 버튼: 벽공장·벽력탄·만천화우·금강불괴 4개는 버튼(PC는 Q·E·R·F 또는 1·2·3·4 키)을 누를 때만 나감
 //   (W·A·S·D 는 이동이라 W 대신 F. 왼손은 WASD 위에 그대로)
-//         대신 직접 쓰는 보상으로 위력 +20%. 매화검법·칼 베기·늘 켜진 무공은 그대로 자동
-// - 대기 시간은 자동일 때와 같음 (06_skills_combat.js 의 interval)
+//         매화검법·칼 베기·늘 켜진 무공은 그대로 자동
+// - 버튼 모드 대기 시간: 강한 무공일수록 길게 (MANUAL_CD, 2026-11-12 사용자 요청)
+//   대신 한 방이 셈: 위력 = 자동일 때 같은 시간 동안 나갈 몫을 한 번에 + 20% (직접 쓰는 보상)
 // ============================================================
 const ACTIVE_SLOTS = [
   { id: 'palm_blast', key: 'Q', keys: ['q', '1'] },
@@ -13,6 +14,18 @@ const ACTIVE_SLOTS = [
   { id: 'vajra_shield', key: 'F', keys: ['f', '4'] }
 ];
 const MANUAL_POWER = 1.2;
+// 버튼 모드 대기 시간(초): [1레벨, 5레벨, 초월]. 그 사이 레벨은 고르게
+const MANUAL_CD = {
+  palm_blast:   [4, 3, 6],     // 벽공장 → 여래신장
+  thunder_bomb: [6, 4.5, 9],   // 벽력탄 → 구천뇌정
+  dagger_rain:  [8, 6, 12],    // 만천화우 → 생사부 만천화우
+  vajra_shield: [10, 8, 15]    // 금강불괴 → 천지무적신공
+};
+function manualCd(id) {
+  const t = MANUAL_CD[id], lv = Math.max(1, Math.min(5, player.skills[id] || 1));
+  if (player.evolutions && player.evolutions['evo_' + id]) return t[2];
+  return t[0] + (t[1] - t[0]) * (lv - 1) / 4;
+}
 
 function skillManual() { return typeof gameSettings !== 'undefined' && gameSettings.skillMode === 'manual'; }
 
@@ -20,8 +33,11 @@ function skillManual() { return typeof gameSettings !== 'undefined' && gameSetti
 function activeSkillTick(id, interval, dt) {
   if (!skillManual()) return false;
   if (!player.activeCd) player.activeCd = {};
-  player.activeCd[id] = interval;
-  player.timers[id] = Math.min(interval, (player.timers[id] || 0) + dt);
+  if (!player.autoCd) player.autoCd = {};
+  player.autoCd[id] = interval; // 자동일 때 간격 (위력 계산용)
+  const cd = manualCd(id);
+  player.activeCd[id] = cd;
+  player.timers[id] = Math.min(cd, (player.timers[id] || 0) + dt);
   return true;
 }
 
@@ -38,7 +54,8 @@ function useActiveSkill(slot) {
   if (!activeSkillReady(s.id)) { flashSkillBtn(slot, 'no'); return false; }
   player.timers[s.id] = 0;
   const base = player.atkMultiplier;
-  player.atkMultiplier = base * MANUAL_POWER;
+  const ratio = Math.max(1, player.activeCd[s.id] / ((player.autoCd && player.autoCd[s.id]) || player.activeCd[s.id]));
+  player.atkMultiplier = base * MANUAL_POWER * ratio;
   try {
     if (s.id === 'palm_blast') {
       // 움직이는 중이면 그 방향으로, 서 있으면 적이 몰린 쪽으로
