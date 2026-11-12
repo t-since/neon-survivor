@@ -183,7 +183,7 @@ function renderPlayer() {
   const isCanvas = (typeof HTMLCanvasElement !== 'undefined' && sprite instanceof HTMLCanvasElement);
   if (sprite && (isCanvas || sprite.complete || (sprite.width > 0))) {
     if (sprite === SPRITES[frameKey]) {
-      ctx.drawImage(tinted(sprite, heroTint), -220 * FRAME_K, -320 * FRAME_K + 4, 440 * FRAME_K, 340 * FRAME_K);
+      ctx.drawImage(tinted(typeof heroSkinImg === 'function' ? heroSkinImg(sprite) : sprite, heroTint), -220 * FRAME_K, -320 * FRAME_K + 4, 440 * FRAME_K, 340 * FRAME_K); // heroSkinImg: 외형 옷 색 (20_looks.js)
     } else {
       ctx.drawImage(sprite, -44, -130, 88, 144); // 새 프레임을 못 불러왔을 때 예전 그림
     }
@@ -992,7 +992,7 @@ function renderProjectiles() {
 
     ctx.scale(sw.isEvo ? 0.85 : 0.72, sw.isEvo ? 0.85 : 0.72);
 
-    const look = (player.equipped && player.equipped.weapon) ? player.equipped.weapon.lookEffect : null;
+    const look = (player.equipped && player.equipped.weapon) ? player.equipped.weapon.lookEffect : (typeof skinBladeLook === 'function' ? skinBladeLook() : null); // 주운 장비가 없으면 외형 검기
     let mainColor = sw.isEvo ? '#fb7185' : '#f9a8d4'; // 이십사수매화검법: 매화빛 검
     if (look === 'frost_blade') mainColor = '#38bdf8';
     else if (look === 'blood_blade') mainColor = '#ef4444';
