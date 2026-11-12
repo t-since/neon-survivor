@@ -288,7 +288,7 @@ function miniBossLook(e) {
   }
   if (art && !SPRITES[art + '_walk_0']) art = null; // 그림을 못 불러왔으면 예전 그림
   const sec = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
-  const H = { mob_butcher: 250, mob_ghoul: 190, mob_yeti: 310 };
+  const H = { mob_butcher: 250, mob_ghoul: 190, mob_yeti: 360 };
   const own = art && /^mob_(ice_|yeti)/.test(art); // 빙궁 전용 그림은 색 바꾸지 않음
   e._look = { art, filter: own ? null : MB_SECTOR_TINT[sec], h: art ? (H[art] || 215) : 0 };
   return e._look;

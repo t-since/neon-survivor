@@ -269,7 +269,11 @@ const Cinema = {
     v.playsInline = true;
     v.muted = !(typeof sound !== 'undefined' && sound.enabled);
     v.volume = 1;
-    this.stage.appendChild(v);
+    // 16:9 틀 안에서 1.12배 확대 → 오른쪽 아래 제미나이 표시가 틀 밖으로 (11-12 사용자 확인)
+    const box = document.createElement('div');
+    box.className = 'cn-filmbox';
+    box.appendChild(v);
+    this.stage.appendChild(box);
     this.filmEl = v;
     const p = v.play();
     if (p && p.catch) p.catch(() => { v.muted = true; v.play().catch(() => {}); }); // 소리 자동 재생이 막히면 소리 없이라도

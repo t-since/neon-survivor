@@ -1791,7 +1791,8 @@
     #cinema .cn-dots i.on { background: #fbbf24; }
     @media (pointer: coarse) { #cinema .cn-hint { display: none; } }
     /* 편집된 영상 한 편: 영상은 잘리지 않게 화면에 맞추고, 검은 띠 대신 아래쪽 그림자 위에 자막 */
-    #cinema .cn-film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+    #cinema .cn-filmbox { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(100vw, calc(100vh * 16 / 9)); height: min(100vh, calc(100vw * 9 / 16)); overflow: hidden; background: #000; }
+    #cinema .cn-film { position: absolute; left: 0; top: 0; width: 112%; height: 112%; object-fit: fill; background: #000; } /* 1.12배: 오른쪽·아래 10.7%를 잘라 제미나이 표시 가림 */
     #cinema.film { cursor: default; }
     #cinema.film .cn-bar { background: transparent; }
     #cinema.film .cn-bot { height: 22vh; align-items: flex-end; padding-bottom: 6vh; background: linear-gradient(transparent, rgba(0,0,0,.55)); }

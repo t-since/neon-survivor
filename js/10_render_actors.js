@@ -217,7 +217,7 @@ const SKIN_ART = {
   mob_ice_sword: { key: 'mob_ice_sword', h: 145 },
   mob_ice_jiangshi: { key: 'mob_ice_jiangshi', h: 150, hop: true },
   mob_ice_mage: { key: 'mob_ice_mage', h: 150 },
-  mob_yeti: { key: 'mob_yeti', h: 225 }, // 몽둥이를 들어도 안 잘리게 작게 잘라서(245px) 키를 크게
+  mob_yeti: { key: 'mob_yeti', h: 262 }, // 몽둥이를 들어도 안 잘리게 작게 잘라서(210px) 키를 크게
   mob_white_tiger: { key: 'mob_white_tiger', h: 150 }, // 옆으로 긴 그림이라 작게 잘라서(180px) 키를 크게
   mob_ice_spider: { key: 'mob_ice_spider', h: 170 },
   mob_poison_spider: { key: 'mob_poison_spider', h: 170 },

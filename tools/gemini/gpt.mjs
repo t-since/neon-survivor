@@ -11,7 +11,11 @@ let id = 0; const pend = {}; ws.onmessage = m => { const d = JSON.parse(m.data);
 const send = (method, params = {}) => new Promise(r => { const i = ++id; pend[i] = r; ws.send(JSON.stringify({ id: i, method, params })); });
 const ev = async code => { const r = await send('Runtime.evaluate', { expression: code, awaitPromise: true, returnByValue: true, userGesture: true }); if (r.result?.exceptionDetails) console.log('JS 오류', r.result.exceptionDetails.exception?.description); return r.result?.result?.value; };
 await send('Page.bringToFront'); await sleep(500);
-const imgCount = `[...document.querySelectorAll('img')].filter(i=>i.naturalWidth>500 && !i.src.startsWith('data:') && !i.closest('form')).length`;
+// 늘 새 대화에서 (라이브러리·다른 대화 화면의 그림을 잘못 받지 않게)
+await send('Page.enable'); await send('Page.navigate', { url: 'https://chatgpt.com/' });
+for (let i = 0; i < 40; i++) { await sleep(500); if (await ev("!!document.querySelector('#prompt-textarea, .ProseMirror')")) break; }
+await sleep(1500);
+const imgCount = `[...document.querySelectorAll('main article img, [data-message-author-role=assistant] img, img[alt^="생성된 이미지"]')].filter(i=>i.naturalWidth>500 && !i.src.startsWith('data:') && !i.closest('form')).length`;
 const before = await ev(imgCount);
 if (attach.length) {
   await send('DOM.enable');
@@ -32,12 +36,12 @@ console.log('보냄', sent);
 let ok = false;
 for (let i = 0; i < 300; i++) {
   await sleep(2000);
-  const st = await ev(`(()=>{const ims=[...document.querySelectorAll('img')].filter(i=>i.naturalWidth>500 && !i.src.startsWith('data:') && !i.closest('form')); const stop=!!document.querySelector('[data-testid=stop-button], button[aria-label*="중지"]'); return {n:ims.length, stop}})()`);
+  const st = await ev(`(()=>{const ims=[...document.querySelectorAll('main article img, [data-message-author-role=assistant] img, img[alt^="생성된 이미지"]')].filter(i=>i.naturalWidth>500 && !i.src.startsWith('data:') && !i.closest('form')); const stop=!!document.querySelector('[data-testid=stop-button], button[aria-label*="중지"]'); return {n:ims.length, stop}})()`);
   if (st.n > before && !st.stop) { ok = true; break; }
   if (i % 30 === 29) { const t = await ev(`(()=>{const m=[...document.querySelectorAll('[data-message-author-role=assistant]')].pop(); return m? m.innerText.slice(-300):''})()`); console.log('...', t.replace(/\s+/g,' ').slice(-150)); if (/limit|한도|제한|can't|cannot|죄송/.test(t) && !st.stop) { console.log('답:', t); process.exit(2); } }
 }
 if (!ok) { console.log('그림 안 나옴'); process.exit(2); }
 await sleep(3000);
-const data = await ev(`(async()=>{const ims=[...document.querySelectorAll('img')].filter(i=>i.naturalWidth>500 && !i.src.startsWith('data:') && !i.closest('form')); const im=ims[ims.length-1]; const r=await fetch(im.src,{credentials:'include'}); const b=await r.blob(); return await new Promise(res=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b);})})()`);
+const data = await ev(`(async()=>{const ims=[...document.querySelectorAll('main article img, [data-message-author-role=assistant] img, img[alt^="생성된 이미지"]')].filter(i=>i.naturalWidth>500 && !i.src.startsWith('data:') && !i.closest('form')); const im=ims[ims.length-1]; const r=await fetch(im.src,{credentials:'include'}); const b=await r.blob(); return await new Promise(res=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b);})})()`);
 fs.writeFileSync(outFile, Buffer.from(data.split(',')[1], 'base64'));
 console.log('저장', outFile, (fs.statSync(outFile).size/1048576).toFixed(1)+'MB'); ws.close();
