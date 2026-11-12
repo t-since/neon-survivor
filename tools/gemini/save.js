@@ -1,0 +1,1 @@
+const fs=require('fs');const d=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));const b=Buffer.from(d.split(',')[1],'base64');fs.writeFileSync(process.argv[3],b);console.log(b.length, b.readUInt32BE(16)+'x'+b.readUInt32BE(20))
