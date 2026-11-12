@@ -219,9 +219,9 @@ const SKIN_ART = {
   mob_ice_mage: { key: 'mob_ice_mage', h: 150 },
   mob_yeti: { key: 'mob_yeti', h: 225 }, // 몽둥이를 들어도 안 잘리게 작게 잘라서(245px) 키를 크게
   mob_white_tiger: { key: 'mob_white_tiger', h: 150 }, // 옆으로 긴 그림이라 작게 잘라서(180px) 키를 크게
-  mob_ice_spider: { key: 'mob_ice_spider', h: 95 },
-  mob_poison_spider: { key: 'mob_poison_spider', h: 95 },
-  mob_black_wolf: { key: 'mob_black_wolf', h: 110 }
+  mob_ice_spider: { key: 'mob_ice_spider', h: 170 },
+  mob_poison_spider: { key: 'mob_poison_spider', h: 170 },
+  mob_black_wolf: { key: 'mob_black_wolf', h: 150 } // 거미·늑대 공격 그림은 아직 걷기 그림 복사본 (제미나이 공격 요청 실패, 다시 그릴 것)
 };
 function enemyArt(e) {
   if (e.art) {
