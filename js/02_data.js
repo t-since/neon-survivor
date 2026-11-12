@@ -147,7 +147,9 @@ const SPRITE_URLS = {
 // 새 몬스터 그림 (제미나이 2x2 시트에서 자름, assets/mobs). 새로 만든 몬스터는 이 목록에 이름만 추가
 const MOB_ART_NAMES = ['mob_assassin', 'mob_archer', 'mob_dartman', 'mob_jiangshi',
   'mob_skeleton', 'mob_barbarian', 'mob_butcher', 'mob_ghoul', // 2026-11-10 추가
-  'mob_necromancer', 'mob_sorceress', 'mob_curse_mage']; // 이 셋의 그림 일부는 안티그래비티로 만듦
+  'mob_necromancer', 'mob_sorceress', 'mob_curse_mage', // 이 셋의 그림 일부는 안티그래비티로 만듦
+  'mob_ice_sword', 'mob_ice_jiangshi', 'mob_ice_mage', 'mob_yeti', // 2026-11-12 4구역 빙궁 전용
+  'mob_white_tiger', 'mob_ice_spider', 'mob_poison_spider', 'mob_black_wolf']; // 2026-11-12 괴수형
 for (const n of MOB_ART_NAMES) {
   for (const kind of ['walk', 'attack']) {
     for (let i = 0; i < 4; i++) SPRITE_URLS[`${n}_${kind}_${i}`] = `assets/mobs/${n}_${kind}_${i}.png`;
@@ -520,8 +522,8 @@ const SECTOR_DEFS = [
     difficulty: '악몽 (초절정 고수)',
     bgPreview: 'assets/ground_tile.jpg',
     enemies: [
-      { name: '빙설 살수', hanja: '氷雪 殺手', stars: '★★★★☆', desc: '얼음 비도를 던져 이동속도를 감속시킴.', img: 'assets/portrait_enemy_assassin.jpg' },
-      { name: '빙결 시귀', hanja: '氷結 屍鬼', stars: '★★★★☆', desc: '단단한 빙갑으로 방어력이 높은 설산 괴수.', img: 'assets/portrait_enemy_jiangshi.jpg' },
+      { name: '빙궁 검수', hanja: '氷宮 劍手', stars: '★★★★☆', desc: '서리 검기로 빠르게 베어 들어오는 빙궁의 검객.', img: 'assets/portrait_enemy_assassin.jpg' },
+      { name: '빙결 강시', hanja: '氷結 殭屍', stars: '★★★★☆', desc: '얼음에 갇힌 채 뛰어오는 강시. 서리 술사·설산 거괴도 함께 나옴.', img: 'assets/portrait_enemy_jiangshi.jpg' },
       { name: '빙백신군 [보스]', hanja: '氷魄神君', stars: '★★★★★', desc: '서리 폭풍과 빙백신검을 내리꽂는 북해의 군주.', img: 'assets/portrait_enemy_boss.jpg', isBoss: true }
     ]
   },

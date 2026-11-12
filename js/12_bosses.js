@@ -277,7 +277,7 @@ function miniBossLook(e) {
     '흑호 정찰대장': 'mob_assassin', '흑풍 돌격도두': 'mob_barbarian', '마교 혈호사자': 'mob_assassin',
     '하오문 척후조장': 'mob_assassin', '녹혈 독술장로': 'mob_necromancer', '중장 철갑마인': 'mob_butcher',
     '독충 조련사': 'mob_curse_mage', '천년 강시왕': 'mob_jiangshi', '만독 괴마인': 'mob_ghoul',
-    '서리 살수장': 'mob_assassin', '설산 백발마인': 'mob_barbarian', '빙백 수호수': 'mob_butcher',
+    '서리 살수장': 'mob_ice_sword', '설산 백발마인': 'mob_ice_mage', '빙백 수호수': 'mob_yeti',
     '정예 혈기사장': 'mob_skeleton', '마교 우호법': 'mob_barbarian', '삼천혈해 사자': 'mob_sorceress'
   };
   let art = BY_NAME[n] || null;
@@ -288,8 +288,9 @@ function miniBossLook(e) {
   }
   if (art && !SPRITES[art + '_walk_0']) art = null; // 그림을 못 불러왔으면 예전 그림
   const sec = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
-  const H = { mob_butcher: 250, mob_ghoul: 190 };
-  e._look = { art, filter: MB_SECTOR_TINT[sec], h: art ? (H[art] || 215) : 0 };
+  const H = { mob_butcher: 250, mob_ghoul: 190, mob_yeti: 310 };
+  const own = art && /^mob_(ice_|yeti)/.test(art); // 빙궁 전용 그림은 색 바꾸지 않음
+  e._look = { art, filter: own ? null : MB_SECTOR_TINT[sec], h: art ? (H[art] || 215) : 0 };
   return e._look;
 }
 // 중간보스 기술 고르기: 모습에 맞게 (0 돌진 베기 / 1 암기 폭풍 / 2 혈파 강타)

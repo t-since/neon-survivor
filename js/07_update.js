@@ -806,7 +806,7 @@ function updateGame(dt) {
             life: 2.2,
             damage: 15,
             radius: 8,
-            color: '#f43f5e'
+            color: currentSelectedSector === 4 ? '#7dd3fc' : '#f43f5e'
           });
           sound.playPalmBlast();
         }
@@ -1118,7 +1118,7 @@ function updateGame(dt) {
       contactDmgSum += e.damage;
       contactDmgMax = Math.max(contactDmgMax, e.damage);
       // 독공 몸통 공격: 부패시귀·혈강시·독살수에 닿으면 맹독
-      if (e.type === 'ghoul' || e.type === 'jiangshi' || e.type === 'poison_assassin') applyPlayerDebuff('poison', 3);
+      if ((e.type === 'ghoul' && e.art !== 'mob_white_tiger') || (e.type === 'jiangshi' && currentSelectedSector !== 4) || e.type === 'poison_assassin') applyPlayerDebuff('poison', 3);
     }
 
     // 공격 동작 신호 (새 몬스터 그림의 공격 4장을 재생하는 시간)

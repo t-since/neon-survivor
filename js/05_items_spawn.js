@@ -299,11 +299,37 @@ function getStageEnemyDistribution() {
   const ok = pool.filter(p => (ENEMY_TIER[p.type] || 1) <= maxT);
   return ok.length ? ok : [{ type: 'assassin', name: '흑풍 살수', weight: 60 }, { type: 'archer', name: '흑의 궁수', weight: 40 }];
 }
+function ICE_POOL_FILTER(list) {
+  // 사람형 빙궁 몹은 그림이 없어도 예전 모습으로 나오고, 괴수는 그림이 있을 때만
+  const human = { mob_ice_sword: 1, mob_ice_jiangshi: 1, mob_ice_mage: 1, mob_yeti: 1 };
+  const ok = list.filter(p => !p.art || human[p.art] || (typeof SPRITES !== 'undefined' && SPRITES[p.art + '_walk_0']));
+  return ok.length ? ok : list;
+}
 function getThemeEnemyPool() {
   const secIdx = Math.max(0, Math.min(4, (currentSelectedSector || 1) - 1));
   const curZone = Math.max(0, Math.min(3, (state.currentZone || 1) - 1));
   const zoneCfg = (ZONE_CONFIGS[secIdx] && ZONE_CONFIGS[secIdx][curZone]) ? ZONE_CONFIGS[secIdx][curZone] : ZONE_CONFIGS[0][0];
   const theme = zoneCfg.theme || 'bamboo_grove';
+
+  // 0. 4구역 북해빙궁: 관문과 상관없이 빙궁 몹 (2026-11-12 사용자: 예전 몹은 빙궁과 안 어울림)
+  if (secIdx === 3) {
+    return ICE_POOL_FILTER([
+      { type: 'assassin', name: '빙궁 검수', art: 'mob_ice_sword', weight: 26 },
+      { type: 'jiangshi', name: '빙결 강시', art: 'mob_ice_jiangshi', weight: 18 },
+      { type: 'sorceress', name: '서리 술사', art: 'mob_ice_mage', weight: 16 },
+      { type: 'butcher', name: '설산 거괴', art: 'mob_yeti', weight: 12 },
+      { type: 'ghoul', name: '설원 백호', art: 'mob_white_tiger', weight: 16 },   // 덤벼드는 괴수
+      { type: 'spearman', name: '빙정 거미', art: 'mob_ice_spider', weight: 12 }  // 얼음 거미줄을 쏨
+    ]);
+  }
+  const base = getThemeEnemyPoolBase(secIdx, theme);
+  // 괴수형 몹 (2026-11-12 사용자: 사람형만 말고 무협 괴수도) — 그림을 불러왔을 때만
+  const has = k => typeof SPRITES !== 'undefined' && SPRITES[k + '_walk_0'];
+  if ((secIdx === 0 || secIdx === 1) && has('mob_black_wolf')) base.push({ type: 'assassin', name: '흑풍 늑대', art: 'mob_black_wolf', weight: 22 });
+  if (secIdx === 2 && has('mob_poison_spider')) base.push({ type: 'ghoul', name: '만독 거미', art: 'mob_poison_spider', weight: 22 });
+  return base;
+}
+function getThemeEnemyPoolBase(secIdx, theme) {
 
   // 1. 대나무 숲 테마 (취죽림 숲길, 만독림 외곽 등) -> 살수, 궁수, 투창병, 강시
   if (theme === 'bamboo_grove') {
@@ -453,7 +479,7 @@ function spawnEnemyPack() {
     } else if (enemyType === 'sorceress') {
       enemies.push({
         type: 'sorceress',
-        name: '혈선 주술녀',
+        name: (stageName || '혈선 주술녀'),
         x: eX, y: eY,
         hp: 52 + state.gameTime * 1.6,
         maxHp: 52 + state.gameTime * 1.6,
@@ -536,6 +562,7 @@ function spawnEnemyPack() {
         expVal: 2
       });
     }
+    { const ne = enemies[enemies.length - 1]; if (chosen.art && ne && ne.type === enemyType && !ne.art) ne.art = chosen.art; }
   }
 }
 
@@ -607,6 +634,7 @@ function spawnEnemySwarm(count = 20) {
         expVal: 2
       });
     }
+    { const ne = enemies[enemies.length - 1]; if (chosen.art && ne && ne.type === sType && !ne.art) ne.art = chosen.art; }
   }
 }
 

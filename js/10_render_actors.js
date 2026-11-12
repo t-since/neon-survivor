@@ -212,8 +212,26 @@ const ENEMY_ART = {
   sorceress: { key: 'mob_sorceress', h: 150 },     // 혈선녀
   curse_mage: { key: 'mob_curse_mage', h: 150 }    // 저주술사
 };
+// 몹 목록(05 getThemeEnemyPool)에 art 를 적은 몹: 움직임은 type 그대로, 그림만 이것 (2026-11-12 빙궁 몹·괴수형)
+const SKIN_ART = {
+  mob_ice_sword: { key: 'mob_ice_sword', h: 145 },
+  mob_ice_jiangshi: { key: 'mob_ice_jiangshi', h: 150, hop: true },
+  mob_ice_mage: { key: 'mob_ice_mage', h: 150 },
+  mob_yeti: { key: 'mob_yeti', h: 225 }, // 몽둥이를 들어도 안 잘리게 작게 잘라서(245px) 키를 크게
+  mob_white_tiger: { key: 'mob_white_tiger', h: 125 },
+  mob_ice_spider: { key: 'mob_ice_spider', h: 95 },
+  mob_poison_spider: { key: 'mob_poison_spider', h: 95 },
+  mob_black_wolf: { key: 'mob_black_wolf', h: 110 }
+};
+function enemyArt(e) {
+  if (e.art) {
+    const a = SKIN_ART[e.art];
+    if (a && SPRITES[a.key + '_walk_0']) return a;
+  }
+  return ENEMY_ART[e.type];
+}
 function enemyHasArt(e) {
-  const art = ENEMY_ART[e.type];
+  const art = enemyArt(e);
   return !!(art && !e.isBoss && !e.isMiniBoss && SPRITES[art.key + '_walk_0']);
 }
 // 새 그림 몬스터 그리기: 공격 중이면 공격 4장, 걸으면 걷기 4장, 서 있으면 걷기 2번(다리 모음)
@@ -515,7 +533,7 @@ function renderEnemiesInner() {
       ctx.strokeRect(-barW / 2, -mh + 8, barW, barH);
 
     } else if (enemyHasArt(e)) {
-      drawEnemyArt(e, ENEMY_ART[e.type], facing, isMoving, runTimer);
+      drawEnemyArt(e, enemyArt(e), facing, isMoving, runTimer);
     } else if (e.type === 'jiangshi') {
       ctx.scale(facing, 1);
       // 60FPS Hit Flash: Handled via lightweight GPU blend

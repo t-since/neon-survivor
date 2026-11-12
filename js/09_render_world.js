@@ -366,8 +366,8 @@ function corpseArtOf(e) {
     } else if (e.isMiniBoss) {
       const l = miniBossLook(e);
       if (l.art) return { key: l.art, h: l.h, filter: l.filter || null };
-    } else if (typeof ENEMY_ART !== 'undefined' && ENEMY_ART[e.type] && SPRITES[ENEMY_ART[e.type].key + '_walk_1']) {
-      const a = ENEMY_ART[e.type];
+    } else if (typeof enemyArt === 'function' && enemyArt(e) && SPRITES[enemyArt(e).key + '_walk_1']) {
+      const a = enemyArt(e);
       return { key: a.key, h: a.h, filter: (e.elite ? (a.filter ? a.filter + ' ' : '') + 'sepia(0.35) saturate(1.8) hue-rotate(-25deg) brightness(0.95)' : a.filter) || null };
     }
   } catch (_) { /* 그림 정보가 없으면 예전 그림 */ }
