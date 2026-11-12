@@ -1914,3 +1914,11 @@
     .owned-badge .skill-img { display: inline-block; width: 18px; height: 18px; border-radius: 4px; vertical-align: -4px; margin-right: 2px; }
     .sk-img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; pointer-events: none; }
     .sk-img:not([src]) { display: none; }
+    /* 게임 중 무공 자동/수동 바꾸기 단추 (19_active_skills.js) */
+    #skillModeBtn { width: auto; min-width: 40px; padding: 0 8px; font-size: 12px; font-weight: 800; color: #cbd5e1; }
+    #skillModeBtn.on { color: #7dd3fc; border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.45); }
+    @media (max-width: 900px), (max-height: 520px) {
+      #skillModeBtn { min-width: 34px; padding: 0 6px; font-size: 11px; }
+      .hud-top { width: calc(100% - 136px); }
+      body.debug .hud-top { width: calc(100% - 216px); }
+    }

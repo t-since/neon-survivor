@@ -43,7 +43,7 @@ function renderSettings() {
   const L = (typeof I18N !== 'undefined') ? I18N.lang : 'ko';
   box.innerHTML = `
     <div class="set-row"><span>🌐 언어 · Language</span><div class="set-seg"><button type="button" data-lang="ko" class="${L === 'ko' ? 'on' : ''}">한국어</button><button type="button" data-lang="en" class="${L === 'en' ? 'on' : ''}">English</button></div></div>
-    <div class="set-row"><span>🎯 무공 사용</span>${seg('skillMode', [['auto', '자동'], ['manual', '버튼']])}</div>
+    <div class="set-row"><span>🎯 무공 사용</span>${seg('skillMode', [['auto', '자동'], ['manual', '수동']])}</div>
     <div class="set-row"><span>🎵 배경음악</span><input type="range" min="0" max="1" step="0.05" value="${s.music}" data-range="music"><b>${Math.round(s.music * 100)}</b></div>
     <div class="set-row"><span>🔔 효과음</span><input type="range" min="0" max="1" step="0.05" value="${s.sfx}" data-range="sfx"><b>${Math.round(s.sfx * 100)}</b></div>
     <div class="set-row"><span>📳 화면 흔들림</span>${seg('shake', [[0, '끄기'], [0.5, '약하게'], [1, '보통']])}</div>

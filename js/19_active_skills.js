@@ -145,6 +145,32 @@ function refreshSkillButtons() {
   }
 }
 
+// 게임 중 바꾸기: 위 단추(자동 ↔ 수동) 또는 T 키
+function toggleSkillMode() {
+  if (typeof gameSettings === 'undefined') return;
+  gameSettings.skillMode = skillManual() ? 'auto' : 'manual';
+  saveSettings();
+  refreshSkillModeBtn();
+  if (typeof showMiniToast === 'function' && state.isGameStarted) {
+    const touch = document.body.classList.contains('is-touch');
+    if (skillManual()) showMiniToast('🎯', '무공: 수동', touch ? '오른쪽 아래 버튼을 눌러 무공을 펼치세요' : 'Q·E·R·F 키(또는 1·2·3·4)로 무공을 펼치세요', '#38bdf8');
+    else showMiniToast('🔄', '무공: 자동', '무공이 저절로 나갑니다', '#94a3b8');
+  }
+}
+function refreshSkillModeBtn() {
+  const b = document.getElementById('skillModeBtn');
+  if (!b) return;
+  const m = skillManual();
+  b.textContent = m ? '수동' : '자동';
+  b.classList.toggle('on', m);
+}
+document.addEventListener('click', e => { if (e.target && e.target.closest && e.target.closest('#skillModeBtn')) { e.preventDefault(); toggleSkillMode(); e.target.closest('#skillModeBtn').blur(); } });
+window.addEventListener('keydown', e => {
+  if ((e.code === 'KeyT' || e.key === 't' || e.key === 'T') && !e.repeat && state.isGameStarted && !state.isGameOver) toggleSkillMode();
+});
+// 설정 창에서 바꿔도 단추 글씨 맞춤
+setInterval(refreshSkillModeBtn, 500);
+
 // PC: Q·E·R·F 또는 1·2·3·4 키 (한글 자판 상태여도 e.code 로 잡음)
 window.addEventListener('keydown', e => {
   if (!skillManual() || e.repeat) return;
