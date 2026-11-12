@@ -315,6 +315,9 @@ function renderEnvironmentProps() {
       const px = gx * gridSize + (rnd * 260) - 130;
       const py = gy * gridSize + ((rnd * 7) % 1 * 260) - 130;
       if (Math.hypot(px, py) < 260) continue; // 시작 지점·결전 제단 가운데는 비움
+      // 신단·다른 소품과 겹치지 않게 (11-12 사용자: 신단 위에 화로가 서 있던 문제)
+      if (shrines.some(s => Math.abs(s.x - px) < 200 && Math.abs(s.y - py) < 200)) continue;
+      if (obstacles.some(o => Math.abs(o.x - px) < 110 && Math.abs(o.y - py) < 110)) continue;
 
       ctx.save();
       ctx.translate(px, py);
