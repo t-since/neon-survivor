@@ -1283,6 +1283,7 @@ function updateGame(dt) {
   player.speed = baseSpd;
 
   // Hit flash timer countdown
+  if (player._vajraFlash > 0) player._vajraFlash = Math.max(0, player._vajraFlash - dt);
   if (player.hitFlashTimer > 0) {
     player.hitFlashTimer = Math.max(0, player.hitFlashTimer - dt);
   }
@@ -1525,7 +1526,8 @@ function playerTakeDamage(amount) {
   }
   player.hitFlashTimer = 0.35; // 피격 플래시 & 경직 모션
   if (typeof vibrateHit === 'function') vibrateHit(actualDmg >= 25 ? 80 : 35); // 폰 진동 (설정에서 끔)
-  state.screenShake = Math.min(16, (state.screenShake || 0) + 7); // 강렬한 화면 피격 진동
+  const hurtK = Math.min(1, actualDmg / Math.max(40, player.maxHp * 0.15)); // 큰 피해일수록 1에 가까움
+  state.screenShake = Math.min(12, (state.screenShake || 0) + 2.5 + hurtK * 5); // 피격 흔들림 (작은 피해는 살짝)
 
   sound.playHit();
   updateHud();
@@ -1533,8 +1535,9 @@ function playerTakeDamage(amount) {
   // 강렬한 방사형 혈흔 비네트 플래시
   const overlay = document.getElementById('damageOverlay');
   if (overlay) {
-    overlay.style.opacity = '0.9';
-    setTimeout(() => { if (overlay) overlay.style.opacity = '0'; }, 180);
+    overlay.style.opacity = String((0.22 + hurtK * 0.5).toFixed(2)); // 예전엔 매번 0.9
+    clearTimeout(overlay._t);
+    overlay._t = setTimeout(() => { if (overlay) overlay.style.opacity = '0'; }, 120);
   }
 
   // 플레이어 머리 위 선명한 붉은색 피격 수치

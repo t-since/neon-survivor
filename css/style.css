@@ -51,8 +51,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle, rgba(239, 68, 68, 0.15) 20%, rgba(220, 38, 38, 0.5) 70%, rgba(153, 27, 27, 0.9) 100%);
-      box-shadow: inset 0 0 100px rgba(220, 38, 38, 0.95), inset 0 0 180px rgba(185, 28, 28, 0.75);
+      background: radial-gradient(circle, rgba(239, 68, 68, 0) 45%, rgba(220, 38, 38, 0.35) 80%, rgba(153, 27, 27, 0.8) 100%); /* 가운데는 비우고 가장자리만 붉게 */
+      box-shadow: inset 0 0 90px rgba(220, 38, 38, 0.7);
       z-index: 5;
       pointer-events: none;
       opacity: 0;

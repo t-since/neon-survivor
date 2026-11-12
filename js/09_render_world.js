@@ -357,6 +357,22 @@ const CORPSE_SPRITE_BY_TYPE = {
   ghoul: 'ghoul_run_0', necromancer: 'necromancer', butcher: 'butcher_run_0',
   barbarian: 'barbarian_run_0', sorceress: 'sorceress'
 };
+// 쓰러진 적이 살아 있을 때와 같은 새 그림을 쓰도록 (예전엔 옛 그림이 쓰러졌음)
+function corpseArtOf(e) {
+  try {
+    if (e.isBoss) {
+      const s = bossStyle(e);
+      if (SPRITES[s.art + '_walk_1']) return { key: s.art, h: s.h, filter: null }; // 보스 그림은 색 바꾸지 않음 (drawBossBody 와 같게)
+    } else if (e.isMiniBoss) {
+      const l = miniBossLook(e);
+      if (l.art) return { key: l.art, h: l.h, filter: l.filter || null };
+    } else if (typeof ENEMY_ART !== 'undefined' && ENEMY_ART[e.type] && SPRITES[ENEMY_ART[e.type].key + '_walk_1']) {
+      const a = ENEMY_ART[e.type];
+      return { key: a.key, h: a.h, filter: (e.elite ? (a.filter ? a.filter + ' ' : '') + 'sepia(0.35) saturate(1.8) hue-rotate(-25deg) brightness(0.95)' : a.filter) || null };
+    }
+  } catch (_) { /* 그림 정보가 없으면 예전 그림 */ }
+  return null;
+}
 function corpseSpriteFor(c) {
   if (c.isBoss) return SPRITES.boss_demon;
   if (c.isMiniBoss) return SPRITES.miniboss_run_0 || SPRITES.assassin;
@@ -387,7 +403,17 @@ function renderCorpses() {
     ctx.ellipse(0, 4, 34 * c.scale, 12 * c.scale, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    if (img && img.width > 0) {
+    const artImg = c.art && SPRITES[c.art.key + '_walk_1'];
+    if (artImg && artImg.width > 0) {
+      const k = c.art.h / 300;
+      ctx.globalAlpha = fade;
+      ctx.scale(c.facing, 1);
+      ctx.rotate(-ease * 1.3);
+      ctx.scale(1, 1 - ease * 0.35);
+      const q = Math.round(ease * 5) / 5;
+      const dark = `brightness(${(1 - q * 0.55).toFixed(2)}) saturate(${(1 - q * 0.5).toFixed(2)})`;
+      ctx.drawImage(tinted(artImg, (c.art.filter ? c.art.filter + ' ' : '') + dark), -220 * k, -320 * k + 4, 440 * k, 340 * k);
+    } else if (img && img.width > 0) {
       const h = 118 * c.scale * (c.isBoss ? 1.6 : 1);
       const w = h * img.width / img.height;
       ctx.globalAlpha = fade;
@@ -1664,8 +1690,8 @@ function renderGroundBombs() {
 function renderDashAfterimages() {
   player.afterImages.forEach(img => {
     const frameIndex = img.frame;
-    const spriteKey = 'hero_' + frameIndex;
-    const sprite = SPRITES[spriteKey];
+    const newHero = SPRITES['seojin_walk_' + frameIndex];
+    const sprite = (newHero && newHero.width > 0) ? newHero : SPRITES['hero_' + frameIndex];
     const isCanvas = (typeof HTMLCanvasElement !== 'undefined' && sprite instanceof HTMLCanvasElement);
     if (!sprite || (!isCanvas && !sprite.complete && (!sprite.width || sprite.width <= 0))) return;
 
@@ -1674,9 +1700,14 @@ function renderDashAfterimages() {
     ctx.globalAlpha = img.alpha * 0.5;
     ctx.scale(img.facing * img.scale, img.scale);
 
-    const w = 84;
-    const h = 138;
-    ctx.drawImage(sprite, -w / 2, -h + 14, w, h);
+    if (sprite === newHero) {
+      const K = 0.44; // renderPlayer 의 FRAME_K 와 같게
+      ctx.drawImage(tinted(sprite, 'sepia(1) hue-rotate(160deg) saturate(2) brightness(1.25)'), -220 * K, -320 * K + 4, 440 * K, 340 * K); // 푸른 잔상
+    } else {
+      const w = 84;
+      const h = 138;
+      ctx.drawImage(sprite, -w / 2, -h + 14, w, h);
+    }
     ctx.restore();
   });
 }

@@ -51,7 +51,16 @@ function renderPlayer() {
   }
 
   // 3. Vajra Shield - Golden Body Halo (기존 호신강기)
-  if (player.skills.vajra_shield > 0) {
+  if (player.skills.vajra_shield > 0 && !(player.activeBuffs && player.activeBuffs.invincible > 0) && SPRITES.fx_shield && SPRITES.fx_shield.width) {
+    // 금강불괴 보호막: 평소엔 옅은 금빛 결계, 충격파 순간(_vajraFlash) 크게 번쩍
+    const lvl = player.skills.vajra_shield;
+    const fl = Math.max(0, player._vajraFlash || 0) / 0.35; // 1 → 0
+    const breathe = 1 + Math.sin(state.gameTime * 3) * 0.04;
+    ctx.save();
+    ctx.shadowBlur = 0;
+    drawFxImage('fx_shield', 0, -62, (128 + lvl * 6) * breathe * (1 + fl * 0.22), 0.1 + lvl * 0.035 + fl * 0.55);
+    ctx.restore();
+  } else if (player.skills.vajra_shield > 0) {
     const lvl = player.skills.vajra_shield;
     const baseAlpha = 0.12 + (lvl / 5) * 0.42;
     const pulse = 1 + Math.sin(state.gameTime * 3) * 0.06;
@@ -155,13 +164,13 @@ function renderPlayer() {
   } else if (player.skills.vajra_shield > 0) {
     const lvl = player.skills.vajra_shield;
     ctx.shadowColor = '#fbbf24';
-    ctx.shadowBlur = 8 + lvl * 5;
+    ctx.shadowBlur = 4 + lvl * 2;
   }
 
   // 7. Hit Red/White Flashing Filter on taking damage & Debuff Auras
   let heroTint = null; // 색 바꾸기 (미리 만든 그림 사용 — 성능)
-  if (player.hitFlashTimer > 0) {
-    heroTint = 'brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(4)';
+  if (player.hitFlashTimer > 0.2) {
+    heroTint = 'brightness(1.45) sepia(0.7) hue-rotate(-50deg) saturate(2.4)'; // 피격: 살짝 붉게 (예전보다 약하게·짧게)
   } else if (player.debuffs && player.debuffs.poison > 0) {
     heroTint = 'sepia(0.6) hue-rotate(65deg) saturate(2.6)'; // 맹독: 초록
     if (Math.random() < 0.15 * (state.frameK || 0)) particles.push({ x: player.x + (Math.random() - 0.5) * 40, y: player.y - 40 - Math.random() * 70, vx: 0, vy: -40, color: '#4ade80', radius: 3 + Math.random() * 2, life: 0.6, maxLife: 0.6 });
@@ -1558,7 +1567,7 @@ function renderParticles() {
     }
     if (p.fxKey) {
       const t = 1 - p.life / p.maxLife;
-      drawFxImage(p.fxKey, p.x, p.y, p.size * (0.75 + t * 0.4), (1 - t) * 1.2, p.rot || 0, 1, p.tint || null);
+      drawFxImage(p.fxKey, p.x, p.y, p.size * (0.75 + t * 0.4), (1 - t) * 1.2, p.rot || 0, p.sy || 1, p.tint || null);
       return;
     }
     if (p.bolt || p.arc) {

@@ -123,6 +123,8 @@ function updateSkills(dt) {
         }
       }
       createShockwave(player.x, player.y, radius, '#fbbf24');
+      particles.push({ fxKey: 'fx_shield', x: player.x, y: player.y, vx: 0, vy: 0, size: radius * 1.9, sy: 0.45, rot: 0, life: 0.45, maxLife: 0.45 }); // 바닥 금빛 문양
+      player._vajraFlash = 0.35;
       sound.playPalmBlast();
     }
 
@@ -558,6 +560,7 @@ function onEnemyKilled(target) {
     scale: target.isBoss ? 1.4 : (target.isMiniBoss ? 1.2 : 1.0),
     isBoss: !!target.isBoss,
     isMiniBoss: !!target.isMiniBoss,
+    art: corpseArtOf(target), // 새 그림(보스·중간보스·몬스터)으로 쓰러짐
     life: 5.0,
     maxLife: 5.0
   });
