@@ -14,7 +14,12 @@ const [cmd, ...args] = process.argv.slice(2);
 async function pickTab(part = 'gemini.google.com') {
   const tabs = await (await fetch(BASE + '/json')).json();
   const pages = tabs.filter(t => t.type === 'page');
-  return pages.find(t => t.url.includes(part)) || pages[0];
+  const hit = pages.find(t => t.url.includes(part));
+  if (hit) return hit;
+  // 제미나이 탭이 없으면 다른 탭(ChatGPT 등)을 건드리지 않고 새 탭을 엶
+  const nt = await (await fetch(BASE + '/json/new?https://' + part + '/app', { method: 'PUT' })).json();
+  await new Promise(r => setTimeout(r, 6000));
+  return nt;
 }
 function connect(wsUrl) {
   return new Promise((res, rej) => {

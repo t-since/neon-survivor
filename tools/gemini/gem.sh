@@ -24,7 +24,8 @@ gem_ask() {
   cdp eval "(()=>{const e=document.querySelector('rich-textarea .ql-editor, div[contenteditable=true]'); e.focus(); return document.activeElement===e})()" >/dev/null
   [ -n "$1" ] && cdp type "$1" >/dev/null
   sleep 1
-  cdp eval "(()=>{const b=document.querySelector('button[aria-label=\"메시지 보내기\"]'); if(b){b.click(); return 'sent'} return 'no button'})()" >/dev/null
+  # 첨부 그림이 다 올라갈 때까지(최대 60초) 기다렸다가 보내기 (11-12: 올라가는 중에 눌러 안 보내지던 문제)
+  cdp eval "(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)); for(let i=0;i<120;i++){ const loading=[...document.querySelectorAll('[aria-label]')].some(e=>/로드 중/.test(e.getAttribute('aria-label'))); const b=document.querySelector('button[aria-label=\"메시지 보내기\"]'); if(!loading && b && !b.disabled && b.getAttribute('aria-disabled')!=='true'){ b.click(); return 'sent '+i } await w(500);} return 'no send' })()"
   for i in $(seq 1 40); do sleep 5; n=$(gem_count); [ "$n" -gt "$before" ] 2>/dev/null && break; done
   sleep 5
   for k in 1 2 3 4 5 6; do if cdp evalfile "$S/grab.js" > "$S/img.json" 2>/dev/null; then node "$S/save.js" "$S/img.json" "$NEW/$2"; return 0; fi; sleep 8; done; echo "grab failed"
