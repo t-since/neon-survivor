@@ -1786,6 +1786,24 @@ function renderParticles() {
   damageTexts.forEach(d => {
     if (!showNums && /^\d+$/.test(String(d.text))) return; // 숫자만 숨기고 '백골 소환!' 같은 글은 그대로
     ctx.save();
+    if (d.dmg) {
+      // 피해 숫자: 처음 0.1초 크게 튀어나왔다가 제자리, 굵은 테두리 (치명타는 금색·붉은 테두리)
+      const t = 1 - d.life / (d.maxLife || 0.8);
+      const pop = t < 0.12 ? 1.7 - (t / 0.12) * 0.7 : 1;
+      ctx.translate(d.x, d.y);
+      ctx.scale(pop, pop);
+      ctx.font = `900 ${d.size}px -apple-system, 'Segoe UI', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.lineJoin = 'round';
+      ctx.globalAlpha = Math.min(1, d.life * 3);
+      ctx.strokeStyle = d.crit ? '#7f1d1d' : '#000000';
+      ctx.lineWidth = d.crit ? 6 : 4.5;
+      ctx.strokeText(d.text, 0, 0);
+      ctx.fillStyle = d.color;
+      ctx.fillText(d.text, 0, 0);
+      ctx.restore();
+      return;
+    }
     ctx.font = `bold ${d.size}px -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.globalAlpha = Math.min(1, d.life * 2);

@@ -539,10 +539,13 @@ function dealDamage(target, baseDmg, canCrit = true) {
     x: target.x + (Math.random() - 0.5) * 20,
     y: target.y - 30,
     text: dmg.toString(),
-    color: isCrit ? '#f59e0b' : '#ffffff',
-    size: isCrit ? 18 : 14,
-    life: 0.65,
-    vy: -40
+    color: isCrit ? '#ffd23f' : '#ffffff',
+    size: isCrit ? 30 : 21, // 11-12 사용자: 더 크고 눈에 띄게 (예전 14·18)
+    life: 0.8,
+    maxLife: 0.8,
+    dmg: true,
+    crit: isCrit,
+    vy: -45
   });
 
   if (target.hp <= 0) {
