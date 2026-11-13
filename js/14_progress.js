@@ -22,7 +22,7 @@ const SILVER_RULES = { perKill: 0.4, perSecond: 0.25, perMiniBoss: 20, perBoss: 
 const SILVER_DIFF = { easy: 0.7, normal: 1.0, hard: 1.4 };
 
 let progress = { silver: 0, total: 0, train: {} };
-try { const s = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null'); if (s) progress = { silver: s.silver | 0, total: s.total | 0, train: s.train || {}, looks: s.looks || { owned: {}, robe: '', blade: '' } }; } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null'); if (s) progress = { silver: s.silver | 0, total: s.total | 0, train: s.train || {}, heroes: s.heroes || {}, looks: s.looks || { owned: {}, robe: '', blade: '' } }; } catch (e) {}
 function saveProgress() { try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch (e) {} }
 const trainLevel = id => Math.max(0, Math.min((TRAININGS.find(t => t.id === id) || {}).max || 0, progress.train[id] | 0));
 const trainCost = (t, lvl) => Math.round(t.base * Math.pow(1.6, lvl));

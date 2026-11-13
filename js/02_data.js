@@ -97,6 +97,10 @@ const SPRITE_URLS = {
   shrine_infinite_blades: 'assets/props/shrine_infinite_blades.png',
 
   // 서진 동작 프레임 (제미나이 2x2 시트에서 자름: 걷기 4장, 공격 4장)
+  // 현운(권사) 2026-11-13: 걷기 ChatGPT, 공격·시전 제미나이
+  hyunwoon_walk_0: 'assets/hero/hyunwoon_walk_0.png', hyunwoon_walk_1: 'assets/hero/hyunwoon_walk_1.png', hyunwoon_walk_2: 'assets/hero/hyunwoon_walk_2.png', hyunwoon_walk_3: 'assets/hero/hyunwoon_walk_3.png',
+  hyunwoon_attack_0: 'assets/hero/hyunwoon_attack_0.png', hyunwoon_attack_1: 'assets/hero/hyunwoon_attack_1.png', hyunwoon_attack_2: 'assets/hero/hyunwoon_attack_2.png', hyunwoon_attack_3: 'assets/hero/hyunwoon_attack_3.png',
+  hyunwoon_cast_0: 'assets/hero/hyunwoon_cast_0.png', hyunwoon_cast_1: 'assets/hero/hyunwoon_cast_1.png', hyunwoon_cast_2: 'assets/hero/hyunwoon_cast_2.png', hyunwoon_cast_3: 'assets/hero/hyunwoon_cast_3.png',
   seojin_walk_0: 'assets/hero/seojin_walk_0.png',
   seojin_walk_1: 'assets/hero/seojin_walk_1.png',
   seojin_walk_2: 'assets/hero/seojin_walk_2.png',
@@ -415,7 +419,7 @@ const HERO_DEFS = {
     poisonDmgMult: 1.0,
     knockbackMult: 1.5,
     lore: '천지의 기운이 뒤틀리고 민초들이 도탄에 빠지자, 산문을 열고 나와 묵직한 권과 장풍으로 도의를 세우고자 한다.',
-    passives: ['최대 혈기: +40% (140 HP)', '받는 피해량: 25% 경감 (방어 특화)', '풍압 넉백 파워: 1.5배 강화']
+    passives: ['기본 공격: 주먹 3단 (짧고 빠르게, 크게 밀어냄)', '고유 무공 진각: 둘레 적을 기절시키는 금빛 충격파', '최대 혈기 +40% · 받는 피해 25% 경감']
   },
   tangsoyeon: {
     id: 'tangsoyeon',

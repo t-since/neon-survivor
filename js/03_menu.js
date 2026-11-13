@@ -109,18 +109,40 @@ function navScreen(screenName) {
   sound.playPickup();
 }
 
+// 협객 개방 (2026-11-13 사용자 결정: 현운 = 5구역 돌파 + 은자 5,000)
+const HERO_UNLOCK = { hyunwoon: { sector: 5, silver: 5000 } };
+function heroUnlocked(id) { return id === 'seojin' || !!(progress.heroes && progress.heroes[id]); }
+function renderHeroCards() {
+  const id = 'hyunwoon', el = document.getElementById('card_' + id), u = HERO_UNLOCK[id];
+  if (!el || !u) return;
+  const spec = el.querySelector('.hero-card-spec'), badge = el.querySelector('.hero-card-lock-badge');
+  const own = heroUnlocked(id), cleared = clearedSectors.includes(u.sector), enough = progress.silver >= u.silver;
+  el.classList.toggle('disabled', !own);
+  el.title = own ? '' : '5구역 돌파 · 은자 5,000';
+  el.onclick = () => selectHero(id);
+  if (spec) { spec.removeAttribute('style'); spec.textContent = own ? '권법 & 넉백 (탱커)' : (cleared ? (enough ? '💰 은자 5,000 으로 개방' : '은자가 모자랍니다 (5,000)') : '🔒 5구역 돌파 · 은자 5,000'); }
+  if (badge) badge.style.display = own ? 'none' : '';
+  if (badge && !own) badge.textContent = cleared ? '💰 5,000' : '🔒 5구역 돌파';
+}
 function selectHero(heroId) {
-  if (heroId !== 'seojin') {
-    // 배포판에서는 서진 외 2명 선택 불가 (추후 신규 캐릭터 공개 예정)
-    return;
+  if (heroId !== 'seojin' && !heroUnlocked(heroId)) {
+    const u = HERO_UNLOCK[heroId];
+    if (!u) return; // 당소연: 아직 준비 중
+    if (!clearedSectors.includes(u.sector) || progress.silver < u.silver) { sound.playHit(); return; }
+    if (!confirm('은자 ' + u.silver.toLocaleString() + ' 을(를) 내고 ' + HERO_DEFS[heroId].name + ' 을(를) 개방할까요?')) return;
+    progress.silver -= u.silver; progress.heroes = progress.heroes || {}; progress.heroes[heroId] = true;
+    saveProgress(); if (typeof refreshSilverLabels === 'function') refreshSilverLabels();
+    sound.playLevelUp();
   }
-  currentSelectedHero = 'seojin';
-  const def = HERO_DEFS.seojin;
+  currentSelectedHero = heroId;
+  try { localStorage.setItem('wuxia_hero', heroId); } catch (e) {}
+  renderHeroCards();
+  const def = HERO_DEFS[heroId];
   if (!def) return;
 
   ['seojin', 'hyunwoon', 'tangsoyeon'].forEach(id => {
     const el = document.getElementById(`card_${id}`);
-    if (el) el.classList.toggle('selected', id === 'seojin');
+    if (el) el.classList.toggle('selected', id === heroId);
   });
 
   const nameEl = document.getElementById('heroDetailName');
@@ -498,3 +520,14 @@ function continueToNextSector() {
 }
 
 // --- Game State & Real-time Retro Pixel Art Engine ---
+
+// 2026-11-13: 고른 협객 기억, 구역 선택 화면 오른쪽 위 협객 표시를 누르면 협객 선택 화면
+(function () {
+  const init = () => { // progress(14_progress.js)가 읽힌 뒤에
+    try { const h = localStorage.getItem('wuxia_hero'); if (h && HERO_DEFS[h] && heroUnlocked(h)) currentSelectedHero = h; } catch (e) {}
+    const pill = document.getElementById('stageHeroPill');
+    if (pill) { pill.style.cursor = 'pointer'; pill.title = '협객 바꾸기'; pill.addEventListener('click', () => { sound.init(); renderHeroCards(); selectHero(currentSelectedHero); navScreen('hero'); }); }
+    renderHeroCards();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();

@@ -438,20 +438,21 @@ function triggerMeleeAttack(target) {
   player.attackCombo = ((player.attackCombo || 0) + 1) % 3;
   player.skillPose = null; // 무공 시전 자세가 아니라 칼 베기
   const isFinisher = player.attackCombo === 2;
+  const FIST = player.heroId === 'hyunwoon'; // 현운: 주먹 3단 (잽·훅·장타)
   player.isAttacking = true;
-  player.attackDuration = isFinisher ? 0.38 : 0.3; // 베기 한 번 걸리는 시간 (11-12 사용자: 0.4초는 답답 → 약 25% 빠르게)
+  player.attackDuration = FIST ? (isFinisher ? 0.3 : 0.22) : (isFinisher ? 0.38 : 0.3); // 베기 한 번 걸리는 시간 (11-12 사용자: 0.4초는 답답 → 약 25% 빠르게)
   player.attackTimer = player.attackDuration;
-  player.attackCooldownTimer = Math.max(0.36, 0.56 - (player.level * 0.01)) * (isFinisher ? 1.3 : 1) / ((player.activeBuffs && player.activeBuffs.blood_fury > 0) ? 1.5 : 1);
+  player.attackCooldownTimer = Math.max(0.36, 0.56 - (player.level * 0.01)) * (isFinisher ? 1.3 : 1) * (FIST ? 0.72 : 1) / ((player.activeBuffs && player.activeBuffs.blood_fury > 0) ? 1.5 : 1);
   player.attackAim = aim;
 
   // 대상 쪽으로 몸 돌리기 (거의 위/아래면 그대로)
   if (Math.cos(aim) < -0.15) player.facing = -1;
   else if (Math.cos(aim) > 0.15) player.facing = 1;
 
-  sound.playSwordSlash();
+  if (FIST) sound.playSample('wx_palm', isFinisher ? 0.5 : 0.3, isFinisher ? 1 : 1.35, 0.1, 0.04); else sound.playSwordSlash();
 
-  const range = isFinisher ? 205 : 180;
-  const halfArc = isFinisher ? Math.PI * 0.75 : Math.PI * 0.39; // 보통 140°, 큰 베기 270°
+  const range = FIST ? (isFinisher ? 175 : 140) : (isFinisher ? 205 : 180);
+  const halfArc = FIST ? (isFinisher ? Math.PI * 0.5 : Math.PI * 0.3) : (isFinisher ? Math.PI * 0.75 : Math.PI * 0.39); // 칼: 140°/270°, 주먹: 108°/180°
   let hits = 0;
   const hitList = [];
   for (const e of enemies) {
@@ -464,12 +465,12 @@ function triggerMeleeAttack(target) {
     if (Math.abs(da) > halfArc && d > 45) continue; // 몸에 붙은 적은 방향 상관없이 맞음
     hits++;
     hitList.push(e);
-    const dmg = (48 + player.level * 6) * player.atkMultiplier * (isFinisher ? 1.6 : 1);
+    const dmg = (48 + player.level * 6) * player.atkMultiplier * (isFinisher ? 1.6 : 1) * (FIST ? 0.8 : 1); // 주먹은 빠른 대신 한 대가 조금 약함
     dealDamage(e, dmg, true);
     e.hitCooldown = 0.22; // 하얗게 번쩍이는 시간 (0.06 넘는 동안) — 예전 0.14
     // 맞은 방향으로 밀려남 (보스는 밀리지 않음, 중간보스는 큰 베기에만 조금)
     if (!e.isBoss && !(e.isMiniBoss && !isFinisher)) {
-      const kb = (isFinisher ? 760 : 440) * (e.isMiniBoss ? 0.35 : 1); // 예전 560 / 320
+      const kb = (isFinisher ? 760 : 440) * (e.isMiniBoss ? 0.35 : 1) * (FIST ? 1.35 : 1); // 주먹은 더 멀리
       const nx = dx / (d || 1), ny = dy / (d || 1);
       e.knockbackVx = nx * kb;
       e.knockbackVy = ny * kb;
@@ -501,7 +502,11 @@ function triggerMeleeAttack(target) {
     state.screenShake = Math.max(state.screenShake || 0, isFinisher ? 11 : 5); // 예전 7 / 3
   }
   // 칼 빛: 예전 88 / 120 → 크게
-  PixelFX.spawnSwordSlash(player.x + Math.cos(aim) * 55, player.y - 30 + Math.sin(aim) * 44, aim, isFinisher ? 155 : 112);
+  if (FIST) { // 주먹: 칼 빛 대신 금빛 타격 고리, 장타는 앞으로 큰 충격파
+    const fx = player.x + Math.cos(aim) * (isFinisher ? 80 : 60), fy = player.y - 40 + Math.sin(aim) * 40;
+    createShockwave(fx, fy, isFinisher ? 95 : 38, isFinisher ? 'rgba(251, 191, 36, 0.9)' : 'rgba(253, 230, 138, 0.85)');
+    if (isFinisher) PixelFX.spawnSwordSlash(fx, fy, aim, 90, '#fbbf24');
+  } else PixelFX.spawnSwordSlash(player.x + Math.cos(aim) * 55, player.y - 30 + Math.sin(aim) * 44, aim, isFinisher ? 155 : 112);
 }
 
 function findClosestEnemy(x, y, maxDist = 500) {

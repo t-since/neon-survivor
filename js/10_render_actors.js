@@ -116,26 +116,28 @@ function renderPlayer() {
   // 5. 움직임: 제미나이로 한 장 안에 그린 4동작 시트에서 자른 프레임 사용 (assets/hero/seojin_*.png)
   //    프레임 크기 440x340, 발 기준점 (220, 320), 인물 키 약 300px
   const t = state.gameTime;
-  let frameKey = 'seojin_walk_1'; // 서 있기 = 다리를 모은 걷기 2번
+  const HP = (player.heroId === 'hyunwoon' && SPRITES['hyunwoon_walk_0']) ? 'hyunwoon' : 'seojin'; // 영웅별 그림 (현운: 권사)
+  let frameKey = HP + '_walk_1'; // 서 있기 = 다리를 모은 걷기 2번
   let lean = 0, sy = 1, forward = 0, glow = null;
-  const CAST_FRAME = { palm: 0, rain: 1, sword: 2, bomb: 3 };
-  if (player.isAttacking && player.skillPose && CAST_FRAME[player.skillPose] !== undefined && SPRITES['seojin_cast_0']) {
+  // 시전 그림 번호: 서진(장풍·비침·검·폭탄) / 현운(기 모으기·쌍장·진각·올려치기)
+  const CAST_FRAME = HP === 'hyunwoon' ? { palm: 1, rain: 0, sword: 3, bomb: 0, jingak: 2 } : { palm: 0, rain: 1, sword: 2, bomb: 3 };
+  if (player.isAttacking && player.skillPose && CAST_FRAME[player.skillPose] !== undefined && SPRITES[HP + '_cast_0']) {
     // 무공 시전: 무공마다 다른 자세 (칼 베기와 구분)
     const prog = Math.min(1, Math.max(0, 1 - (player.attackTimer / (player.attackDuration || 0.35))));
-    frameKey = 'seojin_cast_' + CAST_FRAME[player.skillPose];
+    frameKey = HP + '_cast_' + CAST_FRAME[player.skillPose];
     forward = Math.sin(Math.min(1, prog * 2) * Math.PI / 2) * 5; // 내지르며 살짝 앞으로
     glow = player.skillPose === 'sword' ? '#38bdf8' : (player.skillPose === 'palm' ? '#67e8f9' : null);
   } else if (player.isAttacking) {
     const prog = Math.min(1, Math.max(0, 1 - (player.attackTimer / (player.attackDuration || 0.32))));
     // 들어 올리기 → 내리치기 → 찌르기 → 회복
     const idx = prog < 0.22 ? 0 : prog < 0.45 ? 1 : prog < 0.75 ? 2 : 3;
-    frameKey = 'seojin_attack_' + idx;
+    frameKey = HP + '_attack_' + idx;
     forward = idx === 2 ? 6 : 0;
     if ((player.attackCombo || 0) === 2 && idx >= 1 && idx <= 2) glow = '#fde047'; // 3타 큰 베기는 금빛
   } else if (player.isMoving) {
     const running = player.speed > (player.baseSpeed || 195) * 1.3; // 답설무흔·풍신선풍으로 빨라지면 달리기
     const f = Math.floor(player.walkTimer * (running ? 0.62 : 0.55)) % 4; // 걸음 박자 (빨리 달리면 빨라짐)
-    frameKey = 'seojin_walk_' + f;
+    frameKey = HP + '_walk_' + f;
     lean = running ? 0.14 : 0.04;                      // 달릴 때는 몸을 앞으로 크게 숙임
     if (running) {
       forward = 3;
@@ -183,7 +185,7 @@ function renderPlayer() {
   const isCanvas = (typeof HTMLCanvasElement !== 'undefined' && sprite instanceof HTMLCanvasElement);
   if (sprite && (isCanvas || sprite.complete || (sprite.width > 0))) {
     if (sprite === SPRITES[frameKey]) {
-      ctx.drawImage(tinted(typeof heroSkinImg === 'function' ? heroSkinImg(sprite) : sprite, heroTint), -220 * FRAME_K, -320 * FRAME_K + 4, 440 * FRAME_K, 340 * FRAME_K); // heroSkinImg: 외형 옷 색 (20_looks.js)
+      ctx.drawImage(tinted(HP === 'seojin' && typeof heroSkinImg === 'function' ? heroSkinImg(sprite) : sprite, heroTint), -220 * FRAME_K, -320 * FRAME_K + 4, 440 * FRAME_K, 340 * FRAME_K); // heroSkinImg: 외형 옷 색 (20_looks.js)
     } else {
       ctx.drawImage(sprite, -44, -130, 88, 144); // 새 프레임을 못 불러왔을 때 예전 그림
     }
