@@ -272,18 +272,18 @@ function drawEnemyArt(e, art, facing, isMoving, runTimer) {
 }
 
 // 적이 많을 때(25마리 넘게)는 그림자 번짐(shadowBlur)을 끔 — 큰 PC 화면에서 매우 느려서 렉의 원인
-function renderEnemies() {
+function renderEnemies(list) {
   const many = enemies.length > 25;
   if (many) Object.defineProperty(ctx, 'shadowBlur', { set() {}, get() { return 0; }, configurable: true });
-  try { renderEnemiesInner(); } finally { if (many) delete ctx.shadowBlur; ctx.shadowBlur = 0; }
+  try { renderEnemiesInner(list); } finally { if (many) delete ctx.shadowBlur; ctx.shadowBlur = 0; }
 }
-function renderEnemiesInner() {
+function renderEnemiesInner(list) {
   const camX = state.camera.x;
   const camY = state.camera.y;
   const cullW = gameWidth / 2 + 130;
   const cullH = gameHeight / 2 + 130;
 
-  enemies.forEach(e => {
+  (list || enemies).forEach(e => {
     if (!e.isBoss && !e.isMiniBoss) {
       if (Math.abs(e.x - camX) > cullW || Math.abs(e.y - camY) > cullH) return;
     }

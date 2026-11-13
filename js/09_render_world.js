@@ -20,8 +20,7 @@ function renderWorldContents() {
   // 1.05 Draw Boss Arena Magic Seal (Zone 4 결전장)
   // (결전장 봉인 문양 renderBossArenaSeal: 사용자 요청으로 끔 — 최종보스 나올 때 바닥이 바뀌지 않게)
 
-  // 1.06 Draw 2.5D Isometric Obstacles (석등, 이끼 거암, 대나무 군락, 방어 목책)
-  renderObstacles('back');
+  // 1.06 소품(석등·바위·대나무…)은 아래 renderDepthSorted 에서 적·협객과 함께 발 위치 순서로 그림
 
   // 1.07 Draw Diablo-Style Martial Shrines (태을혈기, 풍신선풍, 금강불괴, 만천비검 신단)
   renderShrines();
@@ -57,14 +56,8 @@ function renderWorldContents() {
   // 4. Draw Dash Ink Afterimages
   renderDashAfterimages();
 
-  // 5. Draw Enemies & Boss (with dynamic running/hopping motion!)
-  renderEnemies();
-
-  // 6. Draw Player (with 4-frame walk cycle!)
-  renderPlayer();
-
-  // 6.5 주인공보다 앞쪽(아래)에 있는 소품은 주인공 위에 그림 (뒤로 지나가면 가려짐)
-  renderObstacles('front');
+  // 5~6.5 소품·적·협객을 발 위치(y) 순서로 섞어 그림 (11-13 사용자: 앞뒤 가림 — 뒤에 있는 것이 먼저, 앞에 있는 것이 나중)
+  renderDepthSorted();
 
   // 7. Draw Flying Swords & Projectiles
   renderProjectiles();
@@ -121,8 +114,37 @@ function renderGame() {
     renderWorldContents();
   }
 
+  // 10.5 원근감 (11-13 사용자: 쿼터뷰 느낌) — 화면 위쪽(먼 곳)은 어둡고 옅은 안개, 아래쪽(가까운 곳)은 아주 살짝 어둡게
+  if (state.isGameStarted) renderDepthHaze();
+
   // 11. Zone Auto-Warp Transition Fade (화면 전환 페이드 오버레이)
   renderZoneTransitionOverlay();
+}
+
+// 구역별 안개 빛깔 (먼 곳일수록 이 색에 섞여 흐려 보임)
+const DEPTH_HAZE = { 1: [150, 175, 160], 2: [170, 150, 130], 3: [120, 160, 120], 4: [190, 210, 230], 5: [150, 90, 90] };
+function renderDepthHaze() {
+  const W = gameWidth, H = gameHeight;
+  const sec = (typeof currentSelectedSector !== 'undefined' && currentSelectedSector) || 1;
+  const [r, g, b] = DEPTH_HAZE[sec] || DEPTH_HAZE[1];
+  ctx.save();
+  // 먼 곳 어둡게
+  let gr = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+  gr.addColorStop(0, 'rgba(8, 10, 14, 0.42)');
+  gr.addColorStop(1, 'rgba(8, 10, 14, 0)');
+  ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H * 0.5);
+  // 먼 곳 옅은 안개 (천천히 흐름)
+  const drift = Math.sin(state.gameTime * 0.15) * 0.03;
+  gr = ctx.createLinearGradient(0, 0, 0, H * (0.34 + drift));
+  gr.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.16)`);
+  gr.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+  ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H * 0.4);
+  // 가까운 곳(맨 아래) 살짝 어둡게 — 화면 앞쪽 테두리
+  gr = ctx.createLinearGradient(0, H * 0.82, 0, H);
+  gr.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  gr.addColorStop(1, 'rgba(0, 0, 0, 0.22)');
+  ctx.fillStyle = gr; ctx.fillRect(0, H * 0.82, W, H * 0.18);
+  ctx.restore();
 }
 
 // --- Zone Environmental Props & Atmospheric Weather Particle System ---
@@ -734,7 +756,27 @@ const PROP_SPRITE_DEFS = {
 
 // pass: 'back' = 주인공보다 뒤(위쪽)에 있는 소품, 'front' = 주인공보다 앞(아래쪽)에 있는 소품
 // 이렇게 두 번 나눠 그려서 주인공이 대나무·석등 뒤로 지나가면 가려지게 함
-function renderObstacles(pass = 'all') {
+// 깊이 순서 그리기: 소품·적·협객을 발 y 로 정렬한 뒤, 같은 종류가 이어지는 묶음씩 그림
+function renderDepthSorted() {
+  if (typeof ensureObstacleChunks === 'function') ensureObstacleChunks();
+  const camX = state.camera.x, camY = state.camera.y, cw = gameWidth / 2 + 160, chh = gameHeight / 2 + 240;
+  const items = [];
+  if (obstacles) for (const o of obstacles) if (Math.abs(o.x - camX) <= cw && Math.abs(o.y - camY) <= chh) items.push([o.y, 0, o]);
+  for (const e of enemies) items.push([e.y, 1, e]);
+  items.push([player.y, 2, player]);
+  items.sort((a, b) => a[0] - b[0]);
+  let run = [], kind = -1;
+  const flush = () => {
+    if (kind === 0) renderObstacles('sorted', run);
+    else if (kind === 1) renderEnemies(run);
+    else if (kind === 2) renderPlayer();
+    run = [];
+  };
+  for (const it of items) { if (it[1] !== kind) { if (run.length) flush(); kind = it[1]; } run.push(it[2]); }
+  if (run.length) flush();
+}
+
+function renderObstacles(pass = 'all', list = null) {
   if (typeof ensureObstacleChunks === 'function') ensureObstacleChunks();
   if (!obstacles || obstacles.length === 0) return;
   const camX = state.camera.x;
@@ -742,7 +784,7 @@ function renderObstacles(pass = 'all') {
   const cullW = gameWidth / 2 + 160;
   const cullH = gameHeight / 2 + 240;
 
-  obstacles.forEach(obs => {
+  (list || obstacles).forEach(obs => {
     if (Math.abs(obs.x - camX) > cullW || Math.abs(obs.y - camY) > cullH) return;
     if (pass === 'back' && obs.y > player.y) return;
     if (pass === 'front' && obs.y <= player.y) return;
@@ -771,8 +813,10 @@ function renderObstacles(pass = 'all') {
         ctx.fillRect(-80, -h * 0.55 - 80, 160, 160);
       }
       // 주인공이 앞쪽 소품 뒤에 숨으면 살짝 투명하게
-      if (pass === 'front' && Math.abs(player.x - obs.x) < w * 0.45 && player.y > obs.y - h && player.y < obs.y) {
-        ctx.globalAlpha = 0.55;
+      // (pass 'sorted' 에서도: 소품이 협객보다 앞(아래)에 있고 몸을 가리면 반투명. 가장자리로 갈수록 덜 투명하게)
+      if ((pass === 'front' || pass === 'sorted') && obs.y > player.y && player.y > obs.y - h * 0.95 && Math.abs(player.x - obs.x) < w * 0.5) {
+        const edge = Math.abs(player.x - obs.x) / (w * 0.5);
+        ctx.globalAlpha = 0.42 + 0.5 * edge * edge;
       }
       if (obs.flip) ctx.scale(-1, 1);
       if (def.sway) {
