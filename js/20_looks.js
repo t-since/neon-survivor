@@ -10,6 +10,7 @@ const LOOKS = [
   { id: 'robe_white', kind: 'robe', name: '백의 (白衣)', icon: '🤍', cost: 300, robe: { sat: 0.06, light: 1.7 } },
   { id: 'robe_red', kind: 'robe', name: '홍의 (紅衣)', icon: '❤️', cost: 300, robe: { hue: 352, sat: 1.1 } },
   { id: 'robe_purple', kind: 'robe', name: '자의 (紫衣)', icon: '💜', cost: 300, robe: { hue: 272, sat: 1.0 } },
+  { id: 'outfit_heukryong', kind: 'robe', name: '흑룡포 (黑龍袍)', icon: '🐉', cost: 1500, sheet: 'seojin_heukryong' }, // 새 옷: 그림 한 벌 통째로
   { id: 'blade_frost', kind: 'blade', name: '빙백 검기', icon: '❄️', cost: 400, look: 'frost_blade' },
   { id: 'blade_blood', kind: 'blade', name: '천마혈 검기', icon: '🩸', cost: 400, look: 'blood_blade' },
   { id: 'blade_thunder', kind: 'blade', name: '자하 검기', icon: '⚡', cost: 400, look: 'thunder_blade' }
@@ -27,9 +28,14 @@ function skinBladeLook() {
 
 // ── 옷 색 바꾸기 (그림마다 한 번 만들어 둠) ──
 const _robeCache = new Map();
+// 새 옷(그림 한 벌)을 입었으면 그 그림 이름 앞머리 (없거나 못 불러왔으면 null)
+function heroSheetPrefix() {
+  const L = looksState(), d = LOOKS.find(x => x.id === L.robe);
+  return (d && d.sheet && typeof SPRITES !== 'undefined' && SPRITES[d.sheet + '_walk_0']) ? d.sheet : null;
+}
 function heroSkinImg(img) {
   const L = looksState(), d = LOOKS.find(x => x.id === L.robe);
-  if (!d || !img || !img.width) return img;
+  if (!d || d.sheet || !img || !img.width) return img;
   let m = _robeCache.get(img);
   if (!m) { m = new Map(); _robeCache.set(img, m); }
   if (m.has(d.id)) return m.get(d.id);

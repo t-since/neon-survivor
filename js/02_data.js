@@ -101,6 +101,8 @@ const SPRITE_URLS = {
   hyunwoon_walk_0: 'assets/hero/hyunwoon_walk_0.png', hyunwoon_walk_1: 'assets/hero/hyunwoon_walk_1.png', hyunwoon_walk_2: 'assets/hero/hyunwoon_walk_2.png', hyunwoon_walk_3: 'assets/hero/hyunwoon_walk_3.png',
   hyunwoon_attack_0: 'assets/hero/hyunwoon_attack_0.png', hyunwoon_attack_1: 'assets/hero/hyunwoon_attack_1.png', hyunwoon_attack_2: 'assets/hero/hyunwoon_attack_2.png', hyunwoon_attack_3: 'assets/hero/hyunwoon_attack_3.png',
   hyunwoon_cast_0: 'assets/hero/hyunwoon_cast_0.png', hyunwoon_cast_1: 'assets/hero/hyunwoon_cast_1.png', hyunwoon_cast_2: 'assets/hero/hyunwoon_cast_2.png', hyunwoon_cast_3: 'assets/hero/hyunwoon_cast_3.png',
+  // 서진 새 옷 흑룡포 (외형 3단계, 2026-11-13 제미나이: 원래 그림과 같은 자세에 옷만)
+  seojin_heukryong_walk_0: 'assets/hero/seojin_heukryong_walk_0.png', seojin_heukryong_walk_1: 'assets/hero/seojin_heukryong_walk_1.png', seojin_heukryong_walk_2: 'assets/hero/seojin_heukryong_walk_2.png', seojin_heukryong_walk_3: 'assets/hero/seojin_heukryong_walk_3.png', seojin_heukryong_attack_0: 'assets/hero/seojin_heukryong_attack_0.png', seojin_heukryong_attack_1: 'assets/hero/seojin_heukryong_attack_1.png', seojin_heukryong_attack_2: 'assets/hero/seojin_heukryong_attack_2.png', seojin_heukryong_attack_3: 'assets/hero/seojin_heukryong_attack_3.png', seojin_heukryong_cast_0: 'assets/hero/seojin_heukryong_cast_0.png', seojin_heukryong_cast_1: 'assets/hero/seojin_heukryong_cast_1.png', seojin_heukryong_cast_2: 'assets/hero/seojin_heukryong_cast_2.png', seojin_heukryong_cast_3: 'assets/hero/seojin_heukryong_cast_3.png',
   seojin_walk_0: 'assets/hero/seojin_walk_0.png',
   seojin_walk_1: 'assets/hero/seojin_walk_1.png',
   seojin_walk_2: 'assets/hero/seojin_walk_2.png',

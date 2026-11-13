@@ -700,6 +700,7 @@ const I18N_EN = {
   '백의 (白衣)': 'White Robe',
   '홍의 (紅衣)': 'Crimson Robe',
   '자의 (紫衣)': 'Violet Robe',
+  '흑룡포 (黑龍袍)': 'Black Dragon Robe',
   '빙백 검기': 'Frost Blade Qi',
   '천마혈 검기': 'Blood Demon Blade Qi',
   '자하 검기': 'Purple Mist Blade Qi',

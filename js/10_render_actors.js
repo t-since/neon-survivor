@@ -116,7 +116,7 @@ function renderPlayer() {
   // 5. 움직임: 제미나이로 한 장 안에 그린 4동작 시트에서 자른 프레임 사용 (assets/hero/seojin_*.png)
   //    프레임 크기 440x340, 발 기준점 (220, 320), 인물 키 약 300px
   const t = state.gameTime;
-  const HP = (player.heroId === 'hyunwoon' && SPRITES['hyunwoon_walk_0']) ? 'hyunwoon' : 'seojin'; // 영웅별 그림 (현운: 권사)
+  const HP = (player.heroId === 'hyunwoon' && SPRITES['hyunwoon_walk_0']) ? 'hyunwoon' : ((typeof heroSheetPrefix === 'function' && heroSheetPrefix()) || 'seojin'); // 영웅별 그림 (현운: 권사, 서진 새 옷: 흑룡포)
   let frameKey = HP + '_walk_1'; // 서 있기 = 다리를 모은 걷기 2번
   let lean = 0, sy = 1, forward = 0, glow = null;
   // 시전 그림 번호: 서진(장풍·비침·검·폭탄) / 현운(기 모으기·쌍장·진각·올려치기)
