@@ -16,12 +16,12 @@ SKILL_DEFS.dagger_rain.hero = 'tangsoyeon';
 
 Object.assign(SKILL_DEFS, {
   iaido: {
-    id: 'iaido', hero: 'seojin', name: '발도일섬 (拔刀一閃)', icon: '⚡', maxLevel: 5,
+    id: 'iaido', hero: 'seojin', name: '발도일섬 (拔刀一閃)', icon: '⚡', img: 'assets/icons/iaido.png', maxLevel: 5,
     desc: '적이 가장 길게 늘어선 쪽으로 검기를 한 줄로 뽑아 그 길 위의 적을 모두 벱니다.',
     getUpgradeDesc: l => l === 1 ? '늘어선 적을 한 줄로 베는 검기' : `검기 길이·피해 증가, 더 자주 (Lv.${l})`
   },
   sword_curtain: {
-    id: 'sword_curtain', hero: 'seojin', name: '검막 (劍幕)', icon: '🌀', maxLevel: 5,
+    id: 'sword_curtain', hero: 'seojin', name: '검막 (劍幕)', icon: '🌀', img: 'assets/icons/sword_curtain.png', maxLevel: 5,
     desc: '몸 둘레를 검기가 돌며 다가오는 적을 베고, 날아오는 암기와 화살을 막아냅니다.',
     getUpgradeDesc: l => l === 1 ? '도는 검기 2자루 · 투사체 막기' : `검기 +1자루, 피해 증가 (Lv.${l})`
   },
@@ -31,17 +31,17 @@ Object.assign(SKILL_DEFS, {
     getUpgradeDesc: l => l === 1 ? '둘레 적 기절 충격파' : `범위·피해 증가, 더 자주 (Lv.${l})`
   },
   reflect: {
-    id: 'reflect', hero: 'hyunwoon', name: '반탄강기 (反彈罡氣)', icon: '🔆', maxLevel: 5,
+    id: 'reflect', hero: 'hyunwoon', name: '반탄강기 (反彈罡氣)', icon: '🔆', img: 'assets/icons/reflect.png', maxLevel: 5,
     desc: '금강불괴의 위 단계. 받는 피해를 줄이고, 맞을 때마다 둘레 적에게 피해를 되돌려주며 튕겨냅니다.',
     getUpgradeDesc: l => l === 1 ? '받는 피해 -6% · 맞으면 반격 충격' : `피해 감소·반격 피해 증가 (Lv.${l})`
   },
   tianluo: {
-    id: 'tianluo', hero: 'tangsoyeon', name: '천라지망 (天羅地網)', icon: '🕸️', maxLevel: 5,
+    id: 'tianluo', hero: 'tangsoyeon', name: '천라지망 (天羅地網)', icon: '🕸️', img: 'assets/icons/tianluo.png', maxLevel: 5,
     desc: '둘레에 은침 그물을 펼쳐 걸린 적을 묶고 맹독에 빠뜨립니다.',
     getUpgradeDesc: l => l === 1 ? '그물로 묶기 · 맹독' : `그물 범위·독·묶는 시간 증가 (Lv.${l})`
   },
   poison_burst: {
-    id: 'poison_burst', hero: 'tangsoyeon', name: '폭독 (爆毒)', icon: '☣️', maxLevel: 5,
+    id: 'poison_burst', hero: 'tangsoyeon', name: '폭독 (爆毒)', icon: '☣️', img: 'assets/icons/poison_burst.png', maxLevel: 5,
     desc: '중독된 적이 쓰러지면 독이 터져 둘레 적에게 피해를 주고 맹독을 옮깁니다.',
     getUpgradeDesc: l => l === 1 ? '중독된 적이 터지며 독을 옮김' : `터지는 범위·피해 증가 (Lv.${l})`
   }
