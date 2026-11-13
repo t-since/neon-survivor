@@ -612,6 +612,7 @@ const I18N_EN = {
   "서천 당문. 되찾은 의술서로 지은 해독약이 강호 곳곳으로 퍼져 나갔다.": "The Tang Clan of Sichuan. Antidotes made from the recovered text spread across the martial world.",
   "아버지. 당문의 독은… 이제 사람을 살리는 데 쓰겠어요.": "Father. From now on, Tang poison… will be used to save lives.",
   "독과 약은 한 끗 차이. 당소연은 약상자를 메고 다시 길을 떠났다.": "Poison and medicine are a hair apart. Dang So-yeon shouldered her medicine box and set out again.",
+  "속박": "Bound",
   "운백": "Unbaek",
   "당문 가주": "Tang Clan Master",
   '사부님. 오늘, 산을 내려갑니다.': 'Master. Today, I go down the mountain.',

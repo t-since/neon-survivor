@@ -119,17 +119,26 @@ function castIaido() {
 function castTianluo() {
   const lv = Math.max(1, lvOf('tianluo'));
   const R = 160 + lv * 16;
+  let bound = 0;
   for (const e of enemies) {
     if (e.hp <= 0) continue;
     const d = Math.hypot(e.x - player.x, e.y - player.y);
     if (d > R + (e.radius || 0)) continue;
-    if (!e.isBoss) e.stunTimer = Math.max(e.stunTimer || 0, (e.isMiniBoss ? 0.5 : 1.1) + lv * 0.12);
+    const hold = (e.isMiniBoss ? 0.7 : 1.5) + lv * 0.15; // 11-13: 묶이는 시간 늘림 (1.1 → 1.5초)
+    if (!e.isBoss) {
+      e.stunTimer = Math.max(e.stunTimer || 0, hold);
+      // 걸린 적: 은실에 묶인 모습 (침이 날아가 닿는 때에 맞춰 조금 늦게)
+      if (bound++ < 8) damageTexts.push({ x: e.x, y: e.y - 70, text: '속박', color: '#86efac', size: 17, life: 0.9, vy: -30 });
+      heroFx.push({ type: 'bind', e, life: hold + 0.1, max: hold + 0.1, delay: Math.min(0.16, d / R * 0.16), spin: Math.random() * 6 });
+    }
     applyPoison(e, 3 + lv * 0.4, (12 + lv * 7 + player.level) * player.atkMultiplier * secK() * (player.poisonDmgMult || 1));
     dealDamage(e, (20 + lv * 10) * player.atkMultiplier * secK(), false);
   }
   triggerSkillMotion('rain', 0.4);
-  heroFx.push({ type: 'net', x: player.x, y: player.y, r: R, life: 0.7, max: 0.7 });
-  try { sound.playSample('wx_swing', 0.5, 0.8, 0.1, 0.1); } catch (e) {}
+  // 11-13 사용자: "효과를 모르겠다" → ① 은침 16개가 사방으로 날아감 ② 침 사이로 빛나는 거미줄 그물이 펼쳐져 1.3초 남음 ③ 걸린 적은 은실에 칭칭 묶임
+  heroFx.push({ type: 'net', x: player.x, y: player.y, r: R, life: 1.3, max: 1.3, rot: Math.random() * 0.4 });
+  state.screenShake = Math.max(state.screenShake || 0, 4);
+  try { sound.playSample('wx_swing', 0.6, 0.7, 0.1, 0.1); sound.playSample('wx_swing', 0.4, 1.3, 0.1, 0.05); } catch (e) {}
 }
 
 // ── 매 프레임 ──
@@ -313,13 +322,9 @@ function drawHeroSkills(top) {
       ctx.beginPath(); ctx.moveTo(-r * 0.7, 0); ctx.lineTo(r * 0.7, 0); ctx.stroke();
       ctx.restore();
     } else if (f.type === 'net') {
-      ctx.globalAlpha = k * 0.9;
-      ctx.strokeStyle = 'rgba(226, 232, 240, 0.85)'; ctx.lineWidth = 1.5;
-      const R = f.r * (1.15 - 0.15 * k);
-      for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.x + Math.cos(a) * R, f.y + Math.sin(a) * R * 0.7); ctx.stroke(); }
-      for (const q of [0.35, 0.65, 1]) { ctx.beginPath(); ctx.ellipse(f.x, f.y, R * q, R * q * 0.7, 0, 0, Math.PI * 2); ctx.stroke(); }
-      ctx.strokeStyle = 'rgba(74, 222, 128, 0.6)'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.ellipse(f.x, f.y, R, R * 0.7, 0, 0, Math.PI * 2); ctx.stroke();
+      drawTianluoNet(f, k);
+    } else if (f.type === 'bind') {
+      drawTianluoBind(f, k);
     }
   }
   ctx.globalAlpha = 1;
@@ -371,6 +376,79 @@ function drawCurtainWind(front, cl) {
   }
   ctx.restore();
 }
+// 천라지망 그물 (바닥 층): 펼쳐지는 동안 은침이 날아가고, 그 뒤 거미줄(바퀴살 16 + 다각형 고리 4)이 빛나다 사라짐
+function drawTianluoNet(f, k) {
+  const age = f.max - f.life, N = 16, fly = 0.18;
+  const grow = Math.min(1, age / fly), R = f.r * (0.15 + 0.85 * (1 - Math.pow(1 - grow, 3)));
+  const fade = Math.min(1, f.life / 0.45);            // 마지막 0.45초 동안 사라짐
+  const P = (a, rr) => [f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr * 0.62];
+  ctx.save();
+  // 바닥에 옅은 독빛
+  const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, R);
+  g.addColorStop(0, 'rgba(74, 222, 128, ' + (0.16 * fade).toFixed(3) + ')');
+  g.addColorStop(1, 'rgba(74, 222, 128, 0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(f.x, f.y, R, R * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  // 바퀴살 (은실)
+  ctx.strokeStyle = 'rgba(226, 232, 240, ' + (0.75 * fade).toFixed(3) + ')'; ctx.lineWidth = 1.8;
+  for (let i = 0; i < N; i++) { const a = f.rot + i * Math.PI * 2 / N, [x, y] = P(a, R); ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(x, y); ctx.stroke(); }
+  // 고리 (살 사이를 곧게 이어 거미줄처럼, 살짝 처짐)
+  const rings = [0.3, 0.55, 0.78, 1];
+  for (let q = 0; q < rings.length; q++) {
+    if (grow < rings[q] * 0.9) continue;
+    ctx.strokeStyle = q === rings.length - 1 ? 'rgba(134, 239, 172, ' + (0.9 * fade).toFixed(3) + ')' : 'rgba(226, 232, 240, ' + (0.6 * fade).toFixed(3) + ')';
+    ctx.lineWidth = q === rings.length - 1 ? 3 : 1.5;
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a0 = f.rot + (i - 1) * Math.PI * 2 / N, a1 = f.rot + i * Math.PI * 2 / N;
+      const [x1, y1] = P(a1, R * rings[q]);
+      if (i === 0) { ctx.moveTo(x1, y1); continue; }
+      const [mx, my] = P((a0 + a1) / 2, R * rings[q] * 0.93);
+      ctx.quadraticCurveTo(mx, my, x1, y1);
+    }
+    ctx.stroke();
+  }
+  // 매듭의 독 이슬 (반짝)
+  ctx.fillStyle = 'rgba(134, 239, 172, ' + (0.9 * fade).toFixed(3) + ')';
+  for (let q = 1; q < rings.length; q++) for (let i = 0; i < N; i += 2) {
+    if (grow < rings[q]) continue;
+    const [x, y] = P(f.rot + i * Math.PI * 2 / N, R * rings[q]);
+    const tw = 2 + 1.5 * Math.sin(state.gameTime * 8 + i + q);
+    ctx.beginPath(); ctx.arc(x, y, tw, 0, Math.PI * 2); ctx.fill();
+  }
+  // 날아가는 은침 (펼쳐지는 동안만)
+  if (grow < 1) {
+    ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 2.5;
+    for (let i = 0; i < N; i++) {
+      const a = f.rot + i * Math.PI * 2 / N, [x, y] = P(a, R), [bx, by] = P(a, Math.max(0, R - 26));
+      ctx.beginPath(); ctx.moveTo(bx, by - 30); ctx.lineTo(x, y - 30 * (1 - grow)); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+// 걸린 적: 몸에 은실이 감기고 녹색 독빛, 위에 작은 거미줄 표시
+function drawTianluoBind(f, k) {
+  const e = f.e, t = f.max - f.life;
+  if (!e || e.hp <= 0 || e._dead || t < (f.delay || 0)) return;
+  const rr = Math.max(16, (e.radius || 18)) * 1.15, cy = e.y - rr * 1.2;
+  const fade = Math.min(1, f.life / 0.25, (t - (f.delay || 0)) / 0.08);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  // 몸에 감긴 실 (비스듬한 타원 세 겹)
+  ctx.strokeStyle = 'rgba(241, 245, 249, ' + (0.85 * fade).toFixed(3) + ')'; ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.ellipse(e.x, cy + (i - 1) * rr * 0.55, rr * 0.95, rr * 0.28, f.spin + i * 0.5 - 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // 독빛 테
+  ctx.strokeStyle = 'rgba(74, 222, 128, ' + (0.55 * fade).toFixed(3) + ')'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.ellipse(e.x, cy, rr * 1.05, rr * 0.36, f.spin, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
 function curtainPos(a, R) { return [player.x + Math.cos(a) * R, player.y - 40 + Math.sin(a) * R * 0.6]; }
 function drawCurtainSword(a, R) {
   ctx.save();
