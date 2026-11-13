@@ -267,10 +267,8 @@ window.addEventListener('keydown', (e) => {
         return;
       }
       if (e.key === '1') { selectHero('seojin'); return; }
-      if (e.key === '2' || e.key === '3') {
-        // 배포판 준비 중 협객
-        return;
-      }
+      if (e.key === '2') { selectHero('hyunwoon'); return; }
+      if (e.key === '3') { selectHero('tangsoyeon'); return; }
     } else if (currentGatewayScreen === 'stage') {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();

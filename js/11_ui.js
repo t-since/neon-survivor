@@ -37,6 +37,10 @@ function openEndingCredits() {
   creditsAnimId = requestAnimationFrame(stepCredits);
 }
 
+function closeCreditsSmart() {
+  closeEndingCredits();
+  if (state.isGameStarted && state.isGameOver) endingReturnToTitle();
+}
 function closeEndingCredits() {
   if (creditsAnimId) cancelAnimationFrame(creditsAnimId);
   const modal = document.getElementById('endingCreditsModal');
@@ -48,7 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnOpenCredits) btnOpenCredits.onclick = openEndingCredits;
 
   const btnCloseCredits = document.getElementById('btnCloseEndingCredits');
-  if (btnCloseCredits) btnCloseCredits.onclick = closeEndingCredits;
+  // 닫기: 엔딩을 보고 나서 닫으면 게임이 끝난 채 멈춰 있지 않게 첫 화면으로 (11-13 사용자: 엔딩 크레딧 뒤 멈춤)
+  if (btnCloseCredits) btnCloseCredits.onclick = closeCreditsSmart;
+  // [ESC] 라고 적혀 있으니 Esc 로도 닫힘 (게임 중 Esc 일시정지보다 먼저)
+  window.addEventListener('keydown', e => {
+    const m = document.getElementById('endingCreditsModal');
+    if (e.key === 'Escape' && m && m.style.display !== 'none') { e.preventDefault(); e.stopImmediatePropagation(); closeCreditsSmart(); }
+  }, true);
 
   const btnCreditsReturn = document.getElementById('btnCreditsReturn');
   if (btnCreditsReturn) {
