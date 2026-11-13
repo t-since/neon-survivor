@@ -86,20 +86,33 @@ function castIaido() {
   if (best === null) best = player.facing < 0 ? Math.PI : 0;
   const cx = Math.cos(best), cy = Math.sin(best);
   const dmg = (90 + lv * 35 + player.level * 4) * player.atkMultiplier * secK();
+  const sx = player.x, sy = player.y;
   for (const e of enemies) {
     if (e.hp <= 0) continue;
-    const dx = e.x - player.x, dy = e.y - player.y, t = dx * cx + dy * cy;
+    const dx = e.x - sx, dy = e.y - sy, t = dx * cx + dy * cy;
     if (t > 0 && t < len && Math.abs(dx * cy - dy * cx) < width + (e.radius || 0)) {
-      dealDamage(e, dmg, true); e.squashT = 0.2;
+      dealDamage(e, dmg, true); e.squashT = 0.25;
+      if (!e.isBoss) { e.knockbackVx = -cy * 160 * (Math.random() < 0.5 ? 1 : -1); e.knockbackVy = cx * 160; } // 옆으로 튕김
+      heroFx.push({ type: 'cut', x: e.x, y: e.y - 34, a: best, life: 0.32, max: 0.32, delay: t / len * 0.08 });
       if (e.hp <= 0 && typeof spawnInkSplash === 'function') spawnInkSplash(e.x, e.y, best, true);
     }
   }
   if (Math.cos(best) < -0.15) player.facing = -1; else if (Math.cos(best) > 0.15) player.facing = 1;
-  triggerSkillMotion('sword', 0.35);
-  heroFx.push({ type: 'slash', x: player.x, y: player.y - 40, a: best, len, life: 0.3, max: 0.3 });
-  state.hitStop = Math.max(state.hitStop || 0, 0.06);
-  state.screenShake = Math.max(state.screenShake || 0, 7);
-  try { sound.playSample('wx_slash_heavy', 0.6, 1.15, 0.05, 0.1); } catch (e) {}
+  triggerSkillMotion('sword', 0.4);
+  // 11-13 사용자: 동작이 약함 → 일섬 방향으로 순식간에 꿰뚫고 지나감 (경공 이동을 빌려 씀: 장애물·무적 그대로)
+  const dist = Math.min(len * 0.6, 260), T = 0.09;
+  player.afterImages = player.afterImages || [];
+  for (let i = 0; i < 6; i++) player.afterImages.push({ x: sx + cx * dist * i / 6, y: sy + cy * dist * i / 6, facing: player.facing, frame: 0, alpha: 0.75 - i * 0.08, scale: 1 });
+  player.isDashing = true; player.dashElapsed = (player.dashDuration || 0.22) - T;
+  player.dashVx = cx * dist / T; player.dashVy = cy * dist / T;
+  const sparks = [];
+  for (let i = 0; i < 22; i++) sparks.push({ t: Math.random(), o: (Math.random() - 0.5) * 30, v: 60 + Math.random() * 160, s: Math.random() < 0.5 ? 1 : -1 });
+  heroFx.push({ type: 'slash', x: sx, y: sy - 40, a: best, len, life: 0.45, max: 0.45, sparks });
+  heroFx.push({ type: 'flash', x: sx, y: sy - 40, life: 0.18, max: 0.18 });
+  const now = performance.now(); state.zoomPunchAt = now; state.slowUntil = Math.max(state.slowUntil || 0, now + 70 + 150);
+  state.hitStop = Math.max(state.hitStop || 0, 0.08);
+  state.screenShake = Math.max(state.screenShake || 0, 11);
+  try { sound.playSample('wx_slash_heavy', 0.75, 1.0, 0.05, 0.1); } catch (e) {}
 }
 
 // ── 천라지망: 둘레 그물 — 묶고 맹독 ──
@@ -209,17 +222,51 @@ if (typeof onEnemyKilled === 'function') {
 }
 
 // ── 그리기 ──
-function drawHeroSkills() {
+function drawHeroSkills(top) {
   ctx.save();
   for (const f of heroFx) {
     const k = f.life / f.max;
+    if (!!top !== (f.type !== 'net')) continue; // 일섬·베인 자국은 적·협객 위에, 그물은 바닥에
     if (f.type === 'slash') {
+      // 발도일섬: 처음엔 굵고 눈부신 빛줄기 → 가늘어지며 사라짐, 불꽃이 양옆으로 튐
+      const age = 1 - k, L = f.len * Math.min(1, age * 9 + 0.15); // 앞으로 쭉 뻗어나감
       ctx.save();
       ctx.translate(f.x, f.y); ctx.rotate(f.a);
-      ctx.globalAlpha = k;
-      ctx.fillStyle = 'rgba(186, 230, 253, 0.35)'; ctx.fillRect(0, -18 * k, f.len, 36 * k);
-      ctx.strokeStyle = '#e0f2fe'; ctx.lineWidth = 4 * k + 1;
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(f.len, 0); ctx.stroke();
+      ctx.globalCompositeOperation = 'lighter';
+      const w = 30 * k * k + 3;
+      ctx.globalAlpha = Math.min(1, k * 1.4);
+      ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 28;
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
+      ctx.beginPath(); ctx.moveTo(-20, 0); ctx.quadraticCurveTo(L * 0.45, -w, L + 30, 0); ctx.quadraticCurveTo(L * 0.45, w, -20, 0); ctx.fill();
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.95)';
+      ctx.beginPath(); ctx.moveTo(-10, 0); ctx.quadraticCurveTo(L * 0.45, -w * 0.32, L + 18, 0); ctx.quadraticCurveTo(L * 0.45, w * 0.32, -10, 0); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.7)'; ctx.lineWidth = 1.5;
+      for (const o of [-1, 1]) { ctx.beginPath(); ctx.moveTo(L * 0.1, o * (w + 10)); ctx.lineTo(L * 0.85, o * (w * 0.6 + 6)); ctx.stroke(); } // 속도선
+      ctx.strokeStyle = '#f0f9ff'; ctx.lineWidth = 2;
+      for (const s of f.sparks || []) {
+        const px = s.t * f.len, py = s.o + s.s * s.v * age;
+        if (px > L) continue;
+        ctx.globalAlpha = k;
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + 10, py + s.s * 6); ctx.stroke();
+      }
+      ctx.restore();
+    } else if (f.type === 'flash') {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = k; ctx.strokeStyle = '#e0f2fe'; ctx.lineWidth = 6 * k + 1;
+      ctx.beginPath(); ctx.arc(f.x, f.y, 20 + (1 - k) * 70, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    } else if (f.type === 'cut') {
+      // 맞은 적 위에 X자 베인 자국 (일섬이 지나간 순서대로)
+      const t = f.max - f.life; if (t < (f.delay || 0)) continue;
+      const kk = Math.max(0, 1 - (t - (f.delay || 0)) / (f.max - (f.delay || 0)));
+      ctx.save(); ctx.translate(f.x, f.y); ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = kk; ctx.strokeStyle = '#f0f9ff'; ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 14; ctx.lineCap = 'round';
+      const r = 18 + (1 - kk) * 22; ctx.lineWidth = 5 * kk + 1;
+      ctx.rotate(f.a);
+      ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.stroke();
+      ctx.rotate(0.9); ctx.lineWidth = 3 * kk + 1;
+      ctx.beginPath(); ctx.moveTo(-r * 0.7, 0); ctx.lineTo(r * 0.7, 0); ctx.stroke();
       ctx.restore();
     } else if (f.type === 'net') {
       ctx.globalAlpha = k * 0.9;
@@ -232,6 +279,7 @@ function drawHeroSkills() {
     }
   }
   ctx.globalAlpha = 1;
+  if (top) { ctx.restore(); return; }
   const cl = lvOf('sword_curtain');
   if (cl > 0 && state.isGameStarted) {
     const n = cl + 1, R = 95;
@@ -253,5 +301,9 @@ if (typeof updatePlumTrees === 'function') {
 }
 if (typeof drawPlumTrees === 'function') {
   const _d = drawPlumTrees;
-  drawPlumTrees = function () { _d(); drawHeroSkills(); };
+  drawPlumTrees = function () { _d(); drawHeroSkills(false); };
+}
+if (typeof renderPlumBlossoms === 'function') { // 맨 위 층 (적·협객·입자 다음)
+  const _r = renderPlumBlossoms;
+  renderPlumBlossoms = function () { _r.apply(this, arguments); drawHeroSkills(true); };
 }

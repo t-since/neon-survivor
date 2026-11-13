@@ -111,7 +111,15 @@ function navScreen(screenName) {
 
 // 협객 개방 (2026-11-13 사용자 결정: 현운 = 5구역 돌파 + 은자 5,000)
 const HERO_UNLOCK = { hyunwoon: { sector: 5, silver: 5000, spec: '권법 & 넉백 (탱커)' }, tangsoyeon: { sector: 5, silver: 8000, spec: '암기 & 독 (원거리)' } }; // 당소연 11-13 사용자 결정
-function heroUnlocked(id) { return id === 'seojin' || !!(progress.heroes && progress.heroes[id]); }
+// 시험용: 주소 뒤에 ?test 를 붙이면 모든 협객 개방 (이 기기에 기억, ?test=0 으로 끔). 11-13 사용자 요청
+const HERO_TEST = (() => {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.has('test')) localStorage.setItem('wuxia_test', q.get('test') === '0' ? '0' : '1');
+    return localStorage.getItem('wuxia_test') === '1' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  } catch (e) { return false; }
+})();
+function heroUnlocked(id) { return id === 'seojin' || HERO_TEST || !!(progress.heroes && progress.heroes[id]); }
 function renderHeroCards() {
   for (const [id, u] of Object.entries(HERO_UNLOCK)) {
     const el = document.getElementById('card_' + id);
