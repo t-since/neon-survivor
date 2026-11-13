@@ -153,7 +153,8 @@ const MOB_ART_NAMES = ['mob_assassin', 'mob_archer', 'mob_dartman', 'mob_jiangsh
   'mob_skeleton', 'mob_barbarian', 'mob_butcher', 'mob_ghoul', // 2026-11-10 추가
   'mob_necromancer', 'mob_sorceress', 'mob_curse_mage', // 이 셋의 그림 일부는 안티그래비티로 만듦
   'mob_ice_sword', 'mob_ice_jiangshi', 'mob_ice_mage', 'mob_yeti', // 2026-11-12 4구역 빙궁 전용
-  'mob_white_tiger', 'mob_ice_spider', 'mob_poison_spider', 'mob_black_wolf']; // 2026-11-12 괴수형
+  'mob_white_tiger', 'mob_ice_spider', 'mob_poison_spider', 'mob_black_wolf', // 2026-11-12 괴수형
+  'mob_blood_wolf', 'mob_blood_bat']; // 2026-11-13 5구역 괴수
 for (const n of MOB_ART_NAMES) {
   for (const kind of ['walk', 'attack']) {
     for (let i = 0; i < 4; i++) SPRITE_URLS[`${n}_${kind}_${i}`] = `assets/mobs/${n}_${kind}_${i}.png`;

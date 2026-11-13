@@ -223,6 +223,8 @@ const SKIN_ART = {
   mob_white_tiger: { key: 'mob_white_tiger', h: 150 }, // 옆으로 긴 그림이라 작게 잘라서(180px) 키를 크게
   mob_ice_spider: { key: 'mob_ice_spider', h: 170 },
   mob_poison_spider: { key: 'mob_poison_spider', h: 170 },
+  mob_blood_wolf: { key: 'mob_blood_wolf', h: 165 },  // 5구역 혈랑 (2026-11-13)
+  mob_blood_bat: { key: 'mob_blood_bat', h: 225, fly: true, filter: 'brightness(1.45) saturate(1.3)' }, // 5구역 흡혈 박쥐 (떠서 남, 붉은 바닥에서 보이게 밝게)
   mob_black_wolf: { key: 'mob_black_wolf', h: 150 } // 백호 걷기·늑대 공격·거미 2종은 ChatGPT 그림 (11-12)
 };
 function enemyArt(e) {
@@ -263,7 +265,7 @@ function drawEnemyArt(e, art, facing, isMoving, runTimer) {
   }
   const img = SPRITES[key] || SPRITES[art.key + '_walk_0'];
   const k = art.h / 300;
-  const hop = e.type === 'jiangshi' ? -(e.hopHeight || 0) : 0;
+  const hop = e.type === 'jiangshi' ? -(e.hopHeight || 0) : (art.fly ? -42 + Math.sin(((e.seed || 0) + (state.gameTime || 0)) * 5) * 5 : 0); // 박쥐: 바닥에서 떠서 출렁
   const look = (e.hitCooldown > 0.06) ? 'brightness(2.4) saturate(0.3)' : (e.elite ? ((art.filter ? art.filter + ' ' : '') + 'sepia(0.35) saturate(1.8) hue-rotate(-25deg) brightness(0.95)') : art.filter); // 맞은 순간 하얗게 / 정예 붉게 / 종류별 색
   if (e.squashT > 0) { const s = Math.sin(Math.min(1, e.squashT / 0.2) * Math.PI); ctx.scale(1 + 0.22 * s, 1 - 0.18 * s); } // 타격감 1) 찌그러짐
   ctx.drawImage(tinted(img, look), -220 * k + tremble, -320 * k + 4 + hop, 440 * k, 340 * k);

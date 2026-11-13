@@ -327,6 +327,8 @@ function getThemeEnemyPool() {
   const has = k => typeof SPRITES !== 'undefined' && SPRITES[k + '_walk_0'];
   if ((secIdx === 0 || secIdx === 1) && has('mob_black_wolf')) base.push({ type: 'assassin', name: '흑풍 늑대', art: 'mob_black_wolf', weight: 22 });
   if (secIdx === 2 && has('mob_poison_spider')) base.push({ type: 'ghoul', name: '만독 거미', art: 'mob_poison_spider', weight: 22 });
+  if (secIdx === 4 && has('mob_blood_wolf')) base.push({ type: 'ghoul', name: '혈마 늑대', art: 'mob_blood_wolf', weight: 20 });   // 덤벼듦
+  if (secIdx === 4 && has('mob_blood_bat')) base.push({ type: 'assassin', name: '흡혈 박쥐', art: 'mob_blood_bat', weight: 20 });   // 빠르게 날아듦
   return base;
 }
 function getThemeEnemyPoolBase(secIdx, theme) {

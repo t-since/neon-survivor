@@ -314,6 +314,8 @@ const I18N_EN = {
   '빙정 거미': 'Ice Crystal Spider',
   '만독 거미': 'Venom Spider',
   '흑풍 늑대': 'Black Wind Wolf',
+  '혈마 늑대': 'Blood Demon Wolf',
+  '흡혈 박쥐': 'Blood Bat',
   '서리 검기로 빠르게 베어 들어오는 빙궁의 검객.': 'An Ice Palace swordsman who rushes in with frost sword-qi.',
   '얼음에 갇힌 채 뛰어오는 강시. 서리 술사·설산 거괴도 함께 나옴.': 'A jiangshi hopping toward you, sealed in ice. Frost Sorceresses and Snow Mountain Brutes appear too.',
   '얼음 비도를 던져 이동속도를 감속시킴.': 'Throws ice knives that slow you down.',
