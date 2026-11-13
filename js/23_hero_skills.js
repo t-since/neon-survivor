@@ -215,6 +215,13 @@ if (typeof onEnemyKilled === 'function') {
           applyPoison(e, 2.5, dmg * 0.35);
         }
         createShockwave(target.x, target.y - 20, R, 'rgba(74, 222, 128, 0.85)');
+        // 11-13 사용자: "폭독 이펙트가 너무 약함" → 독 폭발 빛 + 부푸는 독구름 + 튀는 독방울 + 바닥 독웅덩이
+        const puffs = [], drops = [];
+        for (let i = 0; i < 7; i++) { const a = Math.random() * Math.PI * 2; puffs.push({ a, d: 0.25 + Math.random() * 0.45, s: 0.35 + Math.random() * 0.3 }); }
+        for (let i = 0; i < 14; i++) drops.push({ a: Math.random() * Math.PI * 2, v: 0.6 + Math.random() * 0.7, up: 40 + Math.random() * 70 });
+        heroFx.push({ type: 'toxic', x: target.x, y: target.y - 24, r: R, life: 0.6, max: 0.6, puffs, drops, rot: Math.random() * 6 });
+        if (burstBudget >= 5) heroFx.push({ type: 'puddle', x: target.x, y: target.y + 4, r: R, life: 1.4, max: 1.4 });
+        if (burstBudget >= 6) { state.screenShake = Math.max(state.screenShake || 0, 4); try { sound.playSample('wx_palm', 0.25, 0.6, 0.1, 0.05); } catch (e) {} }
       }
     }
     return r;
@@ -226,7 +233,7 @@ function drawHeroSkills(top) {
   ctx.save();
   for (const f of heroFx) {
     const k = f.life / f.max;
-    if (!!top !== (f.type !== 'net')) continue; // 일섬·베인 자국은 적·협객 위에, 그물은 바닥에
+    if (!!top !== (f.type !== 'net' && f.type !== 'puddle')) continue; // 일섬·베인 자국은 적·협객 위에, 그물은 바닥에
     if (f.type === 'slash') {
       // 발도일섬: 처음엔 굵고 눈부신 빛줄기 → 가늘어지며 사라짐, 불꽃이 양옆으로 튐
       const age = 1 - k, L = f.len * Math.min(1, age * 9 + 0.15); // 앞으로 쭉 뻗어나감
@@ -250,6 +257,43 @@ function drawHeroSkills(top) {
         ctx.globalAlpha = k;
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + 10, py + s.s * 6); ctx.stroke();
       }
+      ctx.restore();
+    } else if (f.type === 'puddle') {
+      drawFxImage('fx_poison', f.x, f.y, f.r * 1.7 * (0.75 + 0.25 * Math.min(1, (1 - k) * 4)), 0.55 * Math.min(1, k * 2), 0, 0.55);
+    } else if (f.type === 'toxic') {
+      const age = 1 - k;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      // 가운데 터지는 빛
+      const fr = f.r * (0.35 + age * 0.7);
+      const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, fr);
+      g.addColorStop(0, 'rgba(220, 252, 231, ' + (0.9 * k * k).toFixed(3) + ')');
+      g.addColorStop(0.35, 'rgba(74, 222, 128, ' + (0.7 * k).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(22, 101, 52, 0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, fr, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      // 부풀어 오르는 독구름 (짙은 초록 덩어리, 위로 살짝 떠오름)
+      ctx.save();
+      for (const p of f.puffs) {
+        const d = f.r * p.d * (0.4 + age * 0.9), pr = f.r * p.s * (0.5 + age * 0.8);
+        const px = f.x + Math.cos(p.a) * d, py = f.y + Math.sin(p.a) * d * 0.6 - age * 30;
+        const pg = ctx.createRadialGradient(px, py, 0, px, py, pr);
+        pg.addColorStop(0, 'rgba(134, 239, 172, ' + (0.55 * k).toFixed(3) + ')');
+        pg.addColorStop(0.6, 'rgba(34, 197, 94, ' + (0.35 * k).toFixed(3) + ')');
+        pg.addColorStop(1, 'rgba(20, 83, 45, 0)');
+        ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+      }
+      // 튀는 독방울 (포물선으로 떨어짐)
+      ctx.fillStyle = '#bbf7d0'; ctx.strokeStyle = '#15803d'; ctx.lineWidth = 1;
+      for (const dp of f.drops) {
+        const dist = f.r * dp.v * Math.min(1, age * 1.6);
+        const px = f.x + Math.cos(dp.a) * dist, py = f.y + Math.sin(dp.a) * dist * 0.6 - dp.up * age * 2 + 260 * age * age;
+        ctx.globalAlpha = k;
+        ctx.beginPath(); ctx.arc(px, py, 3 + 2 * k, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      // 바깥으로 퍼지는 독 고리
+      ctx.strokeStyle = 'rgba(74, 222, 128, ' + (0.8 * k).toFixed(3) + ')'; ctx.lineWidth = 6 * k + 1;
+      ctx.beginPath(); ctx.ellipse(f.x, f.y + 20, f.r * (0.3 + age), f.r * (0.3 + age) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
       ctx.restore();
     } else if (f.type === 'flash') {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
