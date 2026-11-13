@@ -279,19 +279,92 @@ function drawHeroSkills(top) {
     }
   }
   ctx.globalAlpha = 1;
-  if (top) { ctx.restore(); return; }
+  // 검막 (11-13 사용자: "검도 아니고 애매") → 진짜 검(칼날·코등이·손잡이·술)이 도는 방향으로 칼끝을 두고 돌며 검기 꼬리를 남김
+  // 협객 뒤쪽 절반은 바닥 층(협객 아래), 앞쪽 절반은 맨 위 층에 그려 몸을 감싸 도는 것처럼
   const cl = lvOf('sword_curtain');
   if (cl > 0 && state.isGameStarted) {
     const n = cl + 1, R = 95;
+    drawCurtainWind(!!top, cl);
     for (let i = 0; i < n; i++) {
       const a = curtainAngle + i * Math.PI * 2 / n;
-      const x = player.x + Math.cos(a) * R, y = player.y - 30 + Math.sin(a) * R * 0.6;
-      ctx.save(); ctx.translate(x, y); ctx.rotate(a + Math.PI / 2);
-      ctx.fillStyle = 'rgba(147, 197, 253, 0.85)'; ctx.strokeStyle = '#1e3a8a'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(4, 10); ctx.lineTo(0, 14); ctx.lineTo(-4, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.restore();
+      if ((Math.sin(a) > 0) !== !!top) continue;
+      drawCurtainSword(a, R);
     }
   }
+  ctx.restore();
+}
+
+// 회오리 (11-13 사용자: "회오리 느낌") — 발밑에서 위로 갈수록 넓어지는 바람 고리 여러 겹, 각자 빠르게 돌며 끊긴 줄기로
+function drawCurtainWind(front, cl) {
+  const t = curtainAngle;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  const rings = 4;
+  for (let r = 0; r < rings; r++) {
+    const h = r / (rings - 1);               // 0 = 발밑, 1 = 머리 위
+    const rx = 55 + h * 60 + cl * 4, ry = rx * 0.32;
+    const cy = player.y - 4 - h * 95;
+    const spin = t * (1.6 + h * 0.8) + r * 1.3;
+    for (let s = 0; s < 3; s++) {            // 고리마다 끊긴 바람 줄기 3개
+      const a0 = spin + s * Math.PI * 2 / 3, len = 1.3;
+      // 앞쪽(아래 반원)은 맨 위 층, 뒤쪽은 바닥 층
+      // 한 줄기를 한 번에 그림 (조각마다 그리면 구슬처럼 끊겨 보임). 앞/뒤 경계에서만 끊음
+      const steps = 14;
+      ctx.beginPath();
+      let pen = false;
+      for (let k = 0; k <= steps; k++) {
+        const aa = a0 + len * k / steps;
+        const ok = (Math.sin(aa) > 0) === front;
+        const px = player.x + Math.cos(aa) * rx, py = cy + Math.sin(aa) * ry;
+        if (ok) { if (pen) ctx.lineTo(px, py); else ctx.moveTo(px, py); pen = true; } else pen = false;
+      }
+      ctx.strokeStyle = `rgba(125, 211, 252, ${(0.16 + 0.12 * h).toFixed(3)})`;
+      ctx.lineWidth = 7 * (0.8 + h * 0.5); ctx.stroke();
+      ctx.strokeStyle = `rgba(240, 249, 255, ${(0.30 + 0.15 * h).toFixed(3)})`;
+      ctx.lineWidth = 2 * (0.8 + h * 0.5); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function curtainPos(a, R) { return [player.x + Math.cos(a) * R, player.y - 40 + Math.sin(a) * R * 0.6]; }
+function drawCurtainSword(a, R) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  // 검기 꼬리: 지나온 길을 따라 옅어지는 푸른 띠
+  for (let j = 0; j < 10; j++) {
+    const a0 = a - j * 0.09, a1 = a - (j + 1) * 0.09;
+    const [x0, y0] = curtainPos(a0, R), [x1, y1] = curtainPos(a1, R);
+    ctx.strokeStyle = `rgba(125, 211, 252, ${(0.55 * (1 - j / 10)).toFixed(3)})`;
+    ctx.lineWidth = 9 * (1 - j / 12);
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  }
+  ctx.restore();
+  const [x, y] = curtainPos(a, R);
+  const dir = Math.atan2(Math.cos(a) * 0.6, -Math.sin(a)); // 도는 방향 = 칼끝
+  ctx.save();
+  ctx.translate(x, y); ctx.rotate(dir); ctx.scale(1.25, 1.25);
+  // 칼날 (가운데 등줄, 끝이 뾰족)
+  ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 14;
+  const g = ctx.createLinearGradient(0, -4, 0, 4);
+  g.addColorStop(0, '#e0f2fe'); g.addColorStop(0.45, '#ffffff'); g.addColorStop(1, '#7dd3fc');
+  ctx.fillStyle = g; ctx.strokeStyle = '#0c4a6e'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(-14, -3.6); ctx.lineTo(30, -3); ctx.lineTo(42, 0); ctx.lineTo(30, 3); ctx.lineTo(-14, 3.6); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(14, 116, 144, 0.7)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(34, 0); ctx.stroke();
+  // 코등이 (금빛)
+  ctx.fillStyle = '#facc15'; ctx.strokeStyle = '#713f12';
+  ctx.beginPath(); ctx.moveTo(-14, -9); ctx.lineTo(-11, -9); ctx.lineTo(-11, 9); ctx.lineTo(-14, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // 손잡이 (감은 끈) + 꼭지
+  ctx.fillStyle = '#1e3a8a'; ctx.fillRect(-30, -2.6, 16, 5.2);
+  ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 1;
+  for (let k = -28; k < -15; k += 4) { ctx.beginPath(); ctx.moveTo(k, -2.6); ctx.lineTo(k + 2, 2.6); ctx.stroke(); }
+  ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(-32, 0, 3.4, 0, Math.PI * 2); ctx.fill();
+  // 술 (빨간 끈이 뒤로 날림)
+  ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-34, 0); ctx.quadraticCurveTo(-42, 5, -50, 3 + Math.sin(curtainAngle * 3) * 3); ctx.stroke();
   ctx.restore();
 }
 
