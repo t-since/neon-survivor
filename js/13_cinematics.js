@@ -133,6 +133,60 @@ const CINEMATICS = {
 };
 
 // ---------------------------------------------------------------------
+// 협객별 이야기 (11-13 사용자: "컷신이 너무 서진이네"). 장면 id → 바꿀 것 (id 가 있으면 그 그림, 없으면 그림은 그대로 글만)
+// 큰 줄기(혈독환·하오문·만독림·북해·혈마전)는 같고, 협객마다 하산 이유와 끝맺음이 다름
+// ---------------------------------------------------------------------
+const HERO_CINE = {
+  hyunwoon: { // 무극문 속가제자 — 혈독환에 미쳐 버린 사형 운백을 되돌리려 함
+    op_02: { id: 'hy_op_02', text: '비가 내리던 그 밤, 무극문 아래 마을. 사형 운백이 붉은 단약을 삼키고 사람들에게 주먹을 휘둘렀다.' },
+    op_03: { id: 'hy_op_03', who: '운백', text: '현운아… 나를 막아라… 내 주먹이… 멈추질 않는다…' },
+    op_04: { text: '그 붉은 단약의 이름은 ‘혈독환’. 강호 곳곳에 퍼져, 삼킨 자를 더 이상 사람이 아니게 만들었다.' },
+    op_06: { id: 'hy_op_06', who: '현운', text: '사형을 되돌릴 길. 그 약의 뿌리를 끝까지 쫓겠습니다.' },
+    s4_01: { text: '혈독환을 되돌리는 법? 북해빙궁의 빙심(氷心)만이 몸속의 독을 얼려 뽑아낼 수 있지.' },
+    s4_02: { id: 'hy_s4_02', text: '사형을 구할 단 하나의 길. 현운은 주먹을 동여매고 북쪽으로 향했다.' },
+    s5_01: { text: '빙심은 내어 주마. 허나 혈마교주가 살아 있는 한, 혈독환은 끝나지 않는다.' },
+    s5_02: { id: 'hy_s5_02', text: '빙심을 움켜쥔 주먹에, 무극의 기운이 차올랐다.' },
+    s5_03: { text: '오너라, 무극문의 애송이. 네 사형처럼 내 약 앞에 무릎 꿇게 해 주마.' },
+    ed_03: { id: 'hy_ed_03', text: '무극문. 빙심으로 독을 뽑아낸 사형이 마침내 눈을 떴다.' },
+    ed_04: { id: 'hy_ed_04', who: '운백', text: '현운아… 네 주먹이, 나를 멈춰 주었구나.' },
+    ed_05: { id: 'hy_ed_05', text: '주먹은 사람을 치려고 쥐는 것이 아니다. 현운은 다시 산문을 나섰다.' }
+  },
+  tangsoyeon: { // 서천 당문 소가주 — 도둑맞은 가문 의술서가 혈독환이 됨
+    op_02: { id: 'tg_op_02', text: '비가 내리던 그 밤, 서천 당문. 가문의 비전 의술서가 감쪽같이 사라졌다.' },
+    op_03: { id: 'tg_op_03', who: '당문 가주', text: '연아… 그 책이 악인의 손에 들어가면, 독은 약이 아니라 재앙이 된다.' },
+    op_04: { text: '얼마 뒤, 강호에 ‘혈독환’이라는 붉은 단약이 퍼졌다. 그 처방은… 당문의 의술서와 똑같았다.' },
+    op_06: { id: 'tg_op_06', who: '당소연', text: '아버지. 가문의 이름으로, 이 독을 거둬들이겠어요.' },
+    s3_02: { text: '장부에 적힌 원료의 출처는 서남 만독림. 그 곁에 끼워진 것은… 도둑맞은 우리 가문의 의술서였다.' },
+    s4_01: { text: '당문의 계집이로군. 그 책? 해독법이 적힌 마지막 장은 북해빙궁에 넘겼지.' },
+    s4_02: { id: 'tg_s4_02', text: '찢겨 나간 마지막 장. 해독법을 찾아, 당소연은 북쪽으로 향했다.' },
+    s5_01: { text: '이 장은 돌려주마. 혈마교주가 원한 것은 해독이 아니라, 끝없는 독이었다.' },
+    s5_02: { id: 'tg_s5_02', text: '마지막 장이 제자리를 찾자, 혈독환을 푸는 처방이 모습을 드러냈다.' },
+    s5_03: { text: '오너라, 당문의 아가씨. 네 가문의 책으로 빚은 독맛을 보여 주마.' },
+    ed_03: { id: 'tg_ed_03', text: '서천 당문. 되찾은 의술서로 지은 해독약이 강호 곳곳으로 퍼져 나갔다.' },
+    ed_04: { id: 'tg_ed_04', who: '당소연', text: '아버지. 당문의 독은… 이제 사람을 살리는 데 쓰겠어요.' },
+    ed_05: { id: 'tg_ed_05', text: '독과 약은 한 끗 차이. 당소연은 약상자를 메고 다시 길을 떠났다.' }
+  }
+};
+// 지금 협객 (시험: 주소에 ?cinehero=hyunwoon)
+function cineHero() {
+  const q = new URLSearchParams(location.search).get('cinehero');
+  if (q) return q;
+  if (typeof state !== 'undefined' && state.isGameStarted && typeof player !== 'undefined' && player.heroId) return player.heroId;
+  return (typeof currentSelectedHero !== 'undefined' && currentSelectedHero) || 'seojin';
+}
+function heroShots(shots) {
+  const m = HERO_CINE[cineHero()];
+  if (!m) return shots;
+  return shots.map(sh => {
+    const o = m[sh.id];
+    if (!o) return sh;
+    const r = Object.assign({}, sh, o);
+    if (o.id && sh.fb && sh.fb.fig && /^sj/.test(Object.keys(CB).find(k => CB[k] === sh.fb.fig) || '')) r.fb = Object.assign({}, sh.fb, { fig: null }); // 서진 그림은 빼기
+    return r;
+  });
+}
+
+// ---------------------------------------------------------------------
 // 파일 찾기: <id>.mp4 → .webm → .jpg → .png → .webp (먼저 있는 것)
 // ---------------------------------------------------------------------
 const cinemaMediaCache = {};
@@ -255,8 +309,8 @@ const Cinema = {
       if (film) { this.playFilm(film); return; }
       if (!def || !def.shots.length) { this.end(); return; }
       this.music = def.music || null;
-      this.shots = def.shots;
-      def.shots.forEach(s => resolveCinemaMedia(s.id)); // 미리 찾아 두기
+      this.shots = heroShots(def.shots);
+      this.shots.forEach(s => resolveCinemaMedia(s.id)); // 미리 찾아 두기
       this.dotsEl.innerHTML = def.shots.map(() => '<i></i>').join('');
       this.next();
     });
