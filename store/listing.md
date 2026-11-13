@@ -2,7 +2,7 @@
 
 > 글자 수 제한: 앱 이름 30자 · 간단한 설명 80자 · 자세한 설명 4000자
 > 개인정보처리방침 주소: https://t-since.github.io/neon-survivor/privacy.html (연락처 이메일을 채운 뒤 사용)
-> 그림: `store/screenshots/*.jpg` (1920×1080, 6장) · `store/feature_graphic_1024x500.jpg` (그래픽 이미지) · 앱 아이콘 512×512 는 아직 없음
+> 그림: `store/screenshots/*.jpg` (1920×1080, 6장) · `store/feature_graphic_1024x500.jpg` (그래픽 이미지) · 앱 아이콘 `store/app_icon_512.png` (2026-11-13 ChatGPT)
 
 ---
 
