@@ -95,7 +95,7 @@ async () => {
       if (job.atkOrder) ac = job.atkOrder.map(i => ac[i]);
       // 공격 시트는 크기가 다르게 그려질 때가 있어서, '준비 자세' 칸(기본 4번째)의 키를 걷기 키에 맞춤
       const ref = ac[job.atkRef === undefined ? 3 : job.atkRef];
-      sheets.push(['attack', atk, ac, scale * walkH / ref.figH]);
+      sheets.push(['attack', atk, ac, job.sameScale ? scale : scale * walkH / ref.figH]); // sameScale: 한 장에 같이 그린 그림은 같은 배율
     }
     for (const [kind, c, cs, scale] of sheets) {
       cs.forEach((cell, i) => {

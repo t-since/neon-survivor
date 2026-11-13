@@ -1,7 +1,7 @@
 // ChatGPT 탭(포트 9222)에 그림 요청: node gpt.mjs <저장.png> <프롬프트.txt> [첨부...]
 import fs from 'node:fs'; import path from 'node:path';
 const [outFile, promptFile, ...attach] = process.argv.slice(2);
-const prompt = fs.readFileSync(promptFile, 'utf8').trim();
+const prompt = 'IMPORTANT: Ignore all previous conversations and earlier images. Create exactly ONE new image for this request only. Do not combine, collage or reuse earlier images.\n\n' + fs.readFileSync(promptFile, 'utf8').trim();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const list = await (await fetch('http://127.0.0.1:9222/json')).json();
 const tab = list.find(t => t.type === 'page' && t.url.includes('chatgpt.com'));
@@ -12,7 +12,7 @@ const send = (method, params = {}) => new Promise(r => { const i = ++id; pend[i]
 const ev = async code => { const r = await send('Runtime.evaluate', { expression: code, awaitPromise: true, returnByValue: true, userGesture: true }); if (r.result?.exceptionDetails) console.log('JS 오류', r.result.exceptionDetails.exception?.description); return r.result?.result?.value; };
 await send('Page.bringToFront'); await sleep(500);
 // 늘 새 대화에서 (라이브러리·다른 대화 화면의 그림을 잘못 받지 않게)
-await send('Page.enable'); await send('Page.navigate', { url: 'https://chatgpt.com/' });
+await send('Page.enable'); await send('Page.navigate', { url: 'https://chatgpt.com/' }); // 일반 채팅 (임시 채팅은 그림이 안 됨). 예전 대화 기억 대신 요청문 앞에 '이 한 장만' 을 적음
 for (let i = 0; i < 40; i++) { await sleep(500); if (await ev("!!document.querySelector('#prompt-textarea, .ProseMirror')")) break; }
 await sleep(1500);
 const imgCount = `[...document.querySelectorAll('main article img, [data-message-author-role=assistant] img, img[alt^="생성된 이미지"]')].filter(i=>i.naturalWidth>500 && !i.src.startsWith('data:') && !i.closest('form')).length`;
@@ -29,9 +29,12 @@ if (attach.length) {
   for (let i = 0; i < 30; i++) { await sleep(500); const n = await ev(`document.querySelectorAll('form img, [data-testid*=attachment] img').length`); if (n >= attach.length) break; }
   await sleep(2500); console.log('첨부', attach.length);
 }
-await ev(`(()=>{const e=document.querySelector('.ProseMirror, #prompt-textarea'); e.focus(); return 1})()`);
+// 쓰다 만 글이 남아 있으면 지우고 씀 (11-13: 요청문이 여러 번 겹쳐 쌓였음)
+await ev(`(()=>{const e=document.querySelector('.ProseMirror, #prompt-textarea'); e.focus(); document.execCommand('selectAll'); document.execCommand('delete'); return 1})()`);
 await send('Input.insertText', { text: prompt }); await sleep(800);
-const sent = await ev(`(()=>{const b=document.querySelector('[data-testid=send-button], #composer-submit-button, button[aria-label="보내기"]'); if(b && !b.disabled){b.click(); return 'ok'} return 'no'})()`);
+// 첨부가 다 올라가 보내기 단추가 켜질 때까지 최대 60초 기다렸다가 누름
+const sent = await ev(`(async()=>{for(let i=0;i<120;i++){const b=document.querySelector('[data-testid=send-button], #composer-submit-button, button[aria-label="보내기"]'); if(b && !b.disabled && b.getAttribute('aria-disabled')!=='true'){b.click(); return 'ok '+i} await new Promise(r=>setTimeout(r,500));} return 'no'})()`);
+if (sent === 'no') { console.log('보내기 실패'); process.exit(2); }
 console.log('보냄', sent);
 let ok = false;
 for (let i = 0; i < 300; i++) {
