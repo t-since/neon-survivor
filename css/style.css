@@ -1974,3 +1974,8 @@
     .look-chip.on b { color: #4ade80; }
     .look-chip:disabled { opacity: 0.45; cursor: default; }
     @media (max-height: 520px) { #looksList { margin-top: 6px; } .look-chip { padding: 3px 7px; font-size: 12px; } .looks-row { margin-bottom: 3px; } }
+
+    /* 컷신 그림 컷 (2026-11-13): 장면 그림이 화면을 꽉 채우게, 위 띠는 투명·아래는 자막 그늘만 */
+    #cinema.stills .cn-bar { background: transparent; }
+    #cinema.stills .cn-bot { height: 24vh; align-items: flex-end; padding-bottom: 5vh; background: linear-gradient(transparent, rgba(0,0,0,.7)); }
+    #cinema.stills .cn-line { text-shadow: 0 2px 6px #000, 0 0 2px #000; }

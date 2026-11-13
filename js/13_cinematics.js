@@ -161,7 +161,10 @@ function resolveCinemaMedia(id) {
 
 // 편집된 영상 한 편: assets/cinema/<이름>.mp4 + <이름>.json(자막 시간표) — tools/cinema_edit.mjs 가 만듦
 const cinemaFilmCache = {};
+// 그림 컷 미리보기 (2026-11-13): 주소에 ?cine=stills 를 붙이면 영상 대신 새 장면 그림(assets/cinema/<id>.jpg)으로
+const CINE_STILLS = /[?&]cine=stills/.test(location.search);
 function findCinemaFilm(key) {
+  if (CINE_STILLS) return Promise.resolve(null);
   if (cinemaFilmCache[key]) return cinemaFilmCache[key];
   cinemaFilmCache[key] = fetch(CINEMA_DIR + key + '.json', { cache: 'no-cache' })
     .then(r => r.ok ? r.json() : null)
@@ -343,6 +346,7 @@ const Cinema = {
       img.className = 'cn-media';
       img.alt = '';
       img.src = media ? media.src : fb.bg;
+      this.root.classList.toggle('stills', !!media); // 장면 그림이 있으면 위아래 검은 띠 대신 자막 그늘만 (그림이 잘리지 않게)
       if (!media && fb.bgf) img.style.filter = fb.bgf;
       layer.appendChild(img);
       if (!media && fb.fig) {
@@ -377,7 +381,7 @@ const Cinema = {
     // 카메라 천천히 확대·이동 (영상이 아닐 때)
     const m = layer.querySelector('img.cn-media');
     if (m) {
-      const kb = media ? { from: [50, 50, 1.12], to: [50, 50, 1.0] } : fb;
+      const kb = media ? { from: [50, 50, 1.06], to: [50, 50, 1.0] } : fb; // 새 장면 그림: 아주 살짝만
       const tf = p => {
         const [x, y, s] = p || [50, 50, 1.1];
         const lim = 50 * (1 - 1 / s);
