@@ -363,9 +363,9 @@ function drawCurtainWind(front, cl) {
         const px = player.x + Math.cos(aa) * rx, py = cy + Math.sin(aa) * ry;
         if (ok) { if (pen) ctx.lineTo(px, py); else ctx.moveTo(px, py); pen = true; } else pen = false;
       }
-      ctx.strokeStyle = `rgba(125, 211, 252, ${(0.16 + 0.12 * h).toFixed(3)})`;
-      ctx.lineWidth = 7 * (0.8 + h * 0.5); ctx.stroke();
-      ctx.strokeStyle = `rgba(240, 249, 255, ${(0.30 + 0.15 * h).toFixed(3)})`;
+      ctx.strokeStyle = `rgba(125, 211, 252, ${(0.07 + 0.05 * h).toFixed(3)})`;
+      ctx.lineWidth = 6 * (0.8 + h * 0.5); ctx.stroke(); // 11-13 사용자: 회오리 더 연하게
+      ctx.strokeStyle = `rgba(240, 249, 255, ${(0.13 + 0.07 * h).toFixed(3)})`;
       ctx.lineWidth = 2 * (0.8 + h * 0.5); ctx.stroke();
     }
   }
@@ -380,7 +380,7 @@ function drawCurtainSword(a, R) {
     const a0 = a - j * 0.09, a1 = a - (j + 1) * 0.09;
     const [x0, y0] = curtainPos(a0, R), [x1, y1] = curtainPos(a1, R);
     ctx.strokeStyle = `rgba(125, 211, 252, ${(0.55 * (1 - j / 10)).toFixed(3)})`;
-    ctx.lineWidth = 9 * (1 - j / 12);
+    ctx.lineWidth = 6 * (1 - j / 12);
     ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
   }
@@ -388,7 +388,7 @@ function drawCurtainSword(a, R) {
   const [x, y] = curtainPos(a, R);
   const dir = Math.atan2(Math.cos(a) * 0.6, -Math.sin(a)); // 도는 방향 = 칼끝
   ctx.save();
-  ctx.translate(x, y); ctx.rotate(dir); ctx.scale(1.25, 1.25);
+  ctx.translate(x, y); ctx.rotate(dir); ctx.scale(0.72, 0.72); // 11-13 사용자: 서진 손의 검 크기 정도로
   // 칼날 (가운데 등줄, 끝이 뾰족)
   ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 14;
   const g = ctx.createLinearGradient(0, -4, 0, 4);
