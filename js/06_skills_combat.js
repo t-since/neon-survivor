@@ -451,6 +451,8 @@ function triggerMeleeAttack(target) {
 
   if (FIST) sound.playSample('wx_palm', isFinisher ? 0.5 : 0.3, isFinisher ? 1 : 1.35, 0.1, 0.04); else sound.playSwordSlash();
 
+  // 구역 배율: 적 체력이 구역마다 1~4.6배라서 칼(주먹)도 같은 배율 (11-13 사용자: 뒤 구역에서 근거리가 너무 약함 — 5구역 보통 몹에 10~22번)
+  const SEC_K = (typeof sectorScale === 'function') ? sectorScale().hp : 1;
   const range = FIST ? (isFinisher ? 175 : 140) : (isFinisher ? 205 : 180);
   const halfArc = FIST ? (isFinisher ? Math.PI * 0.5 : Math.PI * 0.3) : (isFinisher ? Math.PI * 0.75 : Math.PI * 0.39); // 칼: 140°/270°, 주먹: 108°/180°
   let hits = 0;
@@ -465,7 +467,7 @@ function triggerMeleeAttack(target) {
     if (Math.abs(da) > halfArc && d > 45) continue; // 몸에 붙은 적은 방향 상관없이 맞음
     hits++;
     hitList.push(e);
-    const dmg = (48 + player.level * 6) * player.atkMultiplier * (isFinisher ? 1.6 : 1) * (FIST ? 0.8 : 1); // 주먹은 빠른 대신 한 대가 조금 약함
+    const dmg = (48 + player.level * 6) * player.atkMultiplier * (isFinisher ? 1.6 : 1) * (FIST ? 0.8 : 1) * SEC_K; // 주먹은 빠른 대신 한 대가 조금 약함
     dealDamage(e, dmg, true);
     e.hitCooldown = 0.22; // 하얗게 번쩍이는 시간 (0.06 넘는 동안) — 예전 0.14
     // 맞은 방향으로 밀려남 (보스는 밀리지 않음, 중간보스는 큰 베기에만 조금)
