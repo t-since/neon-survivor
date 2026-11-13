@@ -11,8 +11,8 @@ gem_new() {
 }
 # 파일 첨부 (여러 개 가능)
 gem_attach() {
-  cdp eval "(async()=>{document.querySelector('button[aria-label=\"업로드 및 도구\"]').click(); await new Promise(r=>setTimeout(r,800)); return 1})()" >/dev/null
-  cdp upload 'input[type=file][accept^="image"]' "$@" >/dev/null
+  # 11-13: 입력칸에 끌어다 놓기(가장 잘 됨) → 안 되면 파일 업로드 메뉴 → 안 되면 숨은 입력칸
+  cdp drop "$@" >/dev/null 2>&1 || cdp choose "$@" >/dev/null 2>&1 || { cdp eval "(async()=>{document.querySelector('button[aria-label=\"업로드 및 도구\"]').click(); await new Promise(r=>setTimeout(r,800)); return 1})()" >/dev/null; cdp upload 'input[type=file][accept^="image"]' "$@" >/dev/null; }
   cdp key Escape >/dev/null
   sleep 4
 }
@@ -21,11 +21,11 @@ gem_count() { cdp eval "(()=>[...document.querySelectorAll('model-response img, 
 # 요청 보내고 새 그림이 나오면 저장: gem_ask "<prompt>" <저장파일이름>
 gem_ask() {
   local before; before=$(gem_count)
-  cdp eval "(()=>{const e=document.querySelector('rich-textarea .ql-editor, div[contenteditable=true]'); e.focus(); return document.activeElement===e})()" >/dev/null
+  cdp eval "(()=>{const e=document.querySelector('rich-textarea .ql-editor, div[contenteditable=true]'); e.focus(); document.execCommand('selectAll'); document.execCommand('delete'); return document.activeElement===e})()" >/dev/null
   [ -n "$1" ] && cdp type "$1" >/dev/null
   sleep 1
   # 첨부 그림이 다 올라갈 때까지(최대 60초) 기다렸다가 보내기 (11-12: 올라가는 중에 눌러 안 보내지던 문제)
-  cdp eval "(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)); for(let i=0;i<120;i++){ const loading=[...document.querySelectorAll('[aria-label]')].some(e=>/로드 중/.test(e.getAttribute('aria-label'))); const b=document.querySelector('button[aria-label=\"메시지 보내기\"]'); if(!loading && b && !b.disabled && b.getAttribute('aria-disabled')!=='true'){ b.click(); return 'sent '+i } await w(500);} return 'no send' })()"
+  cdp eval "(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)); for(let i=0;i<120;i++){ const loading=[...document.querySelectorAll('[aria-label]')].some(e=>/^(이미지|파일).*로드 중|로드 중.*(이미지|파일)/.test(e.getAttribute('aria-label'))); const b=document.querySelector('button[aria-label=\"메시지 보내기\"]'); if(!loading && b && !b.disabled && b.getAttribute('aria-disabled')!=='true'){ b.click(); return 'sent '+i } await w(500);} return 'no send' })()"
   for i in $(seq 1 40); do sleep 5; n=$(gem_count); [ "$n" -gt "$before" ] 2>/dev/null && break; done
   sleep 5
   for k in 1 2 3 4 5 6; do if cdp evalfile "$S/grab.js" > "$S/img.json" 2>/dev/null; then node "$S/save.js" "$S/img.json" "$NEW/$2"; return 0; fi; sleep 8; done; echo "grab failed"
