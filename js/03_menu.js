@@ -110,19 +110,22 @@ function navScreen(screenName) {
 }
 
 // 협객 개방 (2026-11-13 사용자 결정: 현운 = 5구역 돌파 + 은자 5,000)
-const HERO_UNLOCK = { hyunwoon: { sector: 5, silver: 5000 } };
+const HERO_UNLOCK = { hyunwoon: { sector: 5, silver: 5000, spec: '권법 & 넉백 (탱커)' }, tangsoyeon: { sector: 5, silver: 8000, spec: '암기 & 독 (원거리)' } }; // 당소연 11-13 사용자 결정
 function heroUnlocked(id) { return id === 'seojin' || !!(progress.heroes && progress.heroes[id]); }
 function renderHeroCards() {
-  const id = 'hyunwoon', el = document.getElementById('card_' + id), u = HERO_UNLOCK[id];
-  if (!el || !u) return;
-  const spec = el.querySelector('.hero-card-spec'), badge = el.querySelector('.hero-card-lock-badge');
-  const own = heroUnlocked(id), cleared = clearedSectors.includes(u.sector), enough = progress.silver >= u.silver;
-  el.classList.toggle('disabled', !own);
-  el.title = own ? '' : '5구역 돌파 · 은자 5,000';
-  el.onclick = () => selectHero(id);
-  if (spec) { spec.removeAttribute('style'); spec.textContent = own ? '권법 & 넉백 (탱커)' : (cleared ? (enough ? '💰 은자 5,000 으로 개방' : '은자가 모자랍니다 (5,000)') : '🔒 5구역 돌파 · 은자 5,000'); }
-  if (badge) badge.style.display = own ? 'none' : '';
-  if (badge && !own) badge.textContent = cleared ? '💰 5,000' : '🔒 5구역 돌파';
+  for (const [id, u] of Object.entries(HERO_UNLOCK)) {
+    const el = document.getElementById('card_' + id);
+    if (!el) continue;
+    const spec = el.querySelector('.hero-card-spec'), badge = el.querySelector('.hero-card-lock-badge');
+    const own = heroUnlocked(id), cleared = clearedSectors.includes(u.sector), enough = progress.silver >= u.silver;
+    const cost = u.silver.toLocaleString();
+    el.classList.toggle('disabled', !own);
+    el.title = own ? '' : u.sector + '구역 돌파 · 은자 ' + cost;
+    el.onclick = () => selectHero(id);
+    if (spec) { spec.removeAttribute('style'); spec.textContent = own ? u.spec : (cleared ? (enough ? '💰 은자 ' + cost + ' 으로 개방' : '은자가 모자랍니다 (' + cost + ')') : '🔒 ' + u.sector + '구역 돌파 · 은자 ' + cost); }
+    if (badge) badge.style.display = own ? 'none' : '';
+    if (badge && !own) badge.textContent = cleared ? '💰 ' + cost : '🔒 ' + u.sector + '구역 돌파';
+  }
 }
 function selectHero(heroId) {
   if (heroId !== 'seojin' && !heroUnlocked(heroId)) {

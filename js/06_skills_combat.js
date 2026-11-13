@@ -431,6 +431,7 @@ function castThunderBomb() {
 // Melee Sword Slash Attack (화산 정통 근접 매화검격 & 수동/자동 일섬)
 // 근거리 베기: 대상 방향 부채꼴(8방향 어디든) + 3단 콤보(내려베기 → 올려베기 → 큰 베기)
 function triggerMeleeAttack(target) {
+  if (player.heroId === 'tangsoyeon' && typeof tangThrow === 'function') return tangThrow(target); // 당소연: 은침 던지기 (22_tangsoyeon.js)
   const tx = target ? target.x : player.x + player.facing * 100;
   const ty = target ? target.y : player.y;
   const aim = Math.atan2(ty - player.y, tx - player.x);

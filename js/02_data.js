@@ -97,6 +97,8 @@ const SPRITE_URLS = {
   shrine_infinite_blades: 'assets/props/shrine_infinite_blades.png',
 
   // 서진 동작 프레임 (제미나이 2x2 시트에서 자름: 걷기 4장, 공격 4장)
+  // 당소연(암기·독) 2026-11-13: 걷기·공격 제미나이, 시전 ChatGPT
+  tangsoyeon_walk_0: 'assets/hero/tangsoyeon_walk_0.png', tangsoyeon_walk_1: 'assets/hero/tangsoyeon_walk_1.png', tangsoyeon_walk_2: 'assets/hero/tangsoyeon_walk_2.png', tangsoyeon_walk_3: 'assets/hero/tangsoyeon_walk_3.png', tangsoyeon_attack_0: 'assets/hero/tangsoyeon_attack_0.png', tangsoyeon_attack_1: 'assets/hero/tangsoyeon_attack_1.png', tangsoyeon_attack_2: 'assets/hero/tangsoyeon_attack_2.png', tangsoyeon_attack_3: 'assets/hero/tangsoyeon_attack_3.png', tangsoyeon_cast_0: 'assets/hero/tangsoyeon_cast_0.png', tangsoyeon_cast_1: 'assets/hero/tangsoyeon_cast_1.png', tangsoyeon_cast_2: 'assets/hero/tangsoyeon_cast_2.png', tangsoyeon_cast_3: 'assets/hero/tangsoyeon_cast_3.png',
   // 현운(권사) 2026-11-13: 걷기 ChatGPT, 공격·시전 제미나이
   hyunwoon_walk_0: 'assets/hero/hyunwoon_walk_0.png', hyunwoon_walk_1: 'assets/hero/hyunwoon_walk_1.png', hyunwoon_walk_2: 'assets/hero/hyunwoon_walk_2.png', hyunwoon_walk_3: 'assets/hero/hyunwoon_walk_3.png',
   hyunwoon_attack_0: 'assets/hero/hyunwoon_attack_0.png', hyunwoon_attack_1: 'assets/hero/hyunwoon_attack_1.png', hyunwoon_attack_2: 'assets/hero/hyunwoon_attack_2.png', hyunwoon_attack_3: 'assets/hero/hyunwoon_attack_3.png',
@@ -441,7 +443,7 @@ const HERO_DEFS = {
     poisonDmgMult: 1.5,
     knockbackMult: 1.0,
     lore: '가문의 비전 의술서가 도난당해 사람을 괴물로 만드는 혈독환으로 악용되자, 가문의 오명을 씻고 배후를 단죄하려 한다.',
-    passives: ['공격 속도: +25% 고속 연사', '스킬 투사체: +1발 추가 발사', '독 도트 피해: 50% 증폭']
+    passives: ['기본 공격: 은침 던지기 3단 (멀리서, 3타는 독침 부채꼴)', '맞은 적에 맹독 · 독 피해 1.5배', '무공 투사체 +1발 · 시작 무공 만천화우']
   }
 };
 

@@ -249,7 +249,7 @@ function updateGame(dt) {
 
   // Auto Combat Strike when enemies are close
   if (player.attackCooldownTimer <= 0 && enemies.length > 0) {
-    const nearbyEnemy = findClosestEnemy(player.x, player.y, player.heroId === 'hyunwoon' ? 135 : 165); // 현운(주먹)은 더 가까이
+    const nearbyEnemy = findClosestEnemy(player.x, player.y, player.heroId === 'hyunwoon' ? 135 : player.heroId === 'tangsoyeon' ? 300 : 165); // 현운(주먹)은 더 가까이, 당소연(암기)은 멀리서
     if (nearbyEnemy) {
       triggerMeleeAttack(nearbyEnemy);
     }
