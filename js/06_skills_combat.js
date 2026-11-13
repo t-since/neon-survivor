@@ -775,6 +775,7 @@ function showNextLevelUp() {
   for (let key in SKILL_DEFS) {
     const s = SKILL_DEFS[key];
     const currentLvl = player.skills[key] || 0;
+    if (typeof skillAllowed === 'function' && !skillAllowed(key)) continue; // 다른 협객 전용 무공 (23_hero_skills.js)
     if (currentLvl < s.maxLevel) {
       available.push({
         id: key,
@@ -1030,7 +1031,7 @@ function openTreasureModal(isBossChest = false) {
       vy: -30
     });
   } else {
-    let unmaxed = Object.keys(SKILL_DEFS).filter(k => (player.skills[k] || 0) < SKILL_DEFS[k].maxLevel);
+    let unmaxed = Object.keys(SKILL_DEFS).filter(k => (player.skills[k] || 0) < SKILL_DEFS[k].maxLevel && (typeof skillAllowed !== 'function' || skillAllowed(k)));
     let upgradedSkillName = "";
     if (unmaxed.length > 0) {
       const chosen = unmaxed[Math.floor(Math.random() * unmaxed.length)];

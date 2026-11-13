@@ -7,7 +7,7 @@
 // - 버튼 모드 대기 시간: 강한 무공일수록 길게 (MANUAL_CD, 2026-11-12 사용자 요청)
 //   대신 한 방이 셈: 위력 = 자동일 때 같은 시간 동안 나갈 몫을 한 번에 + 20% (직접 쓰는 보상)
 // ============================================================
-const ACTIVE_SLOTS = [
+let ACTIVE_SLOTS = [
   { id: 'palm_blast', key: 'Q', keys: ['q', '1'] },
   { id: 'thunder_bomb', key: 'E', keys: ['e', '2'] },
   { id: 'dagger_rain', key: 'R', keys: ['r', '3'] },
@@ -19,10 +19,24 @@ const MANUAL_CD = {
   palm_blast:   [4, 3, 6],     // 벽공장 → 여래신장
   thunder_bomb: [6, 4.5, 9],   // 벽력탄 → 구천뇌정
   dagger_rain:  [8, 6, 12],    // 만천화우 → 생사부 만천화우
-  vajra_shield: [10, 8, 15]    // 금강불괴 → 천지무적신공
+  vajra_shield: [10, 8, 15],   // 금강불괴 → 천지무적신공
+  iaido:        [6, 4, 6],     // 발도일섬 (서진)
+  jingak:       [6, 4.5, 6],   // 진각 (현운)
+  tianluo:      [8, 6, 8]      // 천라지망 (당소연)
 };
+// 협객마다 버튼 4개 (Q·E·R·F). null 이면 빈 칸
+const HERO_SLOTS = {
+  seojin: ['iaido', 'thunder_bomb', null, 'vajra_shield'],
+  hyunwoon: ['palm_blast', 'thunder_bomb', 'jingak', 'vajra_shield'],
+  tangsoyeon: ['tianluo', 'thunder_bomb', 'dagger_rain', 'vajra_shield']
+};
+function setActiveSlotsForHero(h) {
+  const ids = HERO_SLOTS[h] || HERO_SLOTS.seojin;
+  ACTIVE_SLOTS.forEach((s, i) => { s.id = ids[i] || '_none'; });
+  if (typeof skillBtnEls !== 'undefined') skillBtnEls.forEach(b => { b.last = ''; });
+}
 function manualCd(id) {
-  const t = MANUAL_CD[id], lv = Math.max(1, Math.min(5, player.skills[id] || 1));
+  const t = MANUAL_CD[id] || [6, 4, 6], lv = Math.max(1, Math.min(5, player.skills[id] || 1));
   if (player.evolutions && player.evolutions['evo_' + id]) return t[2];
   return t[0] + (t[1] - t[0]) * (lv - 1) / 4;
 }
@@ -64,6 +78,9 @@ function useActiveSkill(slot) {
     } else if (s.id === 'thunder_bomb') castThunderBomb();
     else if (s.id === 'dagger_rain') castDaggerRain();
     else if (s.id === 'vajra_shield') castVajraPulse();
+    else if (s.id === 'iaido') castIaido();
+    else if (s.id === 'jingak') castJingak();
+    else if (s.id === 'tianluo') castTianluo();
   } finally { player.atkMultiplier = base; }
   flashSkillBtn(slot, 'go');
   return true;
@@ -125,7 +142,7 @@ function refreshSkillButtons() {
       b.el.removeAttribute('title');
       return;
     }
-    const def = evo ? EVO_SKILL_DEFS[s.id] : SKILL_DEFS[s.id];
+    const def = (evo ? EVO_SKILL_DEFS[s.id] : SKILL_DEFS[s.id]) || { name: '', icon: '' };
     // 그림 글자 하나만 (초월은 '⚡💣'처럼 둘이라 앞의 것, 🛡️ 의 꾸밈 글자 FE0F 는 살림)
     const ic = (def.icon || '').match(/\p{Extended_Pictographic}️?/u);
     if (def.img) { if (b.img.getAttribute('src') !== def.img) b.img.src = def.img; b.ico.textContent = ''; }

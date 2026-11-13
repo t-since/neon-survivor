@@ -6,10 +6,12 @@
 // - 매 프레임 부르는 곳: 06_skills_combat.js 의 updatePlumTrees 를 감싸서 (updateSkills 안에서 불림)
 // ============================================================
 const JINGAK = { base: 6, min: 3.5, perLevel: 0.08, radius: 175, push: 380, stun: 0.9 };
-function jingakInterval() { return Math.max(JINGAK.min, JINGAK.base - (player.level || 1) * JINGAK.perLevel); }
+const jingakLv = () => Math.max(1, player.skills.jingak || 1);
+function jingakInterval() { return Math.max(JINGAK.min, JINGAK.base - (jingakLv() - 1) * 0.5 - (player.level || 1) * 0.04); }
+function jingakRadius() { return JINGAK.radius + (jingakLv() - 1) * 14; }
 
 function castJingak() {
-  const R = JINGAK.radius;
+  const R = jingakRadius();
   let hits = 0;
   for (const e of enemies) {
     if (e.hp <= 0) continue;
@@ -17,7 +19,7 @@ function castJingak() {
     if (d > R + (e.radius || 0)) continue;
     hits++;
     e.squashT = 0.2;
-    dealDamage(e, (70 + (player.level || 1) * 8) * player.atkMultiplier * (typeof sectorScale === 'function' ? sectorScale().hp : 1), true); // 칼 베기와 같은 구역 배율
+    dealDamage(e, (70 + (player.level || 1) * 8 + (jingakLv() - 1) * 30) * player.atkMultiplier * (typeof sectorScale === 'function' ? sectorScale().hp : 1), true); // 칼 베기와 같은 구역 배율
     if (!e.isBoss) {
       const k = e.isMiniBoss ? 0.35 : 1, a = Math.atan2(dy, dx);
       e.knockbackVx = Math.cos(a) * JINGAK.push * k * (player.knockbackMult || 1);
@@ -41,11 +43,12 @@ function castJingak() {
 }
 
 function updateJingak(dt) {
-  if (player.heroId !== 'hyunwoon' || !state.isGameStarted) return;
+  if (!(player.skills.jingak > 0) || !state.isGameStarted) return; // 진각을 배웠을 때만 (현운은 처음부터 1단계)
+  if (typeof activeSkillTick === 'function' && activeSkillTick('jingak', jingakInterval(), dt)) return; // 수동 모드: 버튼으로
   player.jingakTimer = (player.jingakTimer || 0) + dt;
   if (player.jingakTimer < jingakInterval()) return;
   // 둘레에 적이 있을 때만 (헛발질하지 않게)
-  const R = JINGAK.radius;
+  const R = jingakRadius();
   const any = enemies.some(e => e.hp > 0 && Math.abs(e.x - player.x) < R && Math.abs(e.y - player.y) < R && Math.hypot(e.x - player.x, e.y - player.y) < R + (e.radius || 0));
   if (!any) { player.jingakTimer = jingakInterval(); return; }
   player.jingakTimer = 0;
