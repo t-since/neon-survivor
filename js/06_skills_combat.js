@@ -469,6 +469,8 @@ function triggerMeleeAttack(target) {
     hitList.push(e);
     const dmg = (48 + player.level * 6) * player.atkMultiplier * (isFinisher ? 1.6 : 1) * (FIST ? 0.8 : 1) * SEC_K; // 주먹은 빠른 대신 한 대가 조금 약함
     dealDamage(e, dmg, true);
+    e.squashT = isFinisher ? 0.2 : 0.15; // 타격감: 맞은 적이 옆으로 납작해졌다 튕기듯 돌아옴 (그리기: drawEnemyArt)
+    if (e.hp <= 0) spawnInkSplash(e.x, e.y, aim, isFinisher); // 타격감: 칼(주먹)로 쓰러뜨리면 바닥에 먹물
     e.hitCooldown = 0.22; // 하얗게 번쩍이는 시간 (0.06 넘는 동안) — 예전 0.14
     // 맞은 방향으로 밀려남 (보스는 밀리지 않음, 중간보스는 큰 베기에만 조금)
     if (!e.isBoss && !(e.isMiniBoss && !isFinisher)) {
@@ -501,6 +503,7 @@ function triggerMeleeAttack(target) {
     }
     // 맞는 순간 멈칫 (손맛). 많이 맞을수록 조금 더 — 예전 0.04 / 0.07 고정
     state.hitStop = (isFinisher ? 0.11 : 0.065) + Math.min(3, hits - 1) * 0.008;
+    if (isFinisher) { const now = performance.now(); state.zoomPunchAt = now; state.slowUntil = now + 110 + 180; } // 멈칫(0.11초) 뒤 0.18초 느리게
     state.screenShake = Math.max(state.screenShake || 0, isFinisher ? 11 : 5); // 예전 7 / 3
   }
   // 칼 빛: 예전 88 / 120 → 크게
@@ -509,6 +512,24 @@ function triggerMeleeAttack(target) {
     createShockwave(fx, fy, isFinisher ? 95 : 38, isFinisher ? 'rgba(251, 191, 36, 0.9)' : 'rgba(253, 230, 138, 0.85)');
     if (isFinisher) PixelFX.spawnSwordSlash(fx, fy, aim, 90, '#fbbf24');
   } else PixelFX.spawnSwordSlash(player.x + Math.cos(aim) * 55, player.y - 30 + Math.sin(aim) * 44, aim, isFinisher ? 155 : 112);
+}
+
+// 타격감 3) 먹물 튀김: 큰 먹물 한 덩이 + 맞은 방향으로 튄 방울들 (바닥 자국, 2.5초에 걸쳐 옅어짐)
+function spawnInkSplash(x, y, aim, big) {
+  const blobs = [];
+  const n = big ? 9 : 6, R = big ? 34 : 24;
+  blobs.push({ x: 0, y: 0, r: R, rot: Math.random() * 3 });
+  for (let i = 0; i < n; i++) {
+    const a = aim + (Math.random() - 0.5) * 1.3, d = R * (0.8 + Math.random() * 1.8);
+    blobs.push({ x: Math.cos(a) * d, y: Math.sin(a) * d * 0.6, r: R * (0.12 + Math.random() * 0.3), rot: Math.random() * 3 });
+  }
+  if (groundDecals.length > 60) groundDecals.splice(0, groundDecals.length - 60);
+  groundDecals.push({ type: 'ink', x, y: y + 4, blobs, life: 2.5, maxLife: 2.5 });
+  // 쓰러지는 순간 튀는 방울
+  for (let i = 0; i < (big ? 12 : 7); i++) {
+    const a = aim + (Math.random() - 0.5) * 1.1, sp = 160 + Math.random() * 260;
+    particles.push({ x, y: y - 30, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6 - 60, color: Math.random() < 0.6 ? 'rgba(150, 16, 30, 0.9)' : 'rgba(60, 6, 12, 0.9)', radius: 3 + Math.random() * 4, life: 0.35, maxLife: 0.35 });
+  }
 }
 
 function findClosestEnemy(x, y, maxDist = 500) {

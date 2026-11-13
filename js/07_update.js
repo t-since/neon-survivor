@@ -119,7 +119,7 @@ function gameLoop(time) {
   if (state.hitStop > 0) {
     state.hitStop -= dt; // 타격 멈칫: 화면은 그리되 시간은 잠깐 멈춤
   } else if (state.isGameStarted && !state.isPaused && !state.isGameOver) {
-    updateGame(dt);
+    updateGame(state.slowUntil > performance.now() ? dt * 0.35 : dt); // 3타 큰 베기 뒤 잠깐 느리게 (타격감)
   }
 
   renderGame();
@@ -1123,6 +1123,7 @@ function updateGame(dt) {
 
     // 공격 동작 신호 (새 몬스터 그림의 공격 4장을 재생하는 시간)
     if (e.animAtk > 0) e.animAtk -= dt;
+    if (e.squashT > 0) e.squashT -= dt;
     if (!(e.animAtk > 0) && !prof) { // 휘두르기가 정해진 종류는 updateEnemySwing 이 동작을 정함
       if (dist < player.radius + e.radius + 30) { e.animAtk = e.animAtkMax = 0.5; }       // 붙어서 휘두름
       else if (e.isAttacking) { e.animAtk = e.animAtkMax = 0.5; }

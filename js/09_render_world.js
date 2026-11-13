@@ -4,6 +4,8 @@ function renderWorldContents() {
   const shakeK = (typeof gameSettings !== 'undefined') ? gameSettings.shake : 1; // 설정: 화면 흔들림 끄기/약하게/보통
   const shakeX = (state.screenShake > 0) ? (Math.random() - 0.5) * state.screenShake * shakeK : 0;
   const shakeY = (state.screenShake > 0) ? (Math.random() - 0.5) * state.screenShake * shakeK : 0;
+  const zt = state.zoomPunchAt ? (performance.now() - state.zoomPunchAt) / 260 : 1; // 3타 큰 베기: 화면 살짝 당김 (타격감)
+  if (zt < 1 && shakeK > 0) { const z = 1 + 0.06 * Math.sin(zt * Math.PI); ctx.translate(gameWidth / 2, gameHeight / 2); ctx.scale(z, z); ctx.translate(-gameWidth / 2, -gameHeight / 2); }
   ctx.translate(gameWidth / 2 - state.camera.x + shakeX, gameHeight / 2 - state.camera.y + shakeY);
 
   // 1. Draw Ground Tiles
@@ -476,6 +478,13 @@ function renderGroundDecals() {
     const alpha = Math.min(1.0, d.life / 0.6);
     ctx.globalAlpha = alpha;
 
+    if (d.type === 'ink') { // 칼로 쓰러뜨린 자리의 먹물 (타격감)
+      ctx.globalAlpha = Math.min(1, d.life / 1.2) * 0.75;
+      ctx.fillStyle = 'rgb(92, 10, 20)'; // 검붉은 먹 (검은 먹은 어두운 바닥에서 안 보임)
+      for (const b of d.blobs) { ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.62, b.rot, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+      return;
+    }
     if (d.type === 'scorch') {
       // 벽력탄이 터진 자리의 검게 그을린 자국 (천천히 사라짐)
       ctx.globalAlpha = Math.min(1, d.life / 1.5) * 0.7;

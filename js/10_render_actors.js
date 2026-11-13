@@ -265,6 +265,7 @@ function drawEnemyArt(e, art, facing, isMoving, runTimer) {
   const k = art.h / 300;
   const hop = e.type === 'jiangshi' ? -(e.hopHeight || 0) : 0;
   const look = (e.hitCooldown > 0.06) ? 'brightness(2.4) saturate(0.3)' : (e.elite ? ((art.filter ? art.filter + ' ' : '') + 'sepia(0.35) saturate(1.8) hue-rotate(-25deg) brightness(0.95)') : art.filter); // 맞은 순간 하얗게 / 정예 붉게 / 종류별 색
+  if (e.squashT > 0) { const s = Math.sin(Math.min(1, e.squashT / 0.2) * Math.PI); ctx.scale(1 + 0.22 * s, 1 - 0.18 * s); } // 타격감 1) 찌그러짐
   ctx.drawImage(tinted(img, look), -220 * k + tremble, -320 * k + 4 + hop, 440 * k, 340 * k);
 }
 

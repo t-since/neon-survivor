@@ -16,6 +16,7 @@ function castJingak() {
     const dx = e.x - player.x, dy = e.y - player.y, d = Math.hypot(dx, dy);
     if (d > R + (e.radius || 0)) continue;
     hits++;
+    e.squashT = 0.2;
     dealDamage(e, (70 + (player.level || 1) * 8) * player.atkMultiplier * (typeof sectorScale === 'function' ? sectorScale().hp : 1), true); // 칼 베기와 같은 구역 배율
     if (!e.isBoss) {
       const k = e.isMiniBoss ? 0.35 : 1, a = Math.atan2(dy, dx);
