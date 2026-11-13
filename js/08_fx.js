@@ -248,8 +248,30 @@ function createShockwave(x, y, radius, color) {
 
 // 검은 배경 빛 이펙트 그림을 더하기 합성으로 그림 (검은색은 안 보이고 빛만 남음)
 // sy: 세로 눌림(바닥에 깔린 느낌), rot: 회전
+// 가장자리를 둥글게 서서히 지운 그림 (11-13 사용자: 여래신장 손바닥 "끝이 잘려 보임" — 빛줄기가 네모 끝에서 직선으로 끊기고, jpg 검정이 완전 0 이 아니라 네모 테두리가 비침)
+const FX_SOFT = { fx_buddha_palm: 0.36 }; // 그림 이름: 이 반지름(그림 크기 비율)부터 바깥으로 0 이 되게
+const fxSoftCache = {};
+function softFxImage(key, img) {
+  if (fxSoftCache[key]) return fxSoftCache[key];
+  const w = img.width, h = img.height, c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  x.drawImage(img, 0, 0);
+  try {
+    const id = x.getImageData(0, 0, w, h), d = id.data, r0 = FX_SOFT[key], r1 = 0.5;
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+      const r = Math.hypot(xx / w - 0.5, yy / h - 0.5);
+      const k = r <= r0 ? 1 : r >= r1 ? 0 : Math.pow(1 - (r - r0) / (r1 - r0), 1.6);
+      const i = (yy * w + xx) * 4;
+      for (let q = 0; q < 3; q++) d[i + q] = Math.max(0, (d[i + q] - 6) * 255 / 249) * k; // 검정 바닥 잡티(jpg)도 0 으로
+    }
+    x.putImageData(id, 0, 0);
+  } catch (e) { return img; } // 파일로 열었을 때(file://) 등 읽기 막히면 그대로
+  return (fxSoftCache[key] = c);
+}
 function drawFxImage(key, x, y, size, alpha = 1, rot = 0, sy = 1, tint = null) {
-  const img = tint ? tinted(SPRITES[key], tint) : SPRITES[key];
+  const base = (FX_SOFT[key] && SPRITES[key] && SPRITES[key].width) ? softFxImage(key, SPRITES[key]) : SPRITES[key];
+  const img = tint ? tinted(base, tint) : base;
   if (!img || !img.width) return false;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
