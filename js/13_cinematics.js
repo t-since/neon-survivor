@@ -161,8 +161,8 @@ function resolveCinemaMedia(id) {
 
 // 편집된 영상 한 편: assets/cinema/<이름>.mp4 + <이름>.json(자막 시간표) — tools/cinema_edit.mjs 가 만듦
 const cinemaFilmCache = {};
-// 그림 컷 미리보기 (2026-11-13): 주소에 ?cine=stills 를 붙이면 영상 대신 새 장면 그림(assets/cinema/<id>.jpg)으로
-const CINE_STILLS = /[?&]cine=stills/.test(location.search);
+// 2026-11-13 사용자 결정: 컷신은 영상 대신 장면 그림(assets/cinema/<id>.jpg, 제미나이·ChatGPT)으로. 영상 파일은 뺌(원본은 구글 드라이브 cinema_src·git 기록)
+const CINE_STILLS = true;
 function findCinemaFilm(key) {
   if (CINE_STILLS) return Promise.resolve(null);
   if (cinemaFilmCache[key]) return cinemaFilmCache[key];
